@@ -1,16 +1,16 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "motion/react";
-import { 
-  ShoppingBag, 
-  CreditCard, 
-  QrCode, 
-  Zap, 
-  Clock, 
-  Shield, 
+import {
+  ShoppingBag,
+  CreditCard,
+  QrCode,
+  Zap,
+  Clock,
+  Shield,
   Store,
   ChevronDown,
   ChevronRight,
-  Sparkles
+  Sparkles,
 } from "lucide-react";
 import { Button } from "./components/ui/button";
 import { Card } from "./components/ui/card";
@@ -38,7 +38,20 @@ import { MyOrdersPage } from "./pages/MyOrdersPage";
 import { TermsPage } from "./pages/TermsPage";
 import { PrivacyPage } from "./pages/PrivacyPage";
 
-type Page = "home" | "shop" | "productDetails" | "contact" | "about" | "ourcompany" | "profile" | "cart" | "checkout" | "success" | "orders" | "terms" | "privacy";
+type Page =
+  | "home"
+  | "shop"
+  | "productDetails"
+  | "contact"
+  | "about"
+  | "ourcompany"
+  | "profile"
+  | "cart"
+  | "checkout"
+  | "success"
+  | "orders"
+  | "terms"
+  | "privacy";
 
 interface Product {
   id: number;
@@ -73,12 +86,13 @@ function AppContent() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [scrollY, setScrollY] = useState(0);
-  
+
   // Use contexts
   const { isAuthenticated, user, login, logout } = useAuth();
-  const { openLoginModal, openSignupModal, closeAllModals, openedAt } = useModal();
+  const { openLoginModal, openSignupModal, closeAllModals, openedAt } =
+    useModal();
   const { cartCount, clearCart } = useCart();
-  
+
   // Derive user info from context
   const userName = user?.fullName || "User";
   const userEmail = user?.email || "";
@@ -99,7 +113,7 @@ function AppContent() {
     (window as any).heypoint.openLogin = openLoginModal;
     (window as any).heypoint.openSignup = openSignupModal;
     (window as any).heypoint.closeModals = closeAllModals;
-    
+
     return () => {
       // Cleanup on unmount
       if ((window as any).heypoint) {
@@ -124,33 +138,39 @@ function AppContent() {
   useEffect(() => {
     const handleCustomNavigation = (event: CustomEvent) => {
       const path = event.detail?.path;
-      console.log('[App] Custom navigation event received:', path);
-      
-      if (path === '/account' || path === 'profile') {
-        setCurrentPage('profile');
-      } else if (path === '/orders') {
-        setCurrentPage('orders');
-      } else if (path === '/cart') {
-        setCurrentPage('cart');
+      console.log("[App] Custom navigation event received:", path);
+
+      if (path === "/account" || path === "profile") {
+        setCurrentPage("profile");
+      } else if (path === "/orders") {
+        setCurrentPage("orders");
+      } else if (path === "/cart") {
+        setCurrentPage("cart");
       }
     };
 
-    window.addEventListener('heypoint:navigate', handleCustomNavigation as EventListener);
+    window.addEventListener(
+      "heypoint:navigate",
+      handleCustomNavigation as EventListener
+    );
     return () => {
-      window.removeEventListener('heypoint:navigate', handleCustomNavigation as EventListener);
+      window.removeEventListener(
+        "heypoint:navigate",
+        handleCustomNavigation as EventListener
+      );
     };
   }, []);
 
   // Listen for logout events and redirect to homepage
   useEffect(() => {
     const handleLogout = () => {
-      console.log('[App] Logout event received - redirecting to home');
-      setCurrentPage('home');
+      console.log("[App] Logout event received - redirecting to home");
+      setCurrentPage("home");
     };
 
-    window.addEventListener('heypoint:logout', handleLogout);
+    window.addEventListener("heypoint:logout", handleLogout);
     return () => {
-      window.removeEventListener('heypoint:logout', handleLogout);
+      window.removeEventListener("heypoint:logout", handleLogout);
     };
   }, []);
 
@@ -164,24 +184,24 @@ function AppContent() {
     const handleScroll = () => {
       setScrollY(window.scrollY);
     };
-    
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const heroImages = [
     {
       url: "https://images.unsplash.com/photo-1754195451509-00c25c20fdde?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjB2ZW5kaW5nJTIwbWFjaGluZSUyMHN0b3JlfGVufDF8fHx8MTc2MjMxMjQ0Nnww&ixlib=rb-4.1.0&q=80&w=1080",
-      alt: "Modern HeyPoint! mini-store"
+      alt: "Modern HeyPoint! mini-store",
     },
     {
       url: "https://images.unsplash.com/photo-1611250308498-9e325502f8ee?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb252ZW5pZW5jZSUyMHN0b3JlJTIwaW50ZXJpb3J8ZW58MXx8fHwxNzYyMjk4NTYwfDA&ixlib=rb-4.1.0&q=80&w=1080",
-      alt: "HeyPoint! store interior"
+      alt: "HeyPoint! store interior",
     },
     {
       url: "https://images.unsplash.com/photo-1758721321642-485c02d07009?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhdXRvbWF0ZWQlMjByZXRhaWwlMjBraW9za3xlbnwxfHx8fDE3NjIzMTI5Mzd8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      alt: "Automated retail technology"
-    }
+      alt: "Automated retail technology",
+    },
   ];
 
   // New categories for Spanish version
@@ -189,69 +209,74 @@ function AppContent() {
     {
       name: "Snacks",
       items: 120,
-      image: "https://images.unsplash.com/photo-1762417582697-f17df0c69348?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzbmFja3MlMjBkaXNwbGF5JTIwc2hlbGZ8ZW58MXx8fHwxNzYzMDg4OTk0fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+      image:
+        "https://images.unsplash.com/photo-1762417582697-f17df0c69348?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzbmFja3MlMjBkaXNwbGF5JTIwc2hlbGZ8ZW58MXx8fHwxNzYzMDg4OTk0fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
     },
     {
       name: "Bebidas",
       items: 90,
-      image: "https://images.unsplash.com/photo-1672826979189-faae44e1b7a6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiZXZlcmFnZXMlMjBkcmlua3MlMjBjb29sZXJ8ZW58MXx8fHwxNzYzMDg4OTk0fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+      image:
+        "https://images.unsplash.com/photo-1672826979189-faae44e1b7a6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiZXZlcmFnZXMlMjBkcmlua3MlMjBjb29sZXJ8ZW58MXx8fHwxNzYzMDg4OTk0fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
     },
     {
       name: "Electrónica",
       items: 45,
-      image: "https://images.unsplash.com/photo-1707485122968-56916bd2c464?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlbGVjdHJvbmljcyUyMGdhZGdldHMlMjBkaXNwbGF5fGVufDF8fHx8MTc2MzA4ODk5NHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+      image:
+        "https://images.unsplash.com/photo-1707485122968-56916bd2c464?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlbGVjdHJvbmljcyUyMGdhZGdldHMlMjBkaXNwbGF5fGVufDF8fHx8MTc2MzA4ODk5NHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
     },
     {
       name: "Higiene",
       items: 110,
-      image: "https://images.unsplash.com/photo-1629198688000-71f23e745b6e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwZXJzb25hbCUyMGNhcmUlMjBwcm9kdWN0c3xlbnwxfHx8fDE3NjMwODkwMTR8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+      image:
+        "https://images.unsplash.com/photo-1629198688000-71f23e745b6e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwZXJzb25hbCUyMGNhcmUlMjBwcm9kdWN0c3xlbnwxfHx8fDE3NjMwODkwMTR8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
     },
     {
       name: "Otros",
       items: 75,
-      image: "https://images.unsplash.com/photo-1651383140368-9b3ee59c2981?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmcm96ZW4lMjBmb29kfGVufDF8fHx8MTc2MjIzNDM1OHww&ixlib=rb-4.1.0&q=80&w=1080"
-    }
+      image:
+        "https://images.unsplash.com/photo-1651383140368-9b3ee59c2981?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmcm96ZW4lMjBmb29kfGVufDF8fHx8MTc2MjIzNDM1OHww&ixlib=rb-4.1.0&q=80&w=1080",
+    },
   ];
 
   const howItWorksSteps = [
     {
       icon: <ShoppingBag className="w-10 h-10 sm:w-12 sm:h-12" />,
       title: "Elegí",
-      description: "Explorá la tienda y seleccioná tus productos."
+      description: "Explorá la tienda y seleccioná tus productos.",
     },
     {
       icon: <CreditCard className="w-10 h-10 sm:w-12 sm:h-12" />,
       title: "Pagá",
-      description: "Pagá de forma rápida y segura desde tu celular."
+      description: "Pagá de forma rápida y segura desde tu celular.",
     },
     {
       icon: <QrCode className="w-10 h-10 sm:w-12 sm:h-12" />,
       title: "Retirá",
-      description: "Ingresá tu código alfanumérico y retiralo en tu HeyPoint."
-    }
+      description: "Ingresá tu código alfanumérico y retiralo en tu HeyPoint.",
+    },
   ];
 
   const benefits = [
     {
       icon: <Zap className="w-7 h-7 sm:w-8 sm:h-8" />,
       title: "Sin filas",
-      description: "Comprá cuando quieras, sin esperas"
+      description: "Comprá cuando quieras, sin esperas",
     },
     {
       icon: <Clock className="w-7 h-7 sm:w-8 sm:h-8" />,
       title: "Disponible 24/7",
-      description: "Siempre abierto, siempre listo"
+      description: "Siempre abierto, siempre listo",
     },
     {
       icon: <CreditCard className="w-7 h-7 sm:w-8 sm:h-8" />,
       title: "Pagos digitales",
-      description: "Todos los métodos de pago aceptados"
+      description: "Todos los métodos de pago aceptados",
     },
     {
       icon: <Shield className="w-7 h-7 sm:w-8 sm:h-8" />,
       title: "Retiro seguro",
-      description: "Tu pedido protegido y listo"
-    }
+      description: "Tu pedido protegido y listo",
+    },
   ];
 
   const handleProductClick = (product: Product) => {
@@ -284,14 +309,16 @@ function AppContent() {
   const handleAuthRequired = () => {
     // This function is no longer needed - AuthModal handles it
     // Keeping for backward compatibility
-    console.warn("handleAuthRequired is deprecated. Use AuthModal component instead.");
+    console.warn(
+      "handleAuthRequired is deprecated. Use AuthModal component instead."
+    );
   };
 
   const handleLoginSuccess = (userData?: any) => {
     if (userData) {
       login({
         email: userData.email || "",
-        fullName: userData.fullName || "User"
+        fullName: userData.fullName || "User",
       });
     }
     if (pendingAction) {
@@ -309,7 +336,7 @@ function AppContent() {
     // Google sign-up skips email verification, goes straight to profile completion
     login({
       email: "user@gmail.com", // Would come from Google OAuth
-      fullName
+      fullName,
     });
     setCurrentPage("completeProfile");
   };
@@ -317,14 +344,16 @@ function AppContent() {
   const handleAddToCart = () => {
     // This function is no longer needed - AddToCartButton handles it
     // Keeping for backward compatibility
-    console.warn("handleAddToCart is deprecated. Use AddToCartButton component instead.");
+    console.warn(
+      "handleAddToCart is deprecated. Use AddToCartButton component instead."
+    );
   };
 
   // Smooth scroll to "How It Works" section
   const scrollToHowItWorks = () => {
-    const section = document.getElementById('como-funciona');
+    const section = document.getElementById("como-funciona");
     if (section) {
-      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   };
 
@@ -332,8 +361,8 @@ function AppContent() {
   if (currentPage === "shop") {
     return (
       <>
-        <ShopPage 
-          onProductClick={handleProductClick} 
+        <ShopPage
+          onProductClick={handleProductClick}
           onNavigate={handleNavigation}
           selectedCategory={selectedCategory}
           onCategorySelect={handleCategorySelect}
@@ -347,9 +376,9 @@ function AppContent() {
   if (currentPage === "productDetails" && selectedProduct) {
     return (
       <>
-        <ProductDetailsPage 
-          product={selectedProduct} 
-          onBack={handleBackToShop} 
+        <ProductDetailsPage
+          product={selectedProduct}
+          onBack={handleBackToShop}
           onNavigate={handleNavigation}
           onProductClick={handleProductClick}
         />
@@ -408,8 +437,8 @@ function AppContent() {
   if (currentPage === "success") {
     return (
       <>
-        <PurchaseSuccessPage 
-          onNavigate={handleNavigation} 
+        <PurchaseSuccessPage
+          onNavigate={handleNavigation}
           userEmail={userEmail}
           userName={userName}
           pickupCode={pickupCodeGenerated}
@@ -447,16 +476,16 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-[#FFF4E6]">
       {/* Header */}
-      <UnifiedHeader 
+      <UnifiedHeader
         onNavigate={handleNavigation}
         currentPage={currentPage}
         onCategorySelect={handleCategorySelect}
         isTransparent={currentPage === "home"}
       />
-      
+
       {/* Back to Top Button */}
       <BackToTopButton />
-      
+
       {/* Hero Section */}
       <section className="relative min-h-[100vh] flex items-center justify-center overflow-hidden bg-[#FFF4E6]">
         {/* Background Image with Overlay */}
@@ -480,14 +509,16 @@ function AppContent() {
           >
             {/* Main Headline */}
             <h1 className="text-white text-5xl md:text-7xl mb-6 font-[Inter] font-bold text-[48px]">
-              Comprá online.<br />Retirá en minutos.
+              Comprá online.
+              <br />
+              Retirá en minutos.
             </h1>
-            
+
             {/* Subheadline */}
             <p className="text-white/95 max-w-2xl mx-auto text-lg md:text-xl">
               Elegí tus productos, pagá online y retirá en tu HeyPoint.
             </p>
-            
+
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-center max-w-3xl mx-auto mt-10">
               {/* Primary CTA Button */}
@@ -507,7 +538,7 @@ function AppContent() {
 
               {/* Search Bar */}
               <motion.div className="w-full sm:w-auto sm:flex-1 sm:max-w-md">
-                <SmartSearchBar 
+                <SmartSearchBar
                   onProductClick={(product) => {
                     setSelectedProduct(product);
                     setCurrentPage("productDetails");
@@ -534,10 +565,10 @@ function AppContent() {
                 >
                   <motion.div
                     animate={scrollY < 100 ? { y: [0, 3, 0] } : {}}
-                    transition={{ 
-                      duration: 1.5, 
-                      repeat: scrollY < 100 ? Infinity : 0, 
-                      ease: "easeInOut" 
+                    transition={{
+                      duration: 1.5,
+                      repeat: scrollY < 100 ? Infinity : 0,
+                      ease: "easeInOut",
                     }}
                   >
                     <ChevronDown className="w-4 h-4" />
@@ -550,13 +581,13 @@ function AppContent() {
         </div>
 
         {/* Scroll Indicator */}
-        <motion.div 
+        <motion.div
           className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20"
           animate={{ y: [0, 10, 0] }}
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
         >
           <div className="w-6 h-10 border-2 border-white/70 rounded-full flex items-start justify-center p-2 backdrop-blur-sm">
-            <motion.div 
+            <motion.div
               className="w-1.5 h-1.5 bg-white rounded-full"
               animate={{ y: [0, 16, 0] }}
               transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
@@ -598,15 +629,11 @@ function AppContent() {
                   <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-[#FF6B00] to-[#FF8534] text-white rounded-2xl md:rounded-3xl mb-6 shadow-md">
                     {step.icon}
                   </div>
-                  <div className="mb-2 text-[#FF6B00]">
-                    Paso {index + 1}
-                  </div>
+                  <div className="mb-2 text-[#FF6B00]">Paso {index + 1}</div>
                   <h3 className="text-[#1C2335] text-xl md:text-2xl mb-3">
                     {step.title}
                   </h3>
-                  <p className="text-[#2E2E2E] text-base">
-                    {step.description}
-                  </p>
+                  <p className="text-[#2E2E2E] text-base">{step.description}</p>
                 </Card>
               </motion.div>
             ))}
@@ -657,7 +684,7 @@ function AppContent() {
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-[#1C2335]/70 via-[#1C2335]/20 to-transparent" />
-                        
+
                         {/* Items Badge */}
                         <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-md">
                           <p className="text-[#FF6B00] text-xs">
@@ -705,7 +732,7 @@ function AppContent() {
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-[#1C2335]/70 via-[#1C2335]/20 to-transparent" />
-                        
+
                         {/* Items Badge */}
                         <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-md">
                           <p className="text-[#FF6B00] text-xs">
@@ -809,14 +836,12 @@ function AppContent() {
               Encontrá el HeyPoint más cercano
             </h2>
             <p className="text-white/90 text-lg md:text-xl max-w-2xl mx-auto mb-10">
-              Descubrí la forma más inteligente de hacer tus compras. Rápido, seguro y siempre disponible.
+              Descubrí la forma más inteligente de hacer tus compras. Rápido,
+              seguro y siempre disponible.
             </p>
-            
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Button 
+
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button
                 onClick={() => handleNavigation("shop")}
                 className="h-14 md:h-16 px-10 md:px-12 bg-white hover:bg-[#FFF4E6] text-[#FF6B00] rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-3 mx-auto"
               >
