@@ -27,11 +27,15 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "../components/ui/collapsible";
-import { formatPrecioARS } from "../utils/priceUtils";
+import { formatPrecioARS, getPrecioFinalConIVA } from "../utils/priceUtils";
 
 /** =========================
  * API Helper (self-contained)
- * ========================= */
+ * =========================
+ * ✅ IMPORTANTE:
+ * - En producción SIEMPRE definí VITE_API_URL (ej: https://api.heypoint.com.ar/api)
+ * - Si no existe, cae a localhost (solo dev)
+ */
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
 
 async function apiGet<T>(path: string, opts?: RequestInit): Promise<T> {
@@ -58,10 +62,10 @@ interface Product {
   id: number; // UI id stable (hash from backend string id)
   name: string;
   image: string;
-  price: number; // ✅ finalPrice (con IVA + descuento) desde backend
-  originalPrice?: number; // ✅ priceWithVat (base con IVA) si hay descuento
+  price: number; // ✅ final price SIN IVA (con descuento aplicado)
+  originalPrice?: number; // ✅ basePrice SIN IVA (si hay descuento)
   rating: number;
-  category: string; // category name for filters
+  category: string;
   badges?: string[];
   stock: number;
 }
@@ -93,18 +97,25 @@ type ApiProduct = {
   categoryId?: string;
 
   basePrice: number;
-  discountPct?: number; // 0.3 => 30%
+
+  /**
+   * ✅ NUEVO:
+   * discountPct = porcentaje humano (0.4 = 0.4%)
+   */
+  discountPct?: number;
+
+  /**
+   * ⛑️ LEGACY:
+   * discount (antes lo tenías como fracción 0.4 = 40%)
+   * lo dejamos para no romper productos viejos
+   */
+  discount?: number;
+
   stock?: number;
   status?: "active" | "inactive";
-
   images?: string[];
   createdAt?: string;
   updatedAt?: string;
-
-  // ✅ calculados por backend (Opción A)
-  priceWithVat: number; // base + IVA
-  finalPrice: number; // descuento + IVA
-  savings: number; // priceWithVat - finalPrice
 };
 
 type ApiCategoriesResponse = ApiCategory[] | { categories: ApiCategory[] };
@@ -117,11 +128,32 @@ function normalizeProducts(data: ApiProductsResponse): ApiProduct[] {
   return Array.isArray(data) ? data : data?.products || [];
 }
 
-// id string -> number estable (para tu QuantitySelector/AddToCartButton)
+// id string -> number estable
 function hashId(s: string): number {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
   return h;
+}
+
+/** ✅ Convierte descuento a fracción [0..1]
+ * - Si viene discountPct (0.4 = 0.4%), lo pasamos a 0.004
+ * - Si no, usamos legacy discount (asumido fracción ya)
+ */
+function getDiscountFraction(p: ApiProduct): number {
+  const pctRaw = p.discountPct;
+
+  if (typeof pctRaw === "number" && !Number.isNaN(pctRaw) && pctRaw > 0) {
+    const pct = Math.max(0, Math.min(100, pctRaw)); // clamp
+    return pct / 100;
+  }
+
+  const legacy = p.discount;
+  if (typeof legacy === "number" && !Number.isNaN(legacy) && legacy > 0) {
+    // legacy ya era fracción (0.4 = 40%)
+    return Math.max(0, Math.min(1, legacy));
+  }
+
+  return 0;
 }
 
 export function ShopPage({
@@ -134,7 +166,6 @@ export function ShopPage({
 }: ShopPageProps) {
   const itemsPerPage = 12;
 
-  // Range defaults
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 20000]);
   const [priceMax, setPriceMax] = useState(20000);
 
@@ -153,7 +184,6 @@ export function ShopPage({
   const [isLoadingPage, setIsLoadingPage] = useState(false);
   const [isOfertasFilterActive, setIsOfertasFilterActive] = useState(false);
 
-  // API data
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<
     { name: string; count: number }[]
@@ -161,28 +191,23 @@ export function ShopPage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Debug
   useEffect(() => {
     console.log("[ShopPage] searchQuery prop received:", searchQuery);
   }, [searchQuery]);
 
-  // Quantity helpers
   const getQuantity = (productId: number) => productQuantities[productId] || 1;
   const updateQuantity = (productId: number, quantity: number) => {
     setProductQuantities((prev) => ({ ...prev, [productId]: quantity }));
   };
 
-  // Sync selectedCategories with prop
   useEffect(() => {
     if (selectedCategory) setSelectedCategories([selectedCategory]);
   }, [selectedCategory]);
 
-  // Reset pagination on filters/search changes
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedCategories, priceRange, searchQuery, isOfertasFilterActive]);
 
-  // Load catalog
   useEffect(() => {
     let mounted = true;
 
@@ -191,7 +216,6 @@ export function ShopPage({
         setLoading(true);
         setError(null);
 
-        // Traemos ambos; si categories falla, igual mostramos productos
         const [catRaw, prodRaw] = await Promise.allSettled([
           apiGet<ApiCategoriesResponse>("/categories"),
           apiGet<ApiProductsResponse>("/products"),
@@ -214,20 +238,20 @@ export function ShopPage({
             : true,
         );
 
-        // category map
         const catIdToName = new Map<string, string>();
         for (const c of apiCats) catIdToName.set(c.id, c.name);
 
         const PLACEHOLDER_IMG = "https://placehold.co/600x400?text=HeyPoint";
 
         const mappedProducts: Product[] = apiProds.map((p) => {
-          const hasDiscount = (p.discountPct ?? 0) > 0;
+          const base = Number(p.basePrice || 0);
 
-          // ✅ Backend ya lo calcula (IVA + descuento)
-          const finalPrice = Number(p.finalPrice ?? 0);
-          const originalPrice = hasDiscount
-            ? Number(p.priceWithVat ?? 0)
-            : undefined;
+          const discountFraction = getDiscountFraction(p);
+          const hasDiscount = discountFraction > 0;
+
+          // ✅ precios SIN IVA
+          const finalPrice = hasDiscount ? base * (1 - discountFraction) : base;
+          const originalPrice = hasDiscount ? base : undefined;
 
           const img =
             (p.images && p.images.length > 0 ? p.images[0] : "") ||
@@ -241,8 +265,11 @@ export function ShopPage({
             id: hashId(p.id),
             name: p.name,
             image: img,
-            price: finalPrice,
-            originalPrice,
+            price: Number(finalPrice.toFixed(2)),
+            originalPrice:
+              originalPrice !== undefined
+                ? Number(originalPrice.toFixed(2))
+                : undefined,
             rating: 4.7,
             category: categoryName,
             badges: hasDiscount ? ["Sale"] : undefined,
@@ -250,7 +277,6 @@ export function ShopPage({
           };
         });
 
-        // categories for sidebar
         const countByName = new Map<string, number>();
         for (const prod of mappedProducts) {
           countByName.set(
@@ -275,7 +301,6 @@ export function ShopPage({
                 count,
               }));
 
-        // Price max (usamos precio final)
         const maxPriceFromProducts =
           mappedProducts.length > 0
             ? Math.max(...mappedProducts.map((x) => x.price || 0))
@@ -340,7 +365,8 @@ export function ShopPage({
 
       const ofertaMatch =
         !isOfertasFilterActive ||
-        (product.originalPrice && product.originalPrice > product.price);
+        (product.originalPrice !== undefined &&
+          product.originalPrice > product.price);
 
       return categoryMatch && priceMatch && searchMatch && ofertaMatch;
     });
@@ -370,7 +396,7 @@ export function ShopPage({
 
   const productosEnOferta = useMemo(() => {
     return products
-      .filter((p) => p.originalPrice && p.originalPrice > p.price)
+      .filter((p) => p.originalPrice !== undefined && p.originalPrice > p.price)
       .slice(0, 6);
   }, [products]);
 
@@ -565,12 +591,11 @@ export function ShopPage({
                 </div>
 
                 <div className="p-4 sm:p-6">
-                  {/* Mobile scroll */}
                   <div className="lg:hidden overflow-x-auto pb-4 -mx-2 px-2 scrollbar-hide">
                     <div className="flex gap-4 min-w-max">
                       {productosEnOferta.map((product) => {
                         const hasDiscount =
-                          product.originalPrice &&
+                          product.originalPrice !== undefined &&
                           product.originalPrice > product.price;
 
                         return (
@@ -627,8 +652,9 @@ export function ShopPage({
                                     >
                                       ¡Ahorrás{" "}
                                       {formatPrecioARS(
-                                        product.originalPrice! -
-                                          product.price || 0,
+                                        getPrecioFinalConIVA(
+                                          product.originalPrice!,
+                                        ) - getPrecioFinalConIVA(product.price),
                                       )}
                                       !
                                     </span>
@@ -674,11 +700,10 @@ export function ShopPage({
                     </div>
                   </div>
 
-                  {/* Desktop grid */}
                   <div className="hidden lg:grid lg:grid-cols-3 gap-6">
                     {productosEnOferta.map((product) => {
                       const hasDiscount =
-                        product.originalPrice &&
+                        product.originalPrice !== undefined &&
                         product.originalPrice > product.price;
 
                       return (
@@ -720,8 +745,9 @@ export function ShopPage({
                                   <span className="text-[#2E2E2E] block mt-1 text-xs">
                                     ¡Ahorrás{" "}
                                     {formatPrecioARS(
-                                      product.originalPrice! - product.price ||
-                                        0,
+                                      getPrecioFinalConIVA(
+                                        product.originalPrice!,
+                                      ) - getPrecioFinalConIVA(product.price),
                                     )}
                                     !
                                   </span>
@@ -857,7 +883,7 @@ export function ShopPage({
                       )
                       .map((product) => {
                         const hasDiscount =
-                          product.originalPrice &&
+                          product.originalPrice !== undefined &&
                           product.originalPrice > product.price;
 
                         return (
@@ -876,31 +902,30 @@ export function ShopPage({
                                   alt={product.name}
                                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                                 />
-                                {product.badges &&
-                                  product.badges.length > 0 && (
-                                    <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
-                                      {product.badges.map((badge, index) =>
-                                        badge === "Sale" ? (
-                                          <SaleChip
-                                            key={index}
-                                            variant="orange"
-                                            size="md"
-                                          />
-                                        ) : (
-                                          <Badge
-                                            key={index}
-                                            className="bg-[#B6E322] text-white border-2 border-white px-3 py-1 shadow-md"
-                                            style={{
-                                              fontSize: "0.75rem",
-                                              fontWeight: 600,
-                                            }}
-                                          >
-                                            {badge}
-                                          </Badge>
-                                        ),
-                                      )}
-                                    </div>
-                                  )}
+                                {product.badges?.length ? (
+                                  <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
+                                    {product.badges.map((badge, index) =>
+                                      badge === "Sale" ? (
+                                        <SaleChip
+                                          key={index}
+                                          variant="orange"
+                                          size="md"
+                                        />
+                                      ) : (
+                                        <Badge
+                                          key={index}
+                                          className="bg-[#B6E322] text-white border-2 border-white px-3 py-1 shadow-md"
+                                          style={{
+                                            fontSize: "0.75rem",
+                                            fontWeight: 600,
+                                          }}
+                                        >
+                                          {badge}
+                                        </Badge>
+                                      ),
+                                    )}
+                                  </div>
+                                ) : null}
                               </div>
 
                               <div className="flex-1 flex flex-col pt-3">
@@ -935,8 +960,9 @@ export function ShopPage({
                                     >
                                       ¡Ahorrás{" "}
                                       {formatPrecioARS(
-                                        product.originalPrice! -
-                                          product.price || 0,
+                                        getPrecioFinalConIVA(
+                                          product.originalPrice!,
+                                        ) - getPrecioFinalConIVA(product.price),
                                       )}
                                       !
                                     </span>
