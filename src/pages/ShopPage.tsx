@@ -31,15 +31,11 @@ import { formatPrecioARS, getPrecioFinalConIVA } from "../utils/priceUtils";
 
 /** =========================
  * API Helper (self-contained)
- * =========================
- * ✅ IMPORTANTE:
- * - En producción SIEMPRE definí VITE_API_URL (ej: https://api.heypoint.com.ar/api)
- * - Si no existe, cae a localhost (solo dev)
- */
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+ * ========================= */
+const API_ORIGIN = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 async function apiGet<T>(path: string, opts?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(`${API_ORIGIN}/api${path}`, {
     ...opts,
     headers: {
       "Content-Type": "application/json",
