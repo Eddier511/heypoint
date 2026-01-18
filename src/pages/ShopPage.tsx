@@ -93,7 +93,7 @@ type ApiProduct = {
   categoryId?: string;
 
   basePrice: number;
-  discount?: number; // 0.3 => 30%
+  discountPct?: number; // 0.3 => 30%
   stock?: number;
   status?: "active" | "inactive";
 
@@ -221,7 +221,7 @@ export function ShopPage({
         const PLACEHOLDER_IMG = "https://placehold.co/600x400?text=HeyPoint";
 
         const mappedProducts: Product[] = apiProds.map((p) => {
-          const hasDiscount = (p.discount ?? 0) > 0;
+          const hasDiscount = (p.discountPct ?? 0) > 0;
 
           // ✅ Backend ya lo calcula (IVA + descuento)
           const finalPrice = Number(p.finalPrice ?? 0);
