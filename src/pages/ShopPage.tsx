@@ -27,7 +27,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "../components/ui/collapsible";
-import { formatPrecioARS, getPrecioFinalConIVA } from "../utils/priceUtils";
+import { formatPrecioARS } from "../utils/priceUtils";
 
 /** =========================
  * API Helper (self-contained)
@@ -58,8 +58,8 @@ interface Product {
   id: number; // UI id stable (hash from backend string id)
   name: string;
   image: string;
-  price: number; // final price (con descuento aplicado)
-  originalPrice?: number; // basePrice si discount > 0
+  price: number; // ✅ finalPrice (con IVA + descuento) desde backend
+  originalPrice?: number; // ✅ priceWithVat (base con IVA) si hay descuento
   rating: number;
   category: string; // category name for filters
   badges?: string[];
@@ -97,9 +97,14 @@ type ApiProduct = {
   stock?: number;
   status?: "active" | "inactive";
 
-  images?: string[]; // array
+  images?: string[];
   createdAt?: string;
   updatedAt?: string;
+
+  // ✅ calculados por backend (Opción A)
+  priceWithVat: number; // base + IVA
+  finalPrice: number; // descuento + IVA
+  savings: number; // priceWithVat - finalPrice
 };
 
 type ApiCategoriesResponse = ApiCategory[] | { categories: ApiCategory[] };
@@ -216,12 +221,13 @@ export function ShopPage({
         const PLACEHOLDER_IMG = "https://placehold.co/600x400?text=HeyPoint";
 
         const mappedProducts: Product[] = apiProds.map((p) => {
-          const base = Number(p.basePrice || 0);
-          const discount = typeof p.discount === "number" ? p.discount : 0;
+          const hasDiscount = (p.discount ?? 0) > 0;
 
-          const hasDiscount = discount > 0;
-          const finalPrice = hasDiscount ? base * (1 - discount) : base;
-          const originalPrice = hasDiscount ? base : undefined;
+          // ✅ Backend ya lo calcula (IVA + descuento)
+          const finalPrice = Number(p.finalPrice ?? 0);
+          const originalPrice = hasDiscount
+            ? Number(p.priceWithVat ?? 0)
+            : undefined;
 
           const img =
             (p.images && p.images.length > 0 ? p.images[0] : "") ||
@@ -269,7 +275,7 @@ export function ShopPage({
                 count,
               }));
 
-        // Price max
+        // Price max (usamos precio final)
         const maxPriceFromProducts =
           mappedProducts.length > 0
             ? Math.max(...mappedProducts.map((x) => x.price || 0))
@@ -621,9 +627,8 @@ export function ShopPage({
                                     >
                                       ¡Ahorrás{" "}
                                       {formatPrecioARS(
-                                        getPrecioFinalConIVA(
-                                          product.originalPrice!,
-                                        ) - getPrecioFinalConIVA(product.price),
+                                        product.originalPrice! -
+                                          product.price || 0,
                                       )}
                                       !
                                     </span>
@@ -715,9 +720,8 @@ export function ShopPage({
                                   <span className="text-[#2E2E2E] block mt-1 text-xs">
                                     ¡Ahorrás{" "}
                                     {formatPrecioARS(
-                                      getPrecioFinalConIVA(
-                                        product.originalPrice!,
-                                      ) - getPrecioFinalConIVA(product.price),
+                                      product.originalPrice! - product.price ||
+                                        0,
                                     )}
                                     !
                                   </span>
@@ -838,7 +842,9 @@ export function ShopPage({
               </div>
 
               <div
-                className={`grid ${isMobileGridCompact ? "grid-cols-2" : "grid-cols-1"} sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6`}
+                className={`grid ${
+                  isMobileGridCompact ? "grid-cols-2" : "grid-cols-1"
+                } sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6`}
               >
                 {loading || isLoadingPage
                   ? Array.from({ length: itemsPerPage }).map((_, index) => (
@@ -929,9 +935,8 @@ export function ShopPage({
                                     >
                                       ¡Ahorrás{" "}
                                       {formatPrecioARS(
-                                        getPrecioFinalConIVA(
-                                          product.originalPrice!,
-                                        ) - getPrecioFinalConIVA(product.price),
+                                        product.originalPrice! -
+                                          product.price || 0,
                                       )}
                                       !
                                     </span>
