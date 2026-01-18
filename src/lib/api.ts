@@ -1,7 +1,24 @@
 // src/lib/api.ts
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+// ✅ Prioriza prod URL y evita caer a localhost en producción
+const raw =
+  (import.meta.env.VITE_API_URL as string | undefined) ||
+  (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
+  "";
+
+// Limpia por si alguien puso "url1,url2"
+const normalizedBase = raw.split(",")[0].trim().replace(/\/+$/, "");
+
+// Si viene solo dominio, le agregamos /api
+const API_URL =
+  normalizedBase.length > 0
+    ? normalizedBase.endsWith("/api")
+      ? normalizedBase
+      : `${normalizedBase}/api`
+    : import.meta.env.PROD
+      ? "https://api.heypoint.com.ar/api" // ✅ fallback seguro en producción
+      : "http://localhost:4000/api"; // ✅ fallback solo para local
 
 export const STORAGE_KEYS = {
   idToken: "heypoint_id_token",
@@ -64,7 +81,6 @@ export type CustomerProfile = {
 };
 
 export const CustomersAPI = {
-  // requiere Bearer token (firebase id token)
   me: () => api.get("/customers/me"),
   upsertMe: (data: CustomerProfile) => api.put("/customers/me", data),
 };
