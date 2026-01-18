@@ -14,36 +14,44 @@ export function AboutPage({ onNavigate }: AboutPageProps) {
     {
       icon: <Leaf className="w-10 h-10" />,
       title: "Sustainability",
-      description: "We partner with local farms that practice sustainable agriculture, reducing our environmental impact while supporting our community."
+      description:
+        "We partner with local farms that practice sustainable agriculture, reducing our environmental impact while supporting our community.",
     },
     {
       icon: <Heart className="w-10 h-10" />,
       title: "Quality First",
-      description: "Every product is carefully selected and inspected to ensure you receive only the freshest, highest-quality groceries."
+      description:
+        "Every product is carefully selected and inspected to ensure you receive only the freshest, highest-quality groceries.",
     },
     {
       icon: <Users className="w-10 h-10" />,
       title: "Community Focus",
-      description: "We believe in supporting local farmers and producers, creating a stronger, more connected community."
+      description:
+        "We believe in supporting local farmers and producers, creating a stronger, more connected community.",
     },
     {
       icon: <Award className="w-10 h-10" />,
       title: "Excellence",
-      description: "Our commitment to excellence drives everything we do, from sourcing to delivery, ensuring your satisfaction."
-    }
+      description:
+        "Our commitment to excellence drives everything we do, from sourcing to delivery, ensuring your satisfaction.",
+    },
   ];
 
   const stats = [
     { number: "10,000+", label: "Happy Customers" },
     { number: "50+", label: "Local Partners" },
     { number: "5 Years", label: "in Business" },
-    { number: "99.9%", label: "Satisfaction Rate" }
+    { number: "99.9%", label: "Satisfaction Rate" },
   ];
 
   return (
     <div className="min-h-screen bg-[#FFF4E6]">
-      <UnifiedHeader onNavigate={onNavigate} currentPage="about" isTransparent={false} />
-      
+      <UnifiedHeader
+        onNavigate={onNavigate}
+        currentPage="about"
+        isTransparent={false}
+      />
+
       {/* Add padding-top to account for fixed header */}
       <div className="pt-20 lg:pt-24">
         {/* Hero Section */}
@@ -54,11 +62,19 @@ export function AboutPage({ onNavigate }: AboutPageProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <h1 className="text-[#1C2335] mb-6" style={{ fontSize: '3rem', fontWeight: 700 }}>
+              <h1
+                className="text-[#1C2335] mb-6"
+                style={{ fontSize: "3rem", fontWeight: 700 }}
+              >
                 Sobre HeyPoint!
               </h1>
-              <p className="text-[#2E2E2E] max-w-3xl mx-auto" style={{ fontSize: '1.125rem', lineHeight: '1.7' }}>
-                Nos apasiona traerte productos frescos y de calidad directo a tu edificio. Nuestra misión es hacer que la comida saludable y sostenible sea accesible para todos.
+              <p
+                className="text-[#2E2E2E] max-w-3xl mx-auto"
+                style={{ fontSize: "1.125rem", lineHeight: "1.7" }}
+              >
+                Nos apasiona traerte productos frescos y de calidad directo a tu
+                edificio. Nuestra misión es hacer que la comida saludable y
+                sostenible sea accesible para todos.
               </p>
             </motion.div>
           </div>
@@ -74,18 +90,33 @@ export function AboutPage({ onNavigate }: AboutPageProps) {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6 }}
               >
-                <h2 className="text-[#1C2335] mb-6" style={{ fontSize: '2.5rem', fontWeight: 700 }}>
+                <h2
+                  className="text-[#1C2335] mb-6"
+                  style={{ fontSize: "2.5rem", fontWeight: 700 }}
+                >
                   Our Story
                 </h2>
-                <div className="space-y-4 text-[#2E2E2E]" style={{ fontSize: '1rem', lineHeight: '1.7' }}>
+                <div
+                  className="space-y-4 text-[#2E2E2E]"
+                  style={{ fontSize: "1rem", lineHeight: "1.7" }}
+                >
                   <p>
-                    Founded in 2019, The Grocers Market began as a simple idea: to connect our community with the freshest, most sustainable produce available. What started as a small farmers market booth has grown into a full-service grocery delivery platform.
+                    Founded in 2019, The Grocers Market began as a simple idea:
+                    to connect our community with the freshest, most sustainable
+                    produce available. What started as a small farmers market
+                    booth has grown into a full-service grocery delivery
+                    platform.
                   </p>
                   <p>
-                    We believe that everyone deserves access to fresh, healthy food. That's why we work directly with over 50 local farms and producers to bring you the best selection of organic fruits, vegetables, dairy products, and artisanal goods.
+                    We believe that everyone deserves access to fresh, healthy
+                    food. That's why we work directly with over 50 local farms
+                    and producers to bring you the best selection of organic
+                    fruits, vegetables, dairy products, and artisanal goods.
                   </p>
                   <p>
-                    Our commitment goes beyond just delivering groceries – we're building a more sustainable food system that benefits both our customers and our planet.
+                    Our commitment goes beyond just delivering groceries – we're
+                    building a more sustainable food system that benefits both
+                    our customers and our planet.
                   </p>
                 </div>
               </motion.div>
@@ -119,10 +150,13 @@ export function AboutPage({ onNavigate }: AboutPageProps) {
               transition={{ duration: 0.6 }}
               className="text-center mb-12"
             >
-              <h2 className="text-[#1C2335] mb-4" style={{ fontSize: '2.5rem', fontWeight: 700 }}>
+              <h2
+                className="text-[#1C2335] mb-4"
+                style={{ fontSize: "2.5rem", fontWeight: 700 }}
+              >
                 Our Values
               </h2>
-              <p className="text-[#2E2E2E]" style={{ fontSize: '1.125rem' }}>
+              <p className="text-[#2E2E2E]" style={{ fontSize: "1.125rem" }}>
                 The principles that guide everything we do
               </p>
             </motion.div>
@@ -140,10 +174,16 @@ export function AboutPage({ onNavigate }: AboutPageProps) {
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-[#B6E322]/20 text-[#B6E322] rounded-xl mb-4">
                       {value.icon}
                     </div>
-                    <h3 className="text-[#1C2335] mb-3" style={{ fontSize: '1.125rem', fontWeight: 600 }}>
+                    <h3
+                      className="text-[#1C2335] mb-3"
+                      style={{ fontSize: "1.125rem", fontWeight: 600 }}
+                    >
                       {value.title}
                     </h3>
-                    <p className="text-[#2E2E2E]" style={{ fontSize: '0.875rem', lineHeight: '1.6' }}>
+                    <p
+                      className="text-[#2E2E2E]"
+                      style={{ fontSize: "0.875rem", lineHeight: "1.6" }}
+                    >
                       {value.description}
                     </p>
                   </Card>
@@ -163,10 +203,13 @@ export function AboutPage({ onNavigate }: AboutPageProps) {
               transition={{ duration: 0.6 }}
               className="text-center mb-12"
             >
-              <h2 className="text-[#1C2335] mb-4" style={{ fontSize: '2.5rem', fontWeight: 700 }}>
+              <h2
+                className="text-[#1C2335] mb-4"
+                style={{ fontSize: "2.5rem", fontWeight: 700 }}
+              >
                 By the Numbers
               </h2>
-              <p className="text-[#2E2E2E]" style={{ fontSize: '1.125rem' }}>
+              <p className="text-[#2E2E2E]" style={{ fontSize: "1.125rem" }}>
                 Our impact in the community
               </p>
             </motion.div>
@@ -181,10 +224,13 @@ export function AboutPage({ onNavigate }: AboutPageProps) {
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   className="text-center"
                 >
-                  <div className="text-[#B6E322] mb-2" style={{ fontSize: '3rem', fontWeight: 700 }}>
+                  <div
+                    className="text-[#B6E322] mb-2"
+                    style={{ fontSize: "3rem", fontWeight: 700 }}
+                  >
                     {stat.number}
                   </div>
-                  <div className="text-[#2E2E2E]" style={{ fontSize: '1rem' }}>
+                  <div className="text-[#2E2E2E]" style={{ fontSize: "1rem" }}>
                     {stat.label}
                   </div>
                 </motion.div>
@@ -202,11 +248,19 @@ export function AboutPage({ onNavigate }: AboutPageProps) {
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
-              <h2 className="text-white mb-6" style={{ fontSize: '2.5rem', fontWeight: 700 }}>
+              <h2
+                className="text-white mb-6"
+                style={{ fontSize: "2.5rem", fontWeight: 700 }}
+              >
                 Nuestra Misión
               </h2>
-              <p className="text-white" style={{ fontSize: '1.25rem', lineHeight: '1.7' }}>
-                Hacer que productos frescos, sostenibles y saludables sean accesibles para todos. No solo entregamos compras – estamos cultivando un futuro mejor para nuestro planeta y nuestra gente.
+              <p
+                className="text-white"
+                style={{ fontSize: "1.25rem", lineHeight: "1.7" }}
+              >
+                Hacer que productos frescos, sostenibles y saludables sean
+                accesibles para todos. No solo entregamos compras – estamos
+                cultivando un futuro mejor para nuestro planeta y nuestra gente.
               </p>
             </motion.div>
           </div>

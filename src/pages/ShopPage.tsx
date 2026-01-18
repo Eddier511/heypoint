@@ -41,7 +41,6 @@ async function apiGet<T>(path: string, opts?: RequestInit): Promise<T> {
       "Content-Type": "application/json",
       ...(opts?.headers || {}),
     },
-    credentials: "include",
   });
 
   if (!res.ok) {
