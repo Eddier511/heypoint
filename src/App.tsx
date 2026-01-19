@@ -88,7 +88,7 @@ function AppContent() {
   const [scrollY, setScrollY] = useState(0);
 
   // Use contexts
-  const { isAuthenticated, user, login, logout } = useAuth();
+  const { isAuthenticated, user, login, logout, loadingAuth } = useAuth();
   const { openLoginModal, openSignupModal, closeAllModals, openedAt } =
     useModal();
   const { cartCount, clearCart } = useCart();
@@ -151,12 +151,12 @@ function AppContent() {
 
     window.addEventListener(
       "heypoint:navigate",
-      handleCustomNavigation as EventListener
+      handleCustomNavigation as EventListener,
     );
     return () => {
       window.removeEventListener(
         "heypoint:navigate",
-        handleCustomNavigation as EventListener
+        handleCustomNavigation as EventListener,
       );
     };
   }, []);
@@ -164,6 +164,12 @@ function AppContent() {
   // Listen for logout events and redirect to homepage
   useEffect(() => {
     const handleLogout = () => {
+      // ✅ si Firebase todavía está rehidratando sesión (F5), NO redirigir
+      if (loadingAuth) {
+        console.log("[App] Logout event ignored while loadingAuth=true");
+        return;
+      }
+
       console.log("[App] Logout event received - redirecting to home");
       setCurrentPage("home");
     };
@@ -172,7 +178,7 @@ function AppContent() {
     return () => {
       window.removeEventListener("heypoint:logout", handleLogout);
     };
-  }, []);
+  }, [loadingAuth]);
 
   // Scroll to top whenever page changes
   useEffect(() => {
@@ -310,7 +316,7 @@ function AppContent() {
     // This function is no longer needed - AuthModal handles it
     // Keeping for backward compatibility
     console.warn(
-      "handleAuthRequired is deprecated. Use AuthModal component instead."
+      "handleAuthRequired is deprecated. Use AuthModal component instead.",
     );
   };
 
@@ -345,7 +351,7 @@ function AppContent() {
     // This function is no longer needed - AddToCartButton handles it
     // Keeping for backward compatibility
     console.warn(
-      "handleAddToCart is deprecated. Use AddToCartButton component instead."
+      "handleAddToCart is deprecated. Use AddToCartButton component instead.",
     );
   };
 
