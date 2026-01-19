@@ -36,16 +36,28 @@ type GoogleOAuthResult = {
   isNewUser: boolean;
 };
 
+// ✅ Perfil extendido (lo que guardás en Firestore)
+export type CustomerProfile = {
+  uid?: string;
+  email?: string;
+  fullName?: string;
+  phone?: string;
+  dni?: string;
+  birthDate?: string;
+  apartmentNumber?: string;
+  pickupPoint?: string;
+};
+
 interface AuthContextType {
   isAuthenticated: boolean;
-  user: User | null; // legacy-friendly
-  currentUser: FirebaseUser | null; // ✅ para profile page / firebase ops
+  user: User | null;
+  currentUser: FirebaseUser | null;
   loadingAuth: boolean;
 
-  // Backward compatible (legacy)
+  // legacy
   login: (userData: User) => void;
 
-  // Auth real
+  // firebase auth
   loginWithEmail: (email: string, password: string) => Promise<User>;
   signupWithEmail: (
     fullName: string,
@@ -55,19 +67,19 @@ interface AuthContextType {
   startGoogleOAuth: () => Promise<GoogleOAuthResult>;
   logout: () => Promise<void>;
 
-  // Token para backend
+  // token
   getAuthToken: (forceRefresh?: boolean) => Promise<string | null>;
-
-  // ✅ compat con AuthModal
   getIdToken: () => Promise<string | null>;
 
-  // ✅ para UserProfilePage: cambiar password con reauth
+  // backend profile helpers (para que TODO pegue con /api)
+  fetchMe: () => Promise<{ exists: boolean; profile: CustomerProfile | null }>;
+  saveProfile: (payload: CustomerProfile) => Promise<any>;
+
+  // account ops
   changePassword: (
     currentPassword: string,
     newPassword: string,
   ) => Promise<void>;
-
-  // ✅ opcional (RECOMENDADO)
   updateDisplayName: (fullName: string) => Promise<void>;
 }
 
@@ -80,6 +92,27 @@ function mapFirebaseUser(u: FirebaseUser): User {
     email: u.email || "",
     fullName: u.displayName || "User",
   };
+}
+
+// ✅ URL helpers (SIEMPRE /api)
+function joinUrl(base: string, path: string) {
+  const b = (base || "").replace(/\/+$/, "");
+  const p = (path || "").replace(/^\/+/, "");
+  return `${b}/${p}`;
+}
+
+function resolveApiBase() {
+  const raw =
+    import.meta.env.VITE_API_URL ||
+    import.meta.env.VITE_API_BASE_URL ||
+    "http://localhost:4000";
+
+  const base = String(raw).trim().replace(/\/+$/, "");
+  return base.endsWith("/api") ? base : `${base}/api`;
+}
+
+function apiUrl(path: string) {
+  return joinUrl(resolveApiBase(), path);
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -104,19 +137,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return token;
   }, []);
 
-  // ✅ Mejor que onAuthStateChanged para mantener el token fresco
+  // ✅ mantiene token fresco
   useEffect(() => {
     const unsub = onIdTokenChanged(auth, async (u) => {
       setFbUser(u);
       setLoadingAuth(false);
 
       try {
-        if (u) {
-          // NO forzar refresh aquí, Firebase ya refresca cuando toca
-          await persistToken(false);
-        } else {
-          localStorage.removeItem(STORAGE_KEY);
-        }
+        if (u) await persistToken(false);
+        else localStorage.removeItem(STORAGE_KEY);
       } catch {
         localStorage.removeItem(STORAGE_KEY);
       }
@@ -125,7 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsub();
   }, [persistToken]);
 
-  // Backward compatible (no recomendado)
+  // legacy
   const login = (_userData: User) => {
     console.warn(
       "[AuthContext] login(userData) legacy. Usá loginWithEmail / startGoogleOAuth.",
@@ -138,9 +167,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   ): Promise<User> => {
     const cred = await signInWithEmailAndPassword(auth, email, password);
     await persistToken(false);
-    const u = mapFirebaseUser(cred.user);
-    console.log("[AuthContext] Email login OK:", u.email);
-    return u;
+    return mapFirebaseUser(cred.user);
   };
 
   const signupWithEmail = async (
@@ -150,16 +177,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   ): Promise<User> => {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(cred.user, { displayName: fullName });
-
     await persistToken(false);
 
-    const u: User = {
+    return {
       uid: cred.user.uid,
       email: cred.user.email || email,
       fullName,
     };
-    console.log("[AuthContext] Signup OK:", u.email);
-    return u;
   };
 
   const startGoogleOAuth = async (): Promise<GoogleOAuthResult> => {
@@ -173,19 +197,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await persistToken(false);
 
     const u = mapFirebaseUser(cred.user);
-    console.log("[AuthContext] Google login OK:", u.email, "new?", isNewUser);
-
     return { user: u, isNewUser };
   };
 
   const logout = async () => {
     await signOut(auth);
     localStorage.removeItem(STORAGE_KEY);
-    console.log("[AuthContext] Logout OK");
     window.dispatchEvent(new CustomEvent("heypoint:logout"));
   };
 
-  // ✅ Token para backend (si querés forzar refresh, pasás true)
+  // token
   const getAuthToken = async (forceRefresh = false): Promise<string | null> => {
     const u = auth.currentUser;
     if (!u) return null;
@@ -194,8 +215,91 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return token;
   };
 
-  // ✅ alias para tu modal (AuthModal usa getIdToken())
   const getIdTokenFn = () => getAuthToken(false);
+
+  // ✅ Backend: GET /api/customers/me
+  const fetchMe = async () => {
+    const tok = await getAuthToken(false);
+    if (!tok) return { exists: false, profile: null };
+
+    const res = await fetch(apiUrl("/customers/me"), {
+      method: "GET",
+      headers: { Authorization: `Bearer ${tok}` },
+    });
+
+    // si el token expiró raro, intentá 1 vez forzando refresh
+    if (res.status === 401) {
+      const tok2 = await getAuthToken(true);
+      if (!tok2) return { exists: false, profile: null };
+
+      const res2 = await fetch(apiUrl("/customers/me"), {
+        method: "GET",
+        headers: { Authorization: `Bearer ${tok2}` },
+      });
+
+      if (!res2.ok) {
+        const text = await res2.text().catch(() => "");
+        throw new Error(`fetchMe failed (${res2.status}). ${text}`.trim());
+      }
+      return (await res2.json()) as {
+        exists: boolean;
+        profile: CustomerProfile | null;
+      };
+    }
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`fetchMe failed (${res.status}). ${text}`.trim());
+    }
+
+    return (await res.json()) as {
+      exists: boolean;
+      profile: CustomerProfile | null;
+    };
+  };
+
+  // ✅ Backend: POST /api/customers/profile (alias)
+  const saveProfile = async (payload: CustomerProfile) => {
+    const tok = await getAuthToken(false);
+    if (!tok) throw new Error("No hay sesión activa.");
+
+    const res = await fetch(apiUrl("/customers/profile"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${tok}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    // retry 401 con refresh
+    if (res.status === 401) {
+      const tok2 = await getAuthToken(true);
+      if (!tok2) throw new Error("No hay sesión activa.");
+
+      const res2 = await fetch(apiUrl("/customers/profile"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${tok2}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res2.ok) {
+        const text = await res2.text().catch(() => "");
+        throw new Error(`saveProfile failed (${res2.status}). ${text}`.trim());
+      }
+      return res2.json().catch(() => ({}));
+    }
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`saveProfile failed (${res.status}). ${text}`.trim());
+    }
+
+    return res.json().catch(() => ({}));
+  };
 
   const changePassword = async (
     currentPassword: string,
@@ -224,9 +328,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!u) throw new Error("No hay usuario autenticado.");
     const name = (fullName || "").trim();
     if (!name) throw new Error("El nombre no puede estar vacío.");
-    await updateProfile(u, { displayName: name });
 
-    // refrescar token (no forzado) + estado
+    await updateProfile(u, { displayName: name });
     await persistToken(false);
     setFbUser(auth.currentUser);
   };
@@ -245,6 +348,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         getAuthToken,
         getIdToken: getIdTokenFn,
+        fetchMe,
+        saveProfile,
         changePassword,
         updateDisplayName,
       }}
