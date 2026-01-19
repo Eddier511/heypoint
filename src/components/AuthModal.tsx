@@ -996,7 +996,11 @@ export default function AuthModal({
                     </p>
                   </div>
 
-                  <div className="flex-1 overflow-y-auto px-6 md:px-8 py-8">
+                  {/* ✅ FIX SCROLL */}
+                  <div
+                    className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 md:px-8 py-8"
+                    style={{ WebkitOverflowScrolling: "touch" as any }}
+                  >
                     {!forgotPasswordSent ? (
                       <form onSubmit={handleForgot} className="space-y-6">
                         <div>
@@ -1105,7 +1109,11 @@ export default function AuthModal({
                     </p>
                   </div>
 
-                  <div className="flex-1 overflow-y-auto px-6 md:px-8 py-8">
+                  {/* ✅ FIX SCROLL */}
+                  <div
+                    className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 md:px-8 py-8"
+                    style={{ WebkitOverflowScrolling: "touch" as any }}
+                  >
                     <div className="rounded-3xl border border-gray-200 bg-white p-5">
                       <div className="flex items-start gap-3">
                         <Mail className="w-6 h-6 text-[#FF6B00] mt-0.5" />
@@ -1216,7 +1224,11 @@ export default function AuthModal({
                     </p>
                   </div>
 
-                  <div className="flex-1 overflow-y-auto px-6 md:px-8 py-8">
+                  {/* ✅ FIX SCROLL */}
+                  <div
+                    className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 md:px-8 py-8"
+                    style={{ WebkitOverflowScrolling: "touch" as any }}
+                  >
                     <form
                       onSubmit={handleCompleteProfile}
                       className="space-y-6"
