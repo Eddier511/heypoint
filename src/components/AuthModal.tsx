@@ -589,8 +589,8 @@ export default function AuthModal({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 14 }}
               transition={{ duration: 0.25, ease: "easeOut" }}
-              className="relative w-full max-w-md md:max-w-lg bg-white rounded-3xl shadow-2xl pointer-events-auto overflow-hidden flex flex-col my-auto"
-              style={{ maxHeight: "min(88vh, 900px)" }}
+              className="relative w-full max-w-md md:max-w-lg bg-white rounded-3xl shadow-2xl pointer-events-auto overflow-hidden flex flex-col my-auto min-h-0"
+              style={{ height: "min(88vh, 900px)" }} // 🔥 CAMBIO: height fijo en vez de maxHeight
             >
               <button
                 onClick={guardedClose}
@@ -1205,7 +1205,7 @@ export default function AuthModal({
 
               {/* COMPLETE PROFILE (Paso 2) */}
               {signUpStep === "completeProfile" && (
-                <div className="flex flex-col h-full">
+                <div className="flex flex-col h-full min-h-0">
                   <div className="flex-shrink-0 bg-gradient-to-br from-[#FF6B00] to-[#e56000] text-white px-6 md:px-8 pt-6 pb-4">
                     <button
                       type="button"
@@ -1224,161 +1224,164 @@ export default function AuthModal({
                     </p>
                   </div>
 
-                  {/* ✅ FIX SCROLL */}
-                  <div
-                    className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 md:px-8 py-8"
-                    style={{ WebkitOverflowScrolling: "touch" as any }}
-                  >
-                    <form
-                      onSubmit={handleCompleteProfile}
-                      className="space-y-6"
+                  {/* ✅ FIX SCROLL REAL */}
+                  <div className="flex-1 min-h-0 overflow-hidden">
+                    <div
+                      className="h-full overflow-y-auto overscroll-contain px-6 md:px-8 py-8"
+                      style={{ WebkitOverflowScrolling: "touch" as any }}
                     >
-                      {/* Email / Nombre (solo display) */}
-                      <div className="rounded-3xl border border-gray-200 bg-white p-4">
-                        <div className="text-sm text-gray-600">Cuenta</div>
-                        <div className="mt-1 font-semibold text-[#1C2335]">
-                          {pendingFullName || "User"}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {pendingEmail}
-                        </div>
-                      </div>
-
-                      {/* Teléfono */}
-                      <div>
-                        <Label className="text-[#1C2335] mb-2 block font-semibold">
-                          Teléfono
-                        </Label>
-                        <div className="relative">
-                          <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                          <Input
-                            value={phone}
-                            onChange={(e) => {
-                              setPhone(e.target.value);
-                              setPhoneError("");
-                              setStep2Dirty(true);
-                            }}
-                            placeholder="Ej: 8888 8888"
-                            className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-all ${
-                              phoneError
-                                ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                                : "border-gray-200 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
-                            }`}
-                          />
-                        </div>
-                        {phoneError && (
-                          <p className="text-red-500 mt-2 text-sm font-semibold">
-                            {phoneError}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* DNI */}
-                      <div>
-                        <Label className="text-[#1C2335] mb-2 block font-semibold">
-                          DNI / ID
-                        </Label>
-                        <div className="relative">
-                          <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                          <Input
-                            value={dni}
-                            onChange={(e) => {
-                              setDni(e.target.value);
-                              setDniError("");
-                              setStep2Dirty(true);
-                            }}
-                            placeholder="Ej: 1-2345-6789"
-                            className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-all ${
-                              dniError
-                                ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                                : "border-gray-200 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
-                            }`}
-                          />
-                        </div>
-                        {dniError && (
-                          <p className="text-red-500 mt-2 text-sm font-semibold">
-                            {dniError}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Fecha de nacimiento */}
-                      <div>
-                        <Label className="text-[#1C2335] mb-2 block font-semibold">
-                          Fecha de nacimiento
-                        </Label>
-                        <div className="relative">
-                          <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                          <Input
-                            type="date"
-                            value={birthDate}
-                            onChange={(e) => {
-                              setBirthDate(e.target.value);
-                              setBirthDateError("");
-                              setStep2Dirty(true);
-                            }}
-                            className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-all ${
-                              birthDateError
-                                ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                                : "border-gray-200 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
-                            }`}
-                          />
-                        </div>
-                        {birthDateError && (
-                          <p className="text-red-500 mt-2 text-sm font-semibold">
-                            {birthDateError}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Apartamento */}
-                      <div>
-                        <Label className="text-[#1C2335] mb-2 block font-semibold">
-                          Número de apartamento (opcional)
-                        </Label>
-                        <div className="relative">
-                          <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                          <Input
-                            value={apartmentNumber}
-                            onChange={(e) => {
-                              setApartmentNumber(e.target.value);
-                              setStep2Dirty(true);
-                            }}
-                            placeholder="Ej: Torre A - 1204"
-                            className="pl-12 pr-4 py-6 rounded-2xl border-2 border-gray-200 focus:border-[#FF6B00] focus:ring-2 focus:ring-[#FF6B00]/20"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Pickup point */}
-                      <div className="rounded-3xl border border-gray-200 bg-white p-4">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <MapPin className="w-4 h-4" />
-                          Punto de retiro
-                        </div>
-                        <div className="mt-1 font-semibold text-[#1C2335]">
-                          {pickupPoint}
-                        </div>
-                      </div>
-
-                      <Button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-[#FF6B00] hover:bg-[#e56000] text-white py-6 rounded-2xl shadow-lg"
-                        style={{ fontWeight: 600 }}
+                      <form
+                        onSubmit={handleCompleteProfile}
+                        className="space-y-6"
                       >
-                        {loading ? (
-                          <>
-                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                            Guardando...
-                          </>
-                        ) : (
-                          <>
-                            Continuar <ChevronRight className="w-5 h-5 ml-2" />
-                          </>
-                        )}
-                      </Button>
-                    </form>
+                        {/* Email / Nombre (solo display) */}
+                        <div className="rounded-3xl border border-gray-200 bg-white p-4">
+                          <div className="text-sm text-gray-600">Cuenta</div>
+                          <div className="mt-1 font-semibold text-[#1C2335]">
+                            {pendingFullName || "User"}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {pendingEmail}
+                          </div>
+                        </div>
+
+                        {/* Teléfono */}
+                        <div>
+                          <Label className="text-[#1C2335] mb-2 block font-semibold">
+                            Teléfono
+                          </Label>
+                          <div className="relative">
+                            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <Input
+                              value={phone}
+                              onChange={(e) => {
+                                setPhone(e.target.value);
+                                setPhoneError("");
+                                setStep2Dirty(true);
+                              }}
+                              placeholder="Ej: 8888 8888"
+                              className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-all ${
+                                phoneError
+                                  ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                                  : "border-gray-200 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
+                              }`}
+                            />
+                          </div>
+                          {phoneError && (
+                            <p className="text-red-500 mt-2 text-sm font-semibold">
+                              {phoneError}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* DNI */}
+                        <div>
+                          <Label className="text-[#1C2335] mb-2 block font-semibold">
+                            DNI / ID
+                          </Label>
+                          <div className="relative">
+                            <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <Input
+                              value={dni}
+                              onChange={(e) => {
+                                setDni(e.target.value);
+                                setDniError("");
+                                setStep2Dirty(true);
+                              }}
+                              placeholder="Ej: 1-2345-6789"
+                              className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-all ${
+                                dniError
+                                  ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                                  : "border-gray-200 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
+                              }`}
+                            />
+                          </div>
+                          {dniError && (
+                            <p className="text-red-500 mt-2 text-sm font-semibold">
+                              {dniError}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Fecha de nacimiento */}
+                        <div>
+                          <Label className="text-[#1C2335] mb-2 block font-semibold">
+                            Fecha de nacimiento
+                          </Label>
+                          <div className="relative">
+                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <Input
+                              type="date"
+                              value={birthDate}
+                              onChange={(e) => {
+                                setBirthDate(e.target.value);
+                                setBirthDateError("");
+                                setStep2Dirty(true);
+                              }}
+                              className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-all ${
+                                birthDateError
+                                  ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                                  : "border-gray-200 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
+                              }`}
+                            />
+                          </div>
+                          {birthDateError && (
+                            <p className="text-red-500 mt-2 text-sm font-semibold">
+                              {birthDateError}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Apartamento */}
+                        <div>
+                          <Label className="text-[#1C2335] mb-2 block font-semibold">
+                            Número de apartamento (opcional)
+                          </Label>
+                          <div className="relative">
+                            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <Input
+                              value={apartmentNumber}
+                              onChange={(e) => {
+                                setApartmentNumber(e.target.value);
+                                setStep2Dirty(true);
+                              }}
+                              placeholder="Ej: Torre A - 1204"
+                              className="pl-12 pr-4 py-6 rounded-2xl border-2 border-gray-200 focus:border-[#FF6B00] focus:ring-2 focus:ring-[#FF6B00]/20"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Pickup point */}
+                        <div className="rounded-3xl border border-gray-200 bg-white p-4">
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <MapPin className="w-4 h-4" />
+                            Punto de retiro
+                          </div>
+                          <div className="mt-1 font-semibold text-[#1C2335]">
+                            {pickupPoint}
+                          </div>
+                        </div>
+
+                        <Button
+                          type="submit"
+                          disabled={loading}
+                          className="w-full bg-[#FF6B00] hover:bg-[#e56000] text-white py-6 rounded-2xl shadow-lg"
+                          style={{ fontWeight: 600 }}
+                        >
+                          {loading ? (
+                            <>
+                              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                              Guardando...
+                            </>
+                          ) : (
+                            <>
+                              Continuar{" "}
+                              <ChevronRight className="w-5 h-5 ml-2" />
+                            </>
+                          )}
+                        </Button>
+                      </form>
+                    </div>
                   </div>
                 </div>
               )}
