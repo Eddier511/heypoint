@@ -66,10 +66,21 @@ export function UserProfilePage({
 }: UserProfilePageProps) {
   const { getIdToken, currentUser, changePassword } = useAuth();
 
-  const API_BASE =
-    import.meta.env.VITE_API_URL ||
-    import.meta.env.VITE_API_BASE_URL ||
-    "http://localhost:4000/api";
+  function resolveApiBase() {
+    const raw =
+      import.meta.env.VITE_API_URL ||
+      import.meta.env.VITE_API_BASE_URL ||
+      "http://localhost:4000"; // ✅ SIN /api
+    return raw.replace(/\/+$/, ""); // quita trailing slash
+  }
+
+  const API_BASE = resolveApiBase();
+
+  function apiUrl(path: string) {
+    // fuerza siempre /api + path
+    const clean = path.startsWith("/") ? path : `/${path}`;
+    return `${API_BASE}/api${clean}`;
+  }
 
   // UI states
   const [pageLoading, setPageLoading] = useState(true);
