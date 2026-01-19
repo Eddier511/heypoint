@@ -156,7 +156,7 @@ export function UserProfilePage({
         const idToken = await getIdToken();
         if (!idToken) throw new Error("No hay sesión activa.");
 
-        const res = await fetch(`${API_BASE}/customers/me`, {
+        const res = await fetch(apiUrl("/customers/me"), {
           headers: {
             Authorization: `Bearer ${idToken}`,
           },
@@ -311,7 +311,7 @@ export function UserProfilePage({
         pickupPoint: profileData.pickupPoint || "Urb. Valle Arriba",
       };
 
-      const res = await fetch(`${API_BASE}/customers/me`, {
+      const res = await fetch(apiUrl("/customers/me"), {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
