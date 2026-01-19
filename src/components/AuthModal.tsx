@@ -81,56 +81,30 @@ function normalizeDigits(v: string) {
   return (v || "").replace(/\D/g, "");
 }
 
-/** ✅ evita dobles slashes */
+/**
+ * ✅ FIX #1: normalizar base para que SIEMPRE termine en /api
+ * ✅ FIX #2: joinUrl robusto (evita dobles slashes)
+ */
 function joinUrl(base: string, path: string) {
   const b = (base || "").replace(/\/+$/, "");
   const p = (path || "").replace(/^\/+/, "");
   return `${b}/${p}`;
 }
 
-/** ✅ SIEMPRE termina en /api */
 function resolveApiBase() {
   const raw =
     import.meta.env.VITE_API_URL ||
     import.meta.env.VITE_API_BASE_URL ||
-    "http://localhost:4000";
+    "http://localhost:4000"; // ✅ SIN /api aquí
 
   const base = String(raw).trim().replace(/\/+$/, "");
-
   if (base.endsWith("/api")) return base;
   return `${base}/api`;
-}
-
-/** ✅ token retry (soluciona fallos random con Google) */
-async function getIdTokenWithRetry(
-  getIdTokenFn: () => Promise<string | null>,
-  retries = 6,
-  delayMs = 250,
-) {
-  let lastErr: any = null;
-
-  for (let i = 0; i < retries; i++) {
-    try {
-      const tok = await getIdTokenFn();
-      if (tok) return tok;
-    } catch (e) {
-      lastErr = e;
-    }
-    await new Promise((r) => setTimeout(r, delayMs));
-  }
-
-  throw new Error(
-    lastErr?.message ||
-      "No se pudo obtener el token de sesión. Probá de nuevo.",
-  );
 }
 
 async function saveProfileToBackend(payload: any, idToken: string) {
   const apiBase = resolveApiBase();
   const url = joinUrl(apiBase, "/customers/profile");
-
-  // console.log("[AuthModal] apiBase:", apiBase);
-  // console.log("[AuthModal] saving profile to:", url);
 
   const res = await fetch(url, {
     method: "POST",
@@ -208,6 +182,26 @@ export default function AuthModal({
   const [apartmentNumber, setApartmentNumber] = useState("");
 
   const pickupPoint = "Urb. Valle Arriba";
+
+  // ✅ FIX: token retry (Google puede tardar en estar listo)
+  async function getIdTokenWithRetry(retries = 6, delayMs = 250) {
+    let lastErr: any = null;
+
+    for (let i = 0; i < retries; i++) {
+      try {
+        const tok = await getIdToken();
+        if (tok) return tok;
+      } catch (e) {
+        lastErr = e;
+      }
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+
+    throw new Error(
+      lastErr?.message ||
+        "No se pudo obtener el token de sesión. Probá de nuevo.",
+    );
+  }
 
   // ✅ restore state
   useEffect(() => {
@@ -535,8 +529,8 @@ export default function AuthModal({
         pickupPoint,
       };
 
-      // ✅ FIX: token con retry + base /api normalizada
-      const idToken = await getIdTokenWithRetry(getIdToken);
+      // ✅ FIX: token con retry (evita fallos random con Google)
+      const idToken = await getIdTokenWithRetry();
       await saveProfileToBackend(finalUser, idToken);
 
       // ✅ limpiar flags
@@ -558,22 +552,19 @@ export default function AuthModal({
   };
 
   const handleBackFromCompleteProfile = () => {
-    // limpia errores y estado “dirty”
     setGlobalError("");
     setPhoneError("");
     setDniError("");
     setBirthDateError("");
     setStep2Dirty(false);
 
-    // opcional: limpiar inputs del step 2
     setPhone("");
     setDni("");
     setBirthDate("");
     setApartmentNumber("");
 
-    // volver al inicio del modal
     setSignUpStep("form");
-    setActiveTab("signup"); // o "login" si querés que vuelva a login
+    setActiveTab("signup");
   };
 
   // =========================
@@ -690,7 +681,84 @@ export default function AuthModal({
                         value="login"
                         className="mt-0 px-6 md:px-8 pb-8"
                       >
-                        {/* ... TU UI SIGUE IGUAL ... */}
+                        <form onSubmit={handleLogin} className="space-y-6">
+                          <div>
+                            <Label className="text-[#1C2335] mb-2 block font-semibold">
+                              Correo electrónico
+                            </Label>
+                            <div className="relative">
+                              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                              <Input
+                                type="email"
+                                value={loginEmail}
+                                onChange={(e) => setLoginEmail(e.target.value)}
+                                placeholder="tu.email@ejemplo.com"
+                                className="pl-12 pr-4 py-6 rounded-2xl border-2 border-gray-200 focus:border-[#FF6B00] focus:ring-2 focus:ring-[#FF6B00]/20"
+                                required
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <Label className="text-[#1C2335] mb-2 block font-semibold">
+                              Contraseña
+                            </Label>
+                            <div className="relative">
+                              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                              <Input
+                                type={showLoginPassword ? "text" : "password"}
+                                value={loginPassword}
+                                onChange={(e) =>
+                                  setLoginPassword(e.target.value)
+                                }
+                                placeholder="Ingresá tu contraseña"
+                                className="pl-12 pr-12 py-6 rounded-2xl border-2 border-gray-200 focus:border-[#FF6B00] focus:ring-2 focus:ring-[#FF6B00]/20"
+                                required
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowLoginPassword((s) => !s)}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#FF6B00]"
+                              >
+                                {showLoginPassword ? (
+                                  <EyeOff className="w-5 h-5" />
+                                ) : (
+                                  <Eye className="w-5 h-5" />
+                                )}
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-1">
+                            <button
+                              type="button"
+                              onClick={() => setShowForgotPassword(true)}
+                              className="text-[#FF6B00] hover:text-[#e56000] underline-offset-2 hover:underline text-sm font-semibold"
+                            >
+                              ¿Olvidaste tu contraseña?
+                            </button>
+                          </div>
+
+                          <Button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full bg-[#FF6B00] hover:bg-[#e56000] text-white py-6 rounded-2xl shadow-lg"
+                            style={{ fontWeight: 600 }}
+                          >
+                            {loading ? "Ingresando..." : "Iniciar sesión"}
+                          </Button>
+
+                          <p className="text-center text-gray-500 text-sm">
+                            ¿No tenés cuenta?{" "}
+                            <button
+                              type="button"
+                              onClick={() => setActiveTab("signup")}
+                              className="text-[#FF6B00] hover:text-[#e56000] font-semibold"
+                            >
+                              Creá una ahora
+                            </button>
+                          </p>
+                        </form>
                       </TabsContent>
 
                       {/* SIGNUP TAB */}
@@ -698,38 +766,646 @@ export default function AuthModal({
                         value="signup"
                         className="mt-0 px-6 md:px-8 pb-8"
                       >
-                        {/* ... TU UI SIGUE IGUAL ... */}
+                        <form onSubmit={handleSignup} className="space-y-6">
+                          <div>
+                            <Label className="text-[#1C2335] mb-2 block font-semibold">
+                              Nombre completo
+                            </Label>
+                            <div className="relative">
+                              <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                              <Input
+                                type="text"
+                                value={signUpFullName}
+                                onChange={(e) =>
+                                  setSignUpFullName(e.target.value)
+                                }
+                                placeholder="Juan Pérez"
+                                className="pl-12 pr-4 py-6 rounded-2xl border-2 border-gray-200 focus:border-[#FF6B00] focus:ring-2 focus:ring-[#FF6B00]/20"
+                                required
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <Label className="text-[#1C2335] mb-2 block font-semibold">
+                              Correo electrónico
+                            </Label>
+                            <div className="relative">
+                              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                              <Input
+                                type="email"
+                                value={signUpEmail}
+                                onChange={(e) => {
+                                  setSignUpEmail(e.target.value);
+                                  setEmailError("");
+                                }}
+                                placeholder="tu.email@ejemplo.com"
+                                className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-all ${
+                                  emailError
+                                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                                    : "border-gray-200 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
+                                }`}
+                                required
+                              />
+                            </div>
+                            {emailError && (
+                              <p className="text-red-500 mt-2 text-sm font-medium">
+                                {emailError}
+                              </p>
+                            )}
+                          </div>
+
+                          <div>
+                            <Label className="text-[#1C2335] mb-2 block font-semibold">
+                              Contraseña
+                            </Label>
+                            <div className="relative">
+                              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                              <Input
+                                type={showSignUpPassword ? "text" : "password"}
+                                value={signUpPassword}
+                                onChange={(e) => {
+                                  setSignUpPassword(e.target.value);
+                                  setPasswordError("");
+                                }}
+                                placeholder="Creá una contraseña segura"
+                                className={`pl-12 pr-12 py-6 rounded-2xl border-2 focus:ring-2 transition-all ${
+                                  passwordError
+                                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                                    : "border-gray-200 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
+                                }`}
+                                required
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowSignUpPassword((s) => !s)}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#FF6B00]"
+                              >
+                                {showSignUpPassword ? (
+                                  <EyeOff className="w-5 h-5" />
+                                ) : (
+                                  <Eye className="w-5 h-5" />
+                                )}
+                              </button>
+                            </div>
+
+                            {signUpPassword && (
+                              <div className="mt-3">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-gray-600 text-xs font-semibold">
+                                    Seguridad de la contraseña
+                                  </span>
+                                  <span
+                                    className={`text-xs font-bold ${
+                                      strengthInfo.strength === "weak"
+                                        ? "text-red-500"
+                                        : strengthInfo.strength === "medium"
+                                          ? "text-[#FF6B00]"
+                                          : "text-green-600"
+                                    }`}
+                                  >
+                                    {strengthInfo.strength === "weak"
+                                      ? "DÉBIL"
+                                      : strengthInfo.strength === "medium"
+                                        ? "MEDIA"
+                                        : "FUERTE"}
+                                  </span>
+                                </div>
+
+                                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                  <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{
+                                      width: `${strengthInfo.score}%`,
+                                    }}
+                                    transition={{ duration: 0.25 }}
+                                    className={`h-full ${
+                                      strengthInfo.strength === "weak"
+                                        ? "bg-red-500"
+                                        : strengthInfo.strength === "medium"
+                                          ? "bg-[#FF6B00]"
+                                          : "bg-green-600"
+                                    }`}
+                                  />
+                                </div>
+
+                                <div className="mt-3 space-y-2 bg-[#FFF4E6] p-3 rounded-2xl border border-[#FF6B00]/10">
+                                  {[
+                                    {
+                                      key: "length",
+                                      text: "Al menos 8 caracteres",
+                                    },
+                                    {
+                                      key: "case",
+                                      text: "Mayúsculas y minúsculas",
+                                    },
+                                    {
+                                      key: "number",
+                                      text: "Al menos un número",
+                                    },
+                                    {
+                                      key: "special",
+                                      text: "Un carácter especial (@, #, $, etc.)",
+                                    },
+                                  ].map(({ key, text }) => {
+                                    const met =
+                                      requirements[
+                                        key as keyof typeof requirements
+                                      ];
+                                    return (
+                                      <div
+                                        key={key}
+                                        className="flex items-center gap-2"
+                                      >
+                                        <div
+                                          className={`w-4 h-4 rounded-full flex items-center justify-center ${
+                                            met ? "bg-green-600" : "bg-gray-300"
+                                          }`}
+                                        >
+                                          {met && (
+                                            <Check className="w-3 h-3 text-white" />
+                                          )}
+                                        </div>
+                                        <span
+                                          className={`text-xs ${
+                                            met
+                                              ? "text-[#1C2335] font-semibold"
+                                              : "text-gray-500"
+                                          }`}
+                                        >
+                                          {text}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {passwordError && (
+                              <p className="text-red-500 mt-2 text-sm font-semibold">
+                                {passwordError}
+                              </p>
+                            )}
+                          </div>
+
+                          <Button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full bg-[#FF6B00] hover:bg-[#e56000] text-white py-6 rounded-2xl shadow-lg"
+                            style={{ fontWeight: 600 }}
+                          >
+                            {loading ? "Creando..." : "Crear cuenta"}
+                          </Button>
+
+                          <p className="text-center text-gray-500 text-sm">
+                            ¿Ya tenés cuenta?{" "}
+                            <button
+                              type="button"
+                              onClick={() => setActiveTab("login")}
+                              className="text-[#FF6B00] hover:text-[#e56000] font-semibold"
+                            >
+                              Iniciá sesión
+                            </button>
+                          </p>
+                        </form>
                       </TabsContent>
                     </div>
                   </Tabs>
                 </>
               )}
 
-              {/* STEP 2: VERIFY EMAIL */}
-              {signUpStep === "verifyEmail" && (
+              {/* FORGOT PASSWORD */}
+              {signUpStep === "form" && showForgotPassword && (
                 <div className="flex flex-col h-full">
-                  {/* ... TU UI SIGUE IGUAL ... */}
+                  <div className="flex-shrink-0 bg-gradient-to-br from-[#FF6B00] to-[#e56000] text-white px-6 md:px-8 pt-6 pb-4">
+                    <button
+                      type="button"
+                      onClick={backToLogin}
+                      className="flex items-center gap-2 text-white/90 hover:text-white text-sm font-semibold"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      Volver
+                    </button>
+
+                    <h2 className="font-bold text-2xl mt-3">
+                      Recuperar acceso
+                    </h2>
+                    <p className="mt-2 text-[#FFF4E6]">
+                      Te enviaremos un link para restablecer tu contraseña.
+                    </p>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto px-6 md:px-8 py-8">
+                    {!forgotPasswordSent ? (
+                      <form onSubmit={handleForgot} className="space-y-6">
+                        <div>
+                          <Label className="text-[#1C2335] mb-2 block font-semibold">
+                            Correo electrónico
+                          </Label>
+                          <div className="relative">
+                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <Input
+                              type="email"
+                              value={forgotPasswordEmail}
+                              onChange={(e) =>
+                                setForgotPasswordEmail(e.target.value)
+                              }
+                              placeholder="tu.email@ejemplo.com"
+                              className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-all ${
+                                forgotPasswordError
+                                  ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                                  : "border-gray-200 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
+                              }`}
+                              required
+                            />
+                          </div>
+
+                          {forgotPasswordError && (
+                            <p className="text-red-500 mt-2 text-sm font-semibold">
+                              {forgotPasswordError}
+                            </p>
+                          )}
+                        </div>
+
+                        <Button
+                          type="submit"
+                          disabled={loading}
+                          className="w-full bg-[#FF6B00] hover:bg-[#e56000] text-white py-6 rounded-2xl shadow-lg"
+                          style={{ fontWeight: 600 }}
+                        >
+                          {loading
+                            ? "Enviando..."
+                            : "Enviar link de recuperación"}
+                        </Button>
+
+                        <p className="text-center text-gray-500 text-sm">
+                          ¿Ya recordaste tu contraseña?{" "}
+                          <button
+                            type="button"
+                            onClick={backToLogin}
+                            className="text-[#FF6B00] hover:text-[#e56000] font-semibold"
+                          >
+                            Volver a iniciar sesión
+                          </button>
+                        </p>
+                      </form>
+                    ) : (
+                      <div className="rounded-3xl border border-green-200 bg-green-50 p-5">
+                        <div className="flex items-start gap-3">
+                          <CheckCircle2 className="w-6 h-6 text-green-600 mt-0.5" />
+                          <div>
+                            <h3 className="font-bold text-[#1C2335]">
+                              ¡Listo! Revisá tu correo
+                            </h3>
+                            <p className="text-sm text-gray-600 mt-1">
+                              Enviamos un enlace de recuperación a{" "}
+                              <span className="font-semibold">
+                                {forgotPasswordEmail}
+                              </span>
+                              . Revisá también Spam/Promociones.
+                            </p>
+
+                            <div className="mt-4 flex gap-3">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={openGmail}
+                                className="rounded-2xl border-2"
+                              >
+                                <ExternalLink className="w-4 h-4 mr-2" />
+                                Abrir Gmail
+                              </Button>
+
+                              <Button
+                                type="button"
+                                onClick={backToLogin}
+                                className="rounded-2xl bg-[#FF6B00] hover:bg-[#e56000]"
+                              >
+                                Volver
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
-              {/* STEP 3: COMPLETE PROFILE */}
-              {signUpStep === "completeProfile" && (
-                <>{/* ... TU UI SIGUE IGUAL ... */}</>
+              {/* VERIFY EMAIL */}
+              {signUpStep === "verifyEmail" && (
+                <div className="flex flex-col h-full">
+                  <div className="flex-shrink-0 bg-gradient-to-br from-[#FF6B00] to-[#e56000] text-white px-6 md:px-8 pt-6 pb-4">
+                    <h2 className="font-bold text-2xl">Verificá tu email</h2>
+                    <p className="mt-2 text-[#FFF4E6]">
+                      Te enviamos un correo a{" "}
+                      <span className="font-semibold">{pendingEmail}</span>.
+                      Abrilo y confirmá tu cuenta para continuar.
+                    </p>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto px-6 md:px-8 py-8">
+                    <div className="rounded-3xl border border-gray-200 bg-white p-5">
+                      <div className="flex items-start gap-3">
+                        <Mail className="w-6 h-6 text-[#FF6B00] mt-0.5" />
+                        <div className="flex-1">
+                          <h3 className="font-bold text-[#1C2335]">
+                            Paso 1 de 2 completado
+                          </h3>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Cuando termines la verificación, tocá el botón de
+                            abajo para comprobar y seguir con tus datos de
+                            perfil.
+                          </p>
+
+                          <div className="mt-5 flex flex-col gap-3">
+                            <Button
+                              type="button"
+                              onClick={handleCheckVerified}
+                              disabled={loading}
+                              className="w-full bg-[#FF6B00] hover:bg-[#e56000] text-white py-6 rounded-2xl shadow-lg"
+                              style={{ fontWeight: 600 }}
+                            >
+                              {loading ? (
+                                <>
+                                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                                  Verificando...
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle2 className="w-5 h-5 mr-2" />
+                                  Ya verifiqué mi email
+                                </>
+                              )}
+                            </Button>
+
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={openGmail}
+                              className="w-full py-6 rounded-2xl border-2"
+                              style={{ fontWeight: 600 }}
+                            >
+                              <ExternalLink className="w-4 h-4 mr-2" />
+                              Abrir Gmail
+                            </Button>
+
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 text-sm text-gray-600">
+                                <Clock className="w-4 h-4" />
+                                {isResendEnabled ? (
+                                  <span>Podés reenviar/abrir correo</span>
+                                ) : (
+                                  <span>
+                                    Reintentar en{" "}
+                                    <span className="font-semibold">
+                                      {verificationCountdown}s
+                                    </span>
+                                  </span>
+                                )}
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={handleResend}
+                                disabled={!isResendEnabled || loading}
+                                className={`text-sm font-semibold underline-offset-2 ${
+                                  !isResendEnabled || loading
+                                    ? "text-gray-400"
+                                    : "text-[#FF6B00] hover:text-[#e56000] hover:underline"
+                                }`}
+                              >
+                                Reenviar
+                              </button>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={handleChangeEmail}
+                              className="text-sm font-semibold text-gray-600 hover:text-[#1C2335] underline-offset-2 hover:underline text-left"
+                            >
+                              Cambiar email
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               )}
 
-              {/* CONFIRM LEAVE MODAL */}
-              <AnimatePresence>
-                {showConfirmLeave && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="absolute inset-0 bg-black/60 flex items-center justify-center z-50"
-                  >
-                    {/* ... TU UI SIGUE IGUAL ... */}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {/* COMPLETE PROFILE (Paso 2) */}
+              {signUpStep === "completeProfile" && (
+                <div className="flex flex-col h-full">
+                  <div className="flex-shrink-0 bg-gradient-to-br from-[#FF6B00] to-[#e56000] text-white px-6 md:px-8 pt-6 pb-4">
+                    <button
+                      type="button"
+                      onClick={handleBackFromCompleteProfile}
+                      className="flex items-center gap-2 text-white/90 hover:text-white text-sm font-semibold"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      Volver
+                    </button>
+
+                    <h2 className="font-bold text-2xl mt-3">
+                      Completá tu perfil
+                    </h2>
+                    <p className="mt-2 text-[#FFF4E6]">
+                      Esto nos ayuda a validar tu acceso y preparar tu pickup.
+                    </p>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto px-6 md:px-8 py-8">
+                    <form
+                      onSubmit={handleCompleteProfile}
+                      className="space-y-6"
+                    >
+                      {/* Email / Nombre (solo display) */}
+                      <div className="rounded-3xl border border-gray-200 bg-white p-4">
+                        <div className="text-sm text-gray-600">Cuenta</div>
+                        <div className="mt-1 font-semibold text-[#1C2335]">
+                          {pendingFullName || "User"}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {pendingEmail}
+                        </div>
+                      </div>
+
+                      {/* Teléfono */}
+                      <div>
+                        <Label className="text-[#1C2335] mb-2 block font-semibold">
+                          Teléfono
+                        </Label>
+                        <div className="relative">
+                          <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                          <Input
+                            value={phone}
+                            onChange={(e) => {
+                              setPhone(e.target.value);
+                              setPhoneError("");
+                              setStep2Dirty(true);
+                            }}
+                            placeholder="Ej: 8888 8888"
+                            className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-all ${
+                              phoneError
+                                ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                                : "border-gray-200 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
+                            }`}
+                          />
+                        </div>
+                        {phoneError && (
+                          <p className="text-red-500 mt-2 text-sm font-semibold">
+                            {phoneError}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* DNI */}
+                      <div>
+                        <Label className="text-[#1C2335] mb-2 block font-semibold">
+                          DNI / ID
+                        </Label>
+                        <div className="relative">
+                          <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                          <Input
+                            value={dni}
+                            onChange={(e) => {
+                              setDni(e.target.value);
+                              setDniError("");
+                              setStep2Dirty(true);
+                            }}
+                            placeholder="Ej: 1-2345-6789"
+                            className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-all ${
+                              dniError
+                                ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                                : "border-gray-200 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
+                            }`}
+                          />
+                        </div>
+                        {dniError && (
+                          <p className="text-red-500 mt-2 text-sm font-semibold">
+                            {dniError}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Fecha de nacimiento */}
+                      <div>
+                        <Label className="text-[#1C2335] mb-2 block font-semibold">
+                          Fecha de nacimiento
+                        </Label>
+                        <div className="relative">
+                          <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                          <Input
+                            type="date"
+                            value={birthDate}
+                            onChange={(e) => {
+                              setBirthDate(e.target.value);
+                              setBirthDateError("");
+                              setStep2Dirty(true);
+                            }}
+                            className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-all ${
+                              birthDateError
+                                ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                                : "border-gray-200 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
+                            }`}
+                          />
+                        </div>
+                        {birthDateError && (
+                          <p className="text-red-500 mt-2 text-sm font-semibold">
+                            {birthDateError}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Apartamento */}
+                      <div>
+                        <Label className="text-[#1C2335] mb-2 block font-semibold">
+                          Número de apartamento (opcional)
+                        </Label>
+                        <div className="relative">
+                          <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                          <Input
+                            value={apartmentNumber}
+                            onChange={(e) => {
+                              setApartmentNumber(e.target.value);
+                              setStep2Dirty(true);
+                            }}
+                            placeholder="Ej: Torre A - 1204"
+                            className="pl-12 pr-4 py-6 rounded-2xl border-2 border-gray-200 focus:border-[#FF6B00] focus:ring-2 focus:ring-[#FF6B00]/20"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Pickup point */}
+                      <div className="rounded-3xl border border-gray-200 bg-white p-4">
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <MapPin className="w-4 h-4" />
+                          Punto de retiro
+                        </div>
+                        <div className="mt-1 font-semibold text-[#1C2335]">
+                          {pickupPoint}
+                        </div>
+                      </div>
+
+                      <Button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full bg-[#FF6B00] hover:bg-[#e56000] text-white py-6 rounded-2xl shadow-lg"
+                        style={{ fontWeight: 600 }}
+                      >
+                        {loading ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                            Guardando...
+                          </>
+                        ) : (
+                          <>
+                            Continuar <ChevronRight className="w-5 h-5 ml-2" />
+                          </>
+                        )}
+                      </Button>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* Confirm leave step2 */}
+              {showConfirmLeave && (
+                <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] z-30 flex items-center justify-center p-4">
+                  <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl border border-gray-200 p-5">
+                    <h3 className="text-[#1C2335] font-bold text-lg">
+                      ¿Salir sin guardar?
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-2">
+                      Tenés datos sin guardar en tu perfil. Si salís ahora, se
+                      perderán.
+                    </p>
+
+                    <div className="mt-5 flex gap-3">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="flex-1 rounded-2xl"
+                        onClick={() => setShowConfirmLeave(false)}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        type="button"
+                        className="flex-1 rounded-2xl bg-[#FF6B00] hover:bg-[#e56000]"
+                        onClick={() => {
+                          setShowConfirmLeave(false);
+                          onClose();
+                        }}
+                      >
+                        Salir
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </motion.div>
           </div>
         </>
