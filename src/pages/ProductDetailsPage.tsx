@@ -8,13 +8,13 @@ import { UnifiedHeader } from "../components/UnifiedHeader";
 import { Footer } from "../components/Footer";
 import { QuantitySelector } from "../components/QuantitySelector";
 import { AddToCartButton } from "../components/AddToCartButton";
-import { SaleChip } from "../components/SaleChip";
 import { DiscountBadge } from "../components/DiscountBadge";
 import { StockIndicator } from "../components/StockIndicator";
 import { BackToTopButton } from "../components/BackToTopButton";
 import { toast } from "sonner";
 import { formatPrecioARS, getPrecioFinalConIVA } from "../utils/priceUtils";
 import { motion } from "motion/react";
+import { useStoreSettings } from "../hooks/useStoreSettings";
 import {
   Carousel,
   CarouselContent,
@@ -24,15 +24,15 @@ import {
 } from "../components/ui/carousel";
 
 interface Product {
-  id: number;
+  id: string; // ✅ Firestore doc id
   name: string;
   image: string;
-  price: number;
-  originalPrice?: number;
+  price: number; // basePrice (sin IVA)
+  originalPrice?: number; // base original (sin IVA)
   rating: number;
   category: string;
   badges?: string[];
-  stock: number; // Add stock property
+  stock: number;
 }
 
 interface ProductDetailsPageProps {
@@ -49,60 +49,50 @@ export function ProductDetailsPage({
   onProductClick,
 }: ProductDetailsPageProps) {
   const [quantity, setQuantity] = useState(1);
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [relatedProductQuantities, setRelatedProductQuantities] = useState<{
-    [key: number]: number;
-  }>({});
 
-  // Scroll to top when product changes (when clicking on related products)
+  // ✅ IVA dinámico
+  const { settings } = useStoreSettings();
+  const ivaPct = settings.iva ?? 21;
+
+  const [relatedProductQuantities, setRelatedProductQuantities] = useState<
+    Record<string, number>
+  >({});
+
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "instant" });
+    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
   }, [product.id]);
 
-  // Initialize quantity for related products (default to 1)
-  const getRelatedProductQuantity = (productId: number) => {
+  const getRelatedProductQuantity = (productId: string) => {
     return relatedProductQuantities[productId] || 1;
   };
 
-  // Update quantity for related products
-  const updateRelatedProductQuantity = (
-    productId: number,
-    quantity: number
-  ) => {
-    setRelatedProductQuantities((prev) => ({
-      ...prev,
-      [productId]: quantity,
-    }));
+  const updateRelatedProductQuantity = (productId: string, q: number) => {
+    setRelatedProductQuantities((prev) => ({ ...prev, [productId]: q }));
   };
 
-  // Handle clicking on a related product card
   const handleRelatedProductClick = (
-    relatedProduct: (typeof recommendedProducts)[0]
+    relatedProduct: (typeof recommendedProducts)[0],
   ) => {
-    if (onProductClick) {
-      onProductClick({
-        id: relatedProduct.id,
-        name: relatedProduct.name,
-        image: relatedProduct.image,
-        price: relatedProduct.price,
-        rating: relatedProduct.rating,
-        category: relatedProduct.category,
-        badges: [],
-        stock: relatedProduct.stock,
-      });
-    }
+    onProductClick?.({
+      id: relatedProduct.id,
+      name: relatedProduct.name,
+      image: relatedProduct.image,
+      price: relatedProduct.price,
+      rating: relatedProduct.rating,
+      category: relatedProduct.category,
+      badges: [],
+      stock: relatedProduct.stock,
+      originalPrice: undefined,
+    });
   };
 
-  // Handle share functionality
   const handleShare = async () => {
     const shareData = {
       title: product.name,
-      text: `Mirá este producto en HeyPoint!: ${product.name} - $${product.price}`,
+      text: `Mirá este producto en HeyPoint!: ${product.name} - ${formatPrecioARS(getPrecioFinalConIVA(product.price, ivaPct))}`,
       url: window.location.href,
     };
 
-    // Check if Web Share API is supported (works on mobile and some desktop browsers)
     if (navigator.share) {
       try {
         await navigator.share(shareData);
@@ -111,27 +101,22 @@ export function ProductDetailsPage({
           duration: 2000,
         });
       } catch (error) {
-        // User cancelled share or error occurred
-        if ((error as Error).name !== "AbortError") {
+        if ((error as Error).name !== "AbortError")
           console.error("Error sharing:", error);
-        }
       }
     } else {
-      // Fallback: Copy link to clipboard using multiple methods
       const textToCopy = window.location.href;
       let copySuccess = false;
 
-      // Try modern Clipboard API first
-      if (navigator.clipboard && navigator.clipboard.writeText) {
+      if (navigator.clipboard?.writeText) {
         try {
           await navigator.clipboard.writeText(textToCopy);
           copySuccess = true;
-        } catch (error) {
-          console.log("Clipboard API failed, trying fallback method");
+        } catch {
+          // fallback abajo
         }
       }
 
-      // Fallback to older method if Clipboard API failed
       if (!copySuccess) {
         try {
           const textArea = document.createElement("textarea");
@@ -142,19 +127,13 @@ export function ProductDetailsPage({
           document.body.appendChild(textArea);
           textArea.focus();
           textArea.select();
-
-          const successful = document.execCommand("copy");
+          copySuccess = document.execCommand("copy");
           document.body.removeChild(textArea);
-
-          if (successful) {
-            copySuccess = true;
-          }
         } catch (error) {
           console.error("Fallback copy method failed:", error);
         }
       }
 
-      // Show appropriate toast message
       if (copySuccess) {
         toast.success("¡Enlace copiado!", {
           description: "El enlace del producto fue copiado al portapapeles",
@@ -169,51 +148,45 @@ export function ProductDetailsPage({
     }
   };
 
-  // Mock multiple images for carousel
-  const productImages = [
-    product.image,
-    // Additional images can be added here if needed
-  ];
+  const productImages = [product.image];
 
+  // ✅ (Mock) recomendados con id string (en real vendrán del backend)
   const recommendedProducts = [
     {
-      id: 13,
+      id: "13",
       name: "Fresh Strawberries",
       image:
-        "https://images.unsplash.com/photo-1710528184650-fc75ae862c13?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmcmVzaCUyMHN0cmF3YmVycmllc3xlbnwxfHx8fDE3NjIyOTkyMzJ8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+        "https://images.unsplash.com/photo-1710528184650-fc75ae862c13?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
       price: 12500.0,
       rating: 4.8,
       category: "Fruits",
       stock: 12,
     },
     {
-      id: 14,
+      id: "14",
       name: "Fresh Bananas",
       image:
-        "https://images.unsplash.com/photo-1757332050958-b797a022c910?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmcmVzaCUyMGJhbmFuYXN8ZW58MXx8fHwxNzYyMjUxMjMzfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+        "https://images.unsplash.com/photo-1757332050958-b797a022c910?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
       price: 8900.0,
       rating: 4.6,
       category: "Fruits",
       stock: 4,
     },
     {
-      id: 15,
+      id: "15",
       name: "Fresh Oranges",
       image:
-        "https://images.unsplash.com/photo-1613370487983-4bd43a899822?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmcmVzaCUyMG9yYW5nZXMlMjBmcnVpdHxlbnwxfHx8fDE3NjIzNTA4Nzh8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+        "https://images.unsplash.com/photo-1613370487983-4bd43a899822?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
       price: 10500.0,
       rating: 4.7,
       category: "Fruits",
       stock: 8,
     },
-  ];
+  ] as const;
 
   const totalPrice = formatPrecioARS(
-    getPrecioFinalConIVA(product.price * quantity)
+    getPrecioFinalConIVA(product.price, ivaPct) * quantity,
   );
-  const savings = product.originalPrice
-    ? ((product.originalPrice - product.price) * quantity).toFixed(2)
-    : null;
 
   return (
     <div className="min-h-screen bg-[#FFF4E6]">
@@ -223,13 +196,10 @@ export function ProductDetailsPage({
         isTransparent={false}
       />
 
-      {/* Back to Top Button */}
       <BackToTopButton />
 
-      {/* Add padding-top to account for fixed header */}
       <div className="pt-20 lg:pt-24">
         <div className="container mx-auto px-4 sm:px-6 py-8">
-          {/* Breadcrumb */}
           <div
             className="flex items-center gap-2 mb-8 text-[#2E2E2E]"
             style={{ fontSize: "0.938rem" }}
@@ -247,12 +217,9 @@ export function ProductDetailsPage({
             <span className="text-[#1C2335]">{product.name}</span>
           </div>
 
-          {/* Product Details Section */}
           <div className="grid lg:grid-cols-2 gap-8 mb-16">
-            {/* Left: Product Image - Single large image */}
             <div className="flex">
               <Card className="bg-white border-none shadow-lg rounded-2xl overflow-hidden p-6 w-full flex flex-col">
-                {/* Main Image with Navigation Arrows (only if multiple images) */}
                 <div className="relative rounded-2xl overflow-hidden flex-1">
                   {productImages.length > 1 ? (
                     <Carousel>
@@ -269,12 +236,10 @@ export function ProductDetailsPage({
                           </CarouselItem>
                         ))}
                       </CarouselContent>
-                      {/* Show arrows only if more than 1 image */}
                       <CarouselPrevious className="left-4" />
                       <CarouselNext className="right-4" />
                     </Carousel>
                   ) : (
-                    // Single image without carousel - Square aspect ratio
                     <div className="relative w-full aspect-square bg-gray-50 rounded-xl overflow-hidden">
                       <ImageWithFallback
                         src={product.image}
@@ -284,7 +249,6 @@ export function ProductDetailsPage({
                     </div>
                   )}
 
-                  {/* Badges - Show discount percentage badge */}
                   {product.originalPrice &&
                     product.originalPrice > product.price && (
                       <div className="absolute top-4 right-4">
@@ -299,7 +263,6 @@ export function ProductDetailsPage({
               </Card>
             </div>
 
-            {/* Right: Product Info - Matches height of image */}
             <div className="flex">
               <div className="flex flex-col w-full">
                 <div className="mb-2">
@@ -318,15 +281,17 @@ export function ProductDetailsPage({
                   {product.name}
                 </h1>
 
-                {/* Price */}
                 <div className="mb-6">
                   <div className="flex items-center gap-3 flex-wrap">
                     <span
                       className="text-[#FF6B00]"
                       style={{ fontSize: "2.5rem", fontWeight: 700 }}
                     >
-                      {formatPrecioARS(getPrecioFinalConIVA(product.price))}
+                      {formatPrecioARS(
+                        getPrecioFinalConIVA(product.price, ivaPct),
+                      )}
                     </span>
+
                     {product.originalPrice && (
                       <>
                         <span
@@ -334,7 +299,7 @@ export function ProductDetailsPage({
                           style={{ fontSize: "1.5rem" }}
                         >
                           {formatPrecioARS(
-                            getPrecioFinalConIVA(product.originalPrice)
+                            getPrecioFinalConIVA(product.originalPrice, ivaPct),
                           )}
                         </span>
                         <Badge
@@ -346,7 +311,7 @@ export function ProductDetailsPage({
                       </>
                     )}
                   </div>
-                  {/* Precio sin impuestos */}
+
                   <p
                     className="text-[#2E2E2E] mt-2"
                     style={{ fontSize: "0.875rem" }}
@@ -355,19 +320,14 @@ export function ProductDetailsPage({
                   </p>
                 </div>
 
-                {/* Stock Indicator - Detail variant */}
                 <div className="mb-6">
                   <StockIndicator stock={product.stock} variant="detail" />
                 </div>
 
-                {/* Spacer to push content to bottom on desktop */}
-                <div className="flex-1"></div>
+                <div className="flex-1" />
 
-                {/* Quantity and Add to Cart */}
                 <Card className="bg-white border-none shadow-md rounded-2xl p-6 mb-6">
-                  {/* Mobile Layout: Stack vertically */}
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-                    {/* Quantity Selector */}
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                       <span
                         className="text-[#2E2E2E]"
@@ -383,7 +343,6 @@ export function ProductDetailsPage({
                       />
                     </div>
 
-                    {/* Total Price */}
                     <div className="text-left sm:text-right">
                       <div
                         className="text-[#2E2E2E] mb-1"
@@ -400,17 +359,17 @@ export function ProductDetailsPage({
                     </div>
                   </div>
 
-                  {/* Buttons Row */}
                   <div className="flex gap-3 mt-6">
                     <AddToCartButton
-                      productId={product.id}
+                      productId={product.id} // ✅ string
                       productName={product.name}
                       productImage={product.image}
-                      productPrice={product.price}
+                      productPrice={product.price} // basePrice
                       quantity={quantity}
                       className="flex-1"
                       stock={product.stock}
                     />
+
                     <Button
                       size="icon"
                       variant="outline"
@@ -423,7 +382,6 @@ export function ProductDetailsPage({
                   </div>
                 </Card>
 
-                {/* Shipping Info */}
                 <div className="grid grid-cols-3 gap-4">
                   <Card className="bg-white border-none shadow-sm rounded-xl p-4 text-center">
                     <Truck className="w-8 h-8 text-[#FF6B00] mx-auto mb-2" />
@@ -475,7 +433,6 @@ export function ProductDetailsPage({
             </div>
           </div>
 
-          {/* Related Products Section */}
           <div className="mb-16">
             <h2
               className="text-[#1C2335] mb-8"
@@ -483,6 +440,7 @@ export function ProductDetailsPage({
             >
               Productos relacionados
             </h2>
+
             <div className="grid md:grid-cols-3 gap-6">
               {recommendedProducts.map((recProduct) => (
                 <Card
@@ -498,43 +456,37 @@ export function ProductDetailsPage({
                     />
                   </div>
 
-                  {/* Product Info - Grows to fill space */}
                   <div className="flex-1 flex flex-col pt-3">
-                    {/* Product Name - Fixed height with ellipsis */}
                     <h3
                       className="text-[#1C2335] mb-3 line-clamp-2 md:line-clamp-3"
                       style={{
                         fontSize: "1rem",
                         fontWeight: 600,
-                        minHeight: "2.5rem", // Ensures space for 2 lines minimum
+                        minHeight: "2.5rem",
                         lineHeight: "1.25",
                       }}
                     >
                       {recProduct.name}
                     </h3>
 
-                    {/* Spacer to push price and button to bottom */}
-                    <div className="flex-1"></div>
+                    <div className="flex-1" />
 
-                    {/* Price - Fixed baseline position */}
                     <div className="mb-2">
                       <span
                         className="text-[#1C2335]"
                         style={{ fontSize: "1.25rem", fontWeight: 700 }}
                       >
                         {formatPrecioARS(
-                          getPrecioFinalConIVA(recProduct.price)
+                          getPrecioFinalConIVA(recProduct.price, ivaPct),
                         )}
                       </span>
                     </div>
 
-                    {/* Stock Indicator - Card variant */}
                     <div className="mb-3 min-h-[14px]">
                       <StockIndicator stock={recProduct.stock} variant="card" />
                     </div>
                   </div>
 
-                  {/* Quantity Selector and Add to Cart - Fixed at bottom */}
                   <div
                     className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center flex-shrink-0"
                     onClick={(e) => e.stopPropagation()}
@@ -547,7 +499,7 @@ export function ProductDetailsPage({
                       max={recProduct.stock}
                     />
                     <AddToCartButton
-                      productId={recProduct.id}
+                      productId={recProduct.id} // ✅ string
                       productName={recProduct.name}
                       productImage={recProduct.image}
                       productPrice={recProduct.price}

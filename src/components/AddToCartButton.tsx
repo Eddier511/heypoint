@@ -1,21 +1,26 @@
 import { useState } from "react";
 import { Plus, Loader2 } from "lucide-react";
 import { Button } from "./ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./ui/tooltip";
 import { useAuth } from "../contexts/AuthContext";
 import { useCart } from "../contexts/CartContext";
 import { useModal } from "../contexts/ModalContext";
 
 interface AddToCartButtonProps {
-  productId: number;
+  productId: string; // ✅ Firestore doc id
   productName: string;
   productImage: string;
-  productPrice: number;
+  productPrice: number; // basePrice (sin IVA)
   quantity: number;
   className?: string;
   variant?: "default" | "compact";
   disabled?: boolean;
-  stock: number; // Add stock property
+  stock: number;
 }
 
 export function AddToCartButton({
@@ -35,10 +40,12 @@ export function AddToCartButton({
   const [isLoading, setIsLoading] = useState(false);
 
   const handleAddToCart = async (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card click from triggering
+    e.stopPropagation();
 
-    // Validation
-    if (!productId || !productName || !productPrice || quantity < 1) {
+    const pid = String(productId || "").trim();
+
+    // ✅ Validación sólida (sin romper por 0 / falsy)
+    if (!pid || !productName || Number(productPrice) <= 0 || quantity < 1) {
       console.error("Invalid product data:", {
         productId,
         productName,
@@ -48,32 +55,30 @@ export function AddToCartButton({
       return;
     }
 
-    // Check authentication
     if (!isAuthenticated) {
       openLoginModal();
       return;
     }
 
-    // Add to cart
     setIsLoading(true);
     try {
       await addToCart({
-        productId,
+        productId: pid,
         name: productName,
         image: productImage,
-        price: productPrice,
-        quantity,
-        stock,
+        price: Number(productPrice),
+        quantity: Number(quantity),
+        stock: Number(stock),
       });
     } catch (error) {
-      // Error already handled in cart context with toast
       console.error("Add to cart failed:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const isButtonDisabled = disabled || isLoading || !productId || stock <= 0;
+  const pidOk = String(productId || "").trim().length > 0;
+  const isButtonDisabled = disabled || isLoading || !pidOk || stock <= 0;
 
   const buttonContent = (
     <Button
@@ -99,7 +104,6 @@ export function AddToCartButton({
     </Button>
   );
 
-  // Show tooltip if button is disabled for a specific reason
   if (isButtonDisabled && !isLoading) {
     return (
       <TooltipProvider>
@@ -107,13 +111,13 @@ export function AddToCartButton({
           <TooltipTrigger asChild>{buttonContent}</TooltipTrigger>
           <TooltipContent>
             <p>
-              {!productId
+              {!pidOk
                 ? "Producto no disponible"
                 : disabled
-                ? "No disponible en este momento"
-                : stock <= 0
-                ? "Sin stock"
-                : "Intentá nuevamente"}
+                  ? "No disponible en este momento"
+                  : stock <= 0
+                    ? "Sin stock"
+                    : "Intentá nuevamente"}
             </p>
           </TooltipContent>
         </Tooltip>
