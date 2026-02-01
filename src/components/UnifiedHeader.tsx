@@ -58,54 +58,6 @@ type HeaderCategory = {
   image: string;
 };
 
-const FALLBACK_CATEGORIES: HeaderCategory[] = [
-  {
-    id: "snacks",
-    name: "Snacks",
-    items: 120,
-    image:
-      "https://images.unsplash.com/photo-1762417582697-f17df0c69348?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzbmFja3MlMjBkaXNwbGF5JTIwc2hlbGZ8ZW58MXx8fHwxNzYzMDg4OTk0fDA&ixlib=rb-4.1.0&q=80&w=1080",
-  },
-  {
-    id: "beverages",
-    name: "Beverages",
-    items: 90,
-    image:
-      "https://images.unsplash.com/photo-1672826979189-faae44e1b7a6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiZXZlcmFnZXMlMjBkcmlua3MlMjBjb29sZXJ8ZW58MXx8fHwxNzYzMDg4OTk0fDA&ixlib=rb-4.1.0&q=80&w=1080",
-  },
-  {
-    id: "electronics",
-    name: "Electronics",
-    items: 45,
-    image:
-      "https://images.unsplash.com/photo-1707485122968-56916bd2c464?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlbGVjdHJvbmljcyUyMGdhZGdldHMlMjBkaXNwbGF5fGVufDF8fHx8MTc2MzA4ODk5NHww&ixlib=rb-4.1.0&q=80&w=1080",
-  },
-  {
-    id: "personal-care",
-    name: "Personal Care",
-    items: 110,
-    image:
-      "https://images.unsplash.com/photo-1629198688000-71f23e745b6e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwZXJzb25hbCUyMGNhcmUlMjBwcm9kdWN0c3xlbnwxfHx8fDE3NjMwODkwMTR8MA&ixlib=rb-4.1.0&q=80&w=1080",
-  },
-  {
-    id: "frozen-foods",
-    name: "Frozen Foods",
-    items: 75,
-    image:
-      "https://images.unsplash.com/photo-1651383140368-9b3ee59c2981?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmcm96ZW4lMjBmb29kfGVufDF8fHx8MTc2MjIzNDM1OHww&ixlib=rb-4.1.0&q=80&w=1080",
-  },
-  {
-    id: "bakery",
-    name: "Bakery",
-    items: 65,
-    image:
-      "https://images.unsplash.com/photo-1674770067314-296af21ad811?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiYWtlcnklMjBicmVhZHxlbnwxfHx8fDE3NjIyMjM3OTN8MA&ixlib=rb-4.1.0&q=80&w=1080",
-  },
-];
-
-const DEFAULT_CATEGORY_IMAGE =
-  "https://images.unsplash.com/photo-1580915411954-282cb1b0d780?auto=format&fit=crop&w=1200&q=80";
-
 function isActiveStatus(v: any) {
   // soporta data vieja: true/false o "active"/"inactive" o undefined => activo
   if (v === undefined || v === null) return true;
@@ -161,9 +113,9 @@ export function UnifiedHeader({
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
 
-  // ✅ categories desde API (con fallback)
-  const [categories, setCategories] =
-    useState<HeaderCategory[]>(FALLBACK_CATEGORIES);
+  // ✅ categories desde API (SIN fallback)
+  const [categories, setCategories] = useState<HeaderCategory[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
 
   const shopDropdownRef = useRef<HTMLDivElement>(null);
   const shopButtonRef = useRef<HTMLButtonElement>(null);
@@ -178,7 +130,9 @@ export function UnifiedHeader({
 
     (async () => {
       try {
-        const res = await CategoriesAPI.getAll(); // ✅ /categories (baseURL ya incluye /api)
+        setCategoriesLoading(true);
+
+        const res = await CategoriesAPI.getAll();
         const raw = Array.isArray(res.data) ? (res.data as ApiCategory[]) : [];
 
         const mapped = raw
@@ -186,15 +140,14 @@ export function UnifiedHeader({
           .filter(Boolean) as HeaderCategory[];
 
         if (!mounted) return;
-        if (mapped.length > 0) {
-          setCategories(mapped);
-        } else {
-          // si viene vacío, mantené fallback (pero loguea para debug)
-          console.warn("[UnifiedHeader] categories empty from API");
-        }
+
+        setCategories(mapped); // ✅ directo, aunque venga vacío
       } catch (e) {
         console.warn("[UnifiedHeader] categories load failed:", e);
-        // se queda con fallback
+        if (!mounted) return;
+        setCategories([]); // ✅ sin fallback
+      } finally {
+        if (mounted) setCategoriesLoading(false);
       }
     })();
 
@@ -489,39 +442,51 @@ export function UnifiedHeader({
                         </div>
 
                         <div className="p-6 grid grid-cols-3 gap-4">
-                          {categories.slice(0, 6).map((category) => (
-                            <button
-                              key={category.id}
-                              onClick={() => handleCategoryClick(category.name)}
-                              className="group text-left"
-                            >
-                              <div className="relative h-32 rounded-xl overflow-hidden mb-3">
-                                <ImageWithFallback
-                                  src={category.image}
-                                  alt={category.name}
-                                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                                <div className="absolute bottom-2 left-2 right-2">
-                                  <p
-                                    className="text-white"
-                                    style={{
-                                      fontSize: "0.875rem",
-                                      fontWeight: 600,
-                                    }}
-                                  >
-                                    {category.name}
-                                  </p>
-                                  <p
-                                    className="text-white/80"
-                                    style={{ fontSize: "0.75rem" }}
-                                  >
-                                    {category.items}+ items
-                                  </p>
+                          {categoriesLoading ? (
+                            <div className="col-span-3 text-center text-[#2E2E2E]">
+                              Cargando categorías...
+                            </div>
+                          ) : categories.length === 0 ? (
+                            <div className="col-span-3 text-center text-[#2E2E2E]">
+                              No hay categorías disponibles.
+                            </div>
+                          ) : (
+                            categories.slice(0, 6).map((category) => (
+                              <button
+                                key={category.id}
+                                onClick={() =>
+                                  handleCategoryClick(category.name)
+                                }
+                                className="group text-left"
+                              >
+                                <div className="relative h-32 rounded-xl overflow-hidden mb-3">
+                                  <ImageWithFallback
+                                    src={category.image}
+                                    alt={category.name}
+                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                                  <div className="absolute bottom-2 left-2 right-2">
+                                    <p
+                                      className="text-white"
+                                      style={{
+                                        fontSize: "0.875rem",
+                                        fontWeight: 600,
+                                      }}
+                                    >
+                                      {category.name}
+                                    </p>
+                                    <p
+                                      className="text-white/80"
+                                      style={{ fontSize: "0.75rem" }}
+                                    >
+                                      {category.items}+ items
+                                    </p>
+                                  </div>
                                 </div>
-                              </div>
-                            </button>
-                          ))}
+                              </button>
+                            ))
+                          )}
                         </div>
 
                         <div className="border-t border-gray-100 px-6 py-4 bg-gray-50">
@@ -889,28 +854,41 @@ export function UnifiedHeader({
 
                           {/* categorías */}
                           <div className="grid grid-cols-1 gap-2">
-                            {categories.slice(0, 8).map((cat) => (
-                              <button
-                                key={cat.id}
-                                onClick={() => handleCategoryClick(cat.name)}
-                                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-gray-50 text-[#1C2335]"
-                                style={{ fontSize: "0.93rem", fontWeight: 600 }}
-                              >
-                                <div className="w-10 h-10 rounded-xl overflow-hidden bg-[#FFF4E6] flex-shrink-0">
-                                  <ImageWithFallback
-                                    src={cat.image}
-                                    alt={cat.name}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                                <div className="min-w-0 flex-1 text-left">
-                                  <p className="truncate">{cat.name}</p>
-                                  <p className="text-xs text-[#2E2E2E]/50">
-                                    {cat.items}+ items
-                                  </p>
-                                </div>
-                              </button>
-                            ))}
+                            {categoriesLoading ? (
+                              <div className="px-4 py-3 text-sm text-[#2E2E2E]/70">
+                                Cargando categorías...
+                              </div>
+                            ) : categories.length === 0 ? (
+                              <div className="px-4 py-3 text-sm text-[#2E2E2E]/70">
+                                No hay categorías disponibles.
+                              </div>
+                            ) : (
+                              categories.slice(0, 8).map((cat) => (
+                                <button
+                                  key={cat.id}
+                                  onClick={() => handleCategoryClick(cat.name)}
+                                  className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-gray-50 text-[#1C2335]"
+                                  style={{
+                                    fontSize: "0.93rem",
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  <div className="w-10 h-10 rounded-xl overflow-hidden bg-[#FFF4E6] flex-shrink-0">
+                                    <ImageWithFallback
+                                      src={cat.image}
+                                      alt={cat.name}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                  <div className="min-w-0 flex-1 text-left">
+                                    <p className="truncate">{cat.name}</p>
+                                    <p className="text-xs text-[#2E2E2E]/50">
+                                      {cat.items}+ items
+                                    </p>
+                                  </div>
+                                </button>
+                              ))
+                            )}
                           </div>
                         </div>
                       </motion.div>
