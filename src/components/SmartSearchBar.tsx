@@ -7,22 +7,8 @@ import { motion, AnimatePresence } from "motion/react";
 import { createPortal } from "react-dom";
 import { ProductsAPI, CategoriesAPI } from "../lib/api";
 
-type ApiProduct = {
-  id?: string;
-  name?: string;
-  title?: string;
-  imageUrl?: string;
-  image?: string;
-  price?: number | string;
-  categoryId?: string;
-  category?: string;
-  status?: "active" | "inactive" | boolean;
-};
-
-type ApiCategory = {
-  id?: string;
-  name?: string;
-};
+type ApiProduct = Record<string, any>;
+type ApiCategory = { id?: string; name?: string } | Record<string, any>;
 
 export interface Product {
   id: string;
@@ -43,15 +29,83 @@ interface SmartSearchBarProps {
 const DEFAULT_IMG =
   "https://images.unsplash.com/photo-1580915411954-282cb1b0d780?auto=format&fit=crop&w=1200&q=80";
 
-function isActive(v: any) {
-  if (v === undefined || v === null) return true;
-  if (typeof v === "boolean") return v;
-  return String(v).toLowerCase() === "active";
+function toNumber(v: any) {
+  const n =
+    typeof v === "string"
+      ? Number(v.replace(/\./g, "").replace(",", "."))
+      : Number(v);
+  return Number.isFinite(n) ? n : 0;
 }
 
-function toNumber(v: any) {
-  const n = typeof v === "string" ? Number(v.replace(",", ".")) : Number(v);
-  return Number.isFinite(n) ? n : 0;
+function isActiveLoose(v: any) {
+  if (v === undefined || v === null) return true;
+  if (typeof v === "boolean") return v;
+  if (typeof v === "number") return v === 1;
+  const s = String(v).trim().toLowerCase();
+  return ["active", "activo", "enabled", "true", "1"].includes(s);
+}
+
+function pickFirst(obj: any, keys: string[]) {
+  for (const k of keys) {
+    const v = obj?.[k];
+    if (v !== undefined && v !== null && String(v).trim() !== "") return v;
+  }
+  return undefined;
+}
+
+function normalizeProduct(
+  p: ApiProduct,
+  categoryMap: Record<string, string>,
+): Product | null {
+  // id (acepta id, _id, uid, productId, etc)
+  const rawId = pickFirst(p, ["id", "_id", "uid", "productId", "productoId"]);
+  const id = rawId ? String(rawId).trim() : "";
+
+  // name (acepta name, title, nombre, etc)
+  const rawName = pickFirst(p, [
+    "name",
+    "title",
+    "nombre",
+    "nombreProducto",
+    "productName",
+  ]);
+  const name = rawName ? String(rawName).trim() : "";
+
+  if (!id || !name) return null;
+
+  // image
+  const rawImg = pickFirst(p, [
+    "imageUrl",
+    "image",
+    "imagen",
+    "img",
+    "photo",
+    "urlImagen",
+  ]);
+  const image = (rawImg ? String(rawImg).trim() : "") || DEFAULT_IMG;
+
+  // price
+  const rawPrice = pickFirst(p, ["price", "precio", "cost", "monto", "amount"]);
+  const price = toNumber(rawPrice);
+
+  // category
+  const rawCategoryName = pickFirst(p, [
+    "category",
+    "categoria",
+    "categoryName",
+    "nombreCategoria",
+  ]);
+  const rawCategoryId = pickFirst(p, [
+    "categoryId",
+    "categoriaId",
+    "category_id",
+  ]);
+  const category =
+    (rawCategoryName ? String(rawCategoryName) : "") ||
+    (rawCategoryId ? categoryMap[String(rawCategoryId)] : "") ||
+    "Sin categoría";
+
+  return { id, name, image, price, category };
 }
 
 export function SmartSearchBar({
@@ -66,11 +120,6 @@ export function SmartSearchBar({
   const [results, setResults] = useState<Product[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-
-  // selectedIndex:
-  // -1 = nada seleccionado
-  // 0..results.length-1 = un item
-  // results.length = botón "Ver todos"
   const [selectedIndex, setSelectedIndex] = useState(-1);
 
   const [dropdownPosition, setDropdownPosition] = useState({
@@ -89,7 +138,7 @@ export function SmartSearchBar({
 
   const categoryMapRef = useRef<Record<string, string>>({});
 
-  // Detect mobile device
+  // Detect mobile
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
@@ -103,14 +152,27 @@ export function SmartSearchBar({
     (async () => {
       try {
         const res = await CategoriesAPI.getAll();
-        const list: ApiCategory[] = Array.isArray(res.data) ? res.data : [];
+        const raw = (res as any)?.data;
+        const list: any[] = Array.isArray(raw)
+          ? raw
+          : Array.isArray(raw?.data)
+            ? raw.data
+            : [];
         const map: Record<string, string> = {};
         list.forEach((c) => {
-          if (c?.id && c?.name) map[String(c.id)] = String(c.name);
+          const id = pickFirst(c, [
+            "id",
+            "_id",
+            "uid",
+            "categoryId",
+            "categoriaId",
+          ]);
+          const name = pickFirst(c, ["name", "nombre", "title"]);
+          if (id && name) map[String(id)] = String(name);
         });
         if (alive) categoryMapRef.current = map;
-      } catch {
-        // ok
+      } catch (e) {
+        console.warn("[SmartSearchBar] Categories load failed", e);
       }
     })();
     return () => {
@@ -126,29 +188,30 @@ export function SmartSearchBar({
       try {
         setIsLoading(true);
         const res = await ProductsAPI.getAll();
-        const raw: ApiProduct[] = Array.isArray(res.data) ? res.data : [];
 
-        const mapped: Product[] = raw
-          .filter((p) => isActive(p.status))
-          .map((p) => {
-            const id = String(p.id ?? "").trim();
-            const name = String(p.name ?? p.title ?? "").trim();
-            if (!id || !name) return null;
+        // 🔥 Esto suele variar: a veces viene res.data, a veces res.data.data
+        const raw = (res as any)?.data;
+        const list: ApiProduct[] = Array.isArray(raw)
+          ? raw
+          : Array.isArray(raw?.data)
+            ? raw.data
+            : Array.isArray(raw?.items)
+              ? raw.items
+              : [];
 
-            const image =
-              String(p.imageUrl ?? p.image ?? "").trim() || DEFAULT_IMG;
-            const price = toNumber(p.price);
+        console.log("[SmartSearchBar] products raw sample:", list?.[0]);
+        console.log("[SmartSearchBar] products raw count:", list.length);
 
-            const category =
-              (p.category ? String(p.category) : "") ||
-              (p.categoryId
-                ? categoryMapRef.current[String(p.categoryId)]
-                : "") ||
-              "Sin categoría";
-
-            return { id, name, image, price, category };
-          })
+        const mapped = list
+          // status flexible
+          .filter((p) =>
+            isActiveLoose(p?.status ?? p?.estado ?? p?.isActive ?? p?.activo),
+          )
+          .map((p) => normalizeProduct(p, categoryMapRef.current))
           .filter(Boolean) as Product[];
+
+        console.log("[SmartSearchBar] products mapped count:", mapped.length);
+        console.log("[SmartSearchBar] products mapped sample:", mapped?.[0]);
 
         if (!alive) return;
         setAllProducts(mapped);
@@ -165,7 +228,7 @@ export function SmartSearchBar({
     };
   }, []);
 
-  // Calculate dropdown position (desktop)
+  // dropdown position
   useEffect(() => {
     if (isOpen && inputContainerRef.current && !isMobileSearchMode) {
       const rect = inputContainerRef.current.getBoundingClientRect();
@@ -177,7 +240,7 @@ export function SmartSearchBar({
     }
   }, [isOpen, isMobileSearchMode]);
 
-  // Disable body scroll on mobile fullscreen
+  // disable scroll in mobile fullscreen
   useEffect(() => {
     document.body.style.overflow = isMobileSearchMode ? "hidden" : "";
     return () => {
@@ -185,58 +248,17 @@ export function SmartSearchBar({
     };
   }, [isMobileSearchMode]);
 
-  // Close dropdown on scroll (desktop)
-  useEffect(() => {
-    if (!isOpen || isMobileSearchMode) return;
-
-    let lastScrollY = window.scrollY;
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      const diff = Math.abs(currentScrollY - lastScrollY);
-      if (diff > 150) {
-        setIsOpen(false);
-        setSelectedIndex(-1);
-      }
-      lastScrollY = currentScrollY;
-    };
-
-    window.addEventListener("scroll", handleScroll, true);
-    return () => window.removeEventListener("scroll", handleScroll, true);
-  }, [isOpen, isMobileSearchMode]);
-
-  // Update position on resize (desktop)
-  useEffect(() => {
-    if (!isOpen || isMobileSearchMode) return;
-
-    const updatePosition = () => {
-      if (!inputContainerRef.current) return;
-      const rect = inputContainerRef.current.getBoundingClientRect();
-      setDropdownPosition({
-        top: rect.bottom + 16,
-        left: rect.left,
-        width: rect.width,
-      });
-    };
-
-    window.addEventListener("resize", updatePosition);
-    return () => window.removeEventListener("resize", updatePosition);
-  }, [isOpen, isMobileSearchMode]);
-
-  // ✅ Real search (debounced)
+  // search debounce
   useEffect(() => {
     const q = query.trim().toLowerCase();
-
     if (!q) {
       setResults([]);
       setSelectedIndex(-1);
-      setIsLoading(false);
       return;
     }
 
     setIsLoading(true);
-    setSelectedIndex(-1);
-
-    const timer = setTimeout(() => {
+    const t = setTimeout(() => {
       const filtered = allProducts.filter((p) => {
         const nameMatch = p.name.toLowerCase().includes(q);
         const catMatch = (p.category || "").toLowerCase().includes(q);
@@ -247,10 +269,10 @@ export function SmartSearchBar({
       setIsLoading(false);
     }, 250);
 
-    return () => clearTimeout(timer);
+    return () => clearTimeout(t);
   }, [query, allProducts]);
 
-  // Close dropdown when clicking outside (desktop)
+  // click outside (desktop)
   useEffect(() => {
     if (isMobileSearchMode) return;
 
@@ -309,16 +331,14 @@ export function SmartSearchBar({
     if (isMobile) {
       setIsMobileSearchMode(true);
       setIsOpen(true);
-      // enfocar después del render del portal
       setTimeout(() => inputRef.current?.focus(), 0);
     } else {
-      if (query.trim().length > 0) setIsOpen(true);
+      setIsOpen(true);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    const q = query.trim();
-    if (!isOpen && q.length > 0) setIsOpen(true);
+    if (!isOpen && query.trim().length > 0) setIsOpen(true);
 
     if (e.key === "Escape") {
       if (isMobileSearchMode) closeMobileSearch();
@@ -332,53 +352,27 @@ export function SmartSearchBar({
 
     if (!isOpen) return;
 
-    const maxIndex = results.length > 0 ? results.length : -1; // botón ver todos = results.length (solo si hay resultados)
+    // -1 nada, 0..len-1 item, len ver todos
     const allowViewAll = results.length > 0;
 
     switch (e.key) {
-      case "ArrowDown": {
+      case "ArrowDown":
         e.preventDefault();
-        setSelectedIndex((prev) => {
-          if (!allowViewAll) return -1;
-          const next = prev + 1;
-          return Math.min(next, maxIndex); // maxIndex = results.length
-        });
+        if (!allowViewAll) return;
+        setSelectedIndex((prev) => Math.min(prev + 1, results.length));
         break;
-      }
-      case "ArrowUp": {
+      case "ArrowUp":
         e.preventDefault();
-        setSelectedIndex((prev) => {
-          if (!allowViewAll) return -1;
-          const next = prev - 1;
-          return Math.max(next, -1);
-        });
+        if (!allowViewAll) return;
+        setSelectedIndex((prev) => Math.max(prev - 1, -1));
         break;
-      }
-      case "Enter": {
+      case "Enter":
         e.preventDefault();
-        if (!q) return;
-
-        // si no hay resultados, enter = ver todos
-        if (results.length === 0) {
-          handleViewAllResults();
-          return;
-        }
-
-        if (selectedIndex === -1) {
-          handleViewAllResults();
-          return;
-        }
-
-        if (selectedIndex === results.length) {
-          handleViewAllResults();
-          return;
-        }
-
-        if (selectedIndex >= 0 && selectedIndex < results.length) {
-          handleProductSelect(results[selectedIndex]);
-        }
-        break;
-      }
+        if (!query.trim()) return;
+        if (results.length === 0) return; // no hay nada que seleccionar
+        if (selectedIndex === -1 || selectedIndex === results.length)
+          return handleViewAllResults();
+        return handleProductSelect(results[selectedIndex]);
     }
   };
 
@@ -401,7 +395,7 @@ export function SmartSearchBar({
     );
   };
 
-  // ✅ MOBILE FULLSCREEN
+  // MOBILE FULLSCREEN
   if (isMobileSearchMode && typeof window !== "undefined") {
     return createPortal(
       <motion.div
@@ -411,7 +405,6 @@ export function SmartSearchBar({
         transition={{ duration: 0.3 }}
         className="fixed inset-0 z-[10000] bg-[#FFF4E6] flex flex-col"
       >
-        {/* Header */}
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -460,14 +453,18 @@ export function SmartSearchBar({
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ duration: 0.15 }}
+                    type="button"
                     onClick={handleClear}
-                    className="absolute right-3 top-1/2 -translate-y-1/2
-                               w-10 h-10 rounded-full
-                               hover:bg-gray-100 transition-colors
-                               flex items-center justify-center"
                     aria-label="Limpiar búsqueda"
+                    className="
+        absolute right-3 top-1/2 -translate-y-1/2
+        h-10 w-10 rounded-full
+        grid place-items-center
+        leading-none
+        hover:bg-gray-100 transition-colors
+      "
                   >
-                    <X className="w-5 h-5 text-[#2E2E2E]/60" />
+                    <X className="h-5 w-5 text-[#2E2E2E]/60 block" />
                   </motion.button>
                 )}
               </AnimatePresence>
@@ -475,7 +472,6 @@ export function SmartSearchBar({
           </div>
         </motion.div>
 
-        {/* Results */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -489,28 +485,6 @@ export function SmartSearchBar({
                 <span style={{ fontSize: "1.063rem", fontWeight: 500 }}>
                   Buscando...
                 </span>
-              </div>
-            </div>
-          )}
-
-          {!isLoading && query.trim().length === 0 && (
-            <div className="flex-1 flex items-center justify-center p-8 text-center">
-              <div>
-                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-sm">
-                  <Search className="w-10 h-10 text-[#FF6B00]/60" />
-                </div>
-                <p
-                  className="text-[#1C2335]"
-                  style={{ fontSize: "1.125rem", fontWeight: 600 }}
-                >
-                  ¿Qué estás buscando?
-                </p>
-                <p
-                  className="text-[#2E2E2E]/60 mt-2"
-                  style={{ fontSize: "1rem" }}
-                >
-                  Escribí para buscar productos
-                </p>
               </div>
             </div>
           )}
@@ -539,39 +513,15 @@ export function SmartSearchBar({
 
           {!isLoading && results.length > 0 && (
             <div className="flex-1 flex flex-col overflow-hidden">
-              <div
-                className="flex-1 overflow-y-auto overscroll-contain bg-white"
-                style={{
-                  scrollbarWidth: "thin",
-                  scrollbarColor: "#FF6B00 rgba(255, 244, 230, 0.5)",
-                }}
-              >
-                <div className="px-4 py-2">
-                  <p
-                    className="text-[#2E2E2E]/60 mb-3"
-                    style={{ fontSize: "0.875rem", fontWeight: 500 }}
-                  >
-                    {results.length}{" "}
-                    {results.length === 1 ? "resultado" : "resultados"}
-                  </p>
-                </div>
-
+              <div className="flex-1 overflow-y-auto overscroll-contain bg-white">
                 {results.map((product, index) => (
                   <button
                     key={product.id}
                     onClick={() => handleProductSelect(product)}
                     className={`
                       w-full flex items-center gap-4 p-4 transition-all duration-150
-                      ${
-                        index === selectedIndex
-                          ? "bg-[#FFF4E6]"
-                          : "hover:bg-[#FFF4E6]/50 active:bg-[#FFF4E6]"
-                      }
-                      ${
-                        index < results.length - 1
-                          ? "border-b border-gray-200/60"
-                          : ""
-                      }
+                      ${index === selectedIndex ? "bg-[#FFF4E6]" : "hover:bg-[#FFF4E6]/50 active:bg-[#FFF4E6]"}
+                      ${index < results.length - 1 ? "border-b border-gray-200/60" : ""}
                     `}
                   >
                     <div className="flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden bg-white shadow-sm">
@@ -607,19 +557,13 @@ export function SmartSearchBar({
                     </div>
                   </button>
                 ))}
-
                 <div className="h-24" />
               </div>
 
-              <div
-                className="flex-shrink-0 sticky bottom-0 p-4 bg-white/95 backdrop-blur-md border-t border-gray-200/50 shadow-[0_-4px_16px_rgba(0,0,0,0.1)]"
-                style={{
-                  paddingBottom: "max(env(safe-area-inset-bottom, 16px), 16px)",
-                }}
-              >
+              <div className="flex-shrink-0 sticky bottom-0 p-4 bg-white/95 backdrop-blur-md border-t border-gray-200/50">
                 <Button
                   onClick={handleViewAllResults}
-                  className="w-full bg-gradient-to-r from-[#FF6B00] to-[#FF8534] hover:from-[#e56000] hover:to-[#FF6B00] text-white rounded-full h-14 shadow-[0_4px_16px_rgba(255,107,0,0.25)] hover:shadow-[0_6px_24px_rgba(255,107,0,0.35)] transition-all duration-200"
+                  className="w-full bg-gradient-to-r from-[#FF6B00] to-[#FF8534] hover:from-[#e56000] hover:to-[#FF6B00] text-white rounded-full h-14"
                   style={{ fontSize: "1.063rem", fontWeight: 700 }}
                 >
                   Ver todos los resultados ({results.length})
@@ -633,49 +577,13 @@ export function SmartSearchBar({
     );
   }
 
-  // ✅ DESKTOP
+  // DESKTOP
   return (
     <div ref={searchRef} className={`relative w-full ${className}`}>
-      <AnimatePresence>
-        {isOpen && query.trim().length > 0 && !isMobile && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[9998]"
-            onClick={() => {
-              setIsOpen(false);
-              setSelectedIndex(-1);
-            }}
-          />
-        )}
-      </AnimatePresence>
-
       <div ref={inputContainerRef} className="relative z-[9999]">
-        <motion.div
-          animate={{
-            scale: isOpen && query.trim().length > 0 ? 1.02 : 1,
-          }}
-          transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-          className={`
-            relative bg-white/95 backdrop-blur-sm rounded-full transition-all duration-200
-            ${
-              isOpen && query.trim().length > 0
-                ? "shadow-[0_12px_40px_rgba(255,107,0,0.25)] ring-2 ring-[#FF6B00]/30"
-                : "shadow-[0_4px_16px_rgba(0,0,0,0.1)] hover:shadow-[0_6px_24px_rgba(0,0,0,0.15)]"
-            }
-          `}
-        >
+        <div className="relative bg-white/95 backdrop-blur-sm rounded-full shadow-[0_4px_16px_rgba(0,0,0,0.1)]">
           <Search
-            className={`
-              absolute left-5 top-1/2 -translate-y-1/2 transition-colors duration-200
-              ${
-                isOpen && query.trim().length > 0
-                  ? "text-[#FF6B00]"
-                  : "text-[#2E2E2E]/50"
-              }
-            `}
+            className="absolute left-5 top-1/2 -translate-y-1/2 text-[#2E2E2E]/50"
             style={{ width: "20px", height: "20px" }}
             aria-hidden="true"
           />
@@ -692,13 +600,7 @@ export function SmartSearchBar({
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             className="w-full h-14 pl-14 pr-16 outline-none text-[#2E2E2E] rounded-full bg-transparent placeholder:text-[#2E2E2E]/40"
-            style={{ fontSize: "clamp(1rem, 2vw, 1rem)", fontWeight: 400 }}
             aria-label="Buscar productos"
-            aria-expanded={isOpen}
-            aria-controls="search-results"
-            aria-activedescendant={
-              selectedIndex >= 0 ? `search-result-${selectedIndex}` : undefined
-            }
           />
 
           <AnimatePresence>
@@ -709,180 +611,105 @@ export function SmartSearchBar({
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.15 }}
                 onClick={handleClear}
-                className="absolute right-4 top-1/2 -translate-y-1/2
-                           w-10 h-10 rounded-full
-                           hover:bg-gray-100 transition-colors
-                           flex items-center justify-center"
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full hover:bg-gray-100 transition-colors flex items-center justify-center"
                 aria-label="Limpiar búsqueda"
               >
                 <X className="w-5 h-5 text-[#2E2E2E]/60" />
               </motion.button>
             )}
           </AnimatePresence>
-        </motion.div>
+        </div>
 
         {isOpen &&
           query.trim().length > 0 &&
           !isMobile &&
           typeof window !== "undefined" &&
           createPortal(
-            <AnimatePresence>
-              <motion.div
-                ref={dropdownRef}
-                id="search-results"
-                initial={{ opacity: 0, y: 8, scale: 0.96 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 8, scale: 0.96 }}
-                transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
-                className="fixed z-[9999]"
-                role="listbox"
-                style={{
-                  top: `${dropdownPosition.top}px`,
-                  left: `${dropdownPosition.left}px`,
-                  width: `${dropdownPosition.width}px`,
-                  maxHeight: "calc(100vh - 180px)",
-                }}
-              >
-                <div
-                  className="overflow-hidden flex flex-col"
-                  style={{
-                    background: "rgba(255, 255, 255, 0.95)",
-                    backdropFilter: "blur(20px)",
-                    WebkitBackdropFilter: "blur(20px)",
-                    borderRadius: "24px",
-                    border: "1px solid rgba(255, 255, 255, 0.3)",
-                    boxShadow:
-                      "0 20px 60px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 107, 0, 0.15)",
-                    maxHeight: "calc(100vh - 180px)",
-                  }}
-                >
-                  {isLoading && (
-                    <div className="p-8">
-                      <div className="flex items-center justify-center gap-3 text-[#2E2E2E]/60">
-                        <Loader2 className="w-5 h-5 animate-spin text-[#FF6B00]" />
-                        <span style={{ fontSize: "1rem", fontWeight: 500 }}>
-                          Buscando...
-                        </span>
-                      </div>
-                    </div>
-                  )}
+            <div
+              ref={dropdownRef}
+              className="fixed z-[9999]"
+              style={{
+                top: `${dropdownPosition.top}px`,
+                left: `${dropdownPosition.left}px`,
+                width: `${dropdownPosition.width}px`,
+              }}
+            >
+              <div className="overflow-hidden flex flex-col rounded-3xl border bg-white shadow-[0_20px_60px_rgba(0,0,0,0.2)]">
+                {isLoading && (
+                  <div className="p-8 flex items-center justify-center gap-3 text-[#2E2E2E]/60">
+                    <Loader2 className="w-5 h-5 animate-spin text-[#FF6B00]" />
+                    <span style={{ fontSize: "1rem", fontWeight: 500 }}>
+                      Buscando...
+                    </span>
+                  </div>
+                )}
 
-                  {!isLoading && results.length === 0 && (
-                    <div className="p-10 text-center">
-                      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#FFF4E6]/80 backdrop-blur-sm flex items-center justify-center">
-                        <Search className="w-8 h-8 text-[#FF6B00]/60" />
-                      </div>
-                      <p
-                        className="text-[#2E2E2E]"
-                        style={{ fontSize: "1.063rem", fontWeight: 600 }}
-                      >
-                        No encontramos resultados
-                      </p>
-                      <p
-                        className="text-[#2E2E2E]/60 mt-2"
-                        style={{ fontSize: "0.938rem" }}
-                      >
-                        Intenta con otro término de búsqueda
-                      </p>
+                {!isLoading && results.length === 0 && (
+                  <div className="p-10 text-center">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#FFF4E6]/80 flex items-center justify-center">
+                      <Search className="w-8 h-8 text-[#FF6B00]/60" />
                     </div>
-                  )}
+                    <p
+                      className="text-[#2E2E2E]"
+                      style={{ fontSize: "1.063rem", fontWeight: 600 }}
+                    >
+                      No encontramos resultados
+                    </p>
+                    <p
+                      className="text-[#2E2E2E]/60 mt-2"
+                      style={{ fontSize: "0.938rem" }}
+                    >
+                      Intenta con otro término de búsqueda
+                    </p>
+                  </div>
+                )}
 
-                  {!isLoading && results.length > 0 && (
-                    <>
-                      <div
-                        className="overflow-y-auto overscroll-contain"
-                        style={{
-                          scrollbarWidth: "thin",
-                          scrollbarColor: "#FF6B00 rgba(255, 244, 230, 0.5)",
-                          maxHeight: `${7 * 72}px`,
-                          minHeight: "80px",
-                        }}
+                {!isLoading && results.length > 0 && (
+                  <div className="max-h-[520px] overflow-y-auto">
+                    {results.map((product) => (
+                      <button
+                        key={product.id}
+                        onClick={() => handleProductSelect(product)}
+                        className="w-full flex items-center gap-4 p-4 hover:bg-[#FFF4E6]/60"
                       >
-                        {results.map((product, index) => (
-                          <button
-                            key={product.id}
-                            id={`search-result-${index}`}
-                            onClick={() => handleProductSelect(product)}
-                            className={`
-                              w-full flex items-center gap-4 p-3.5 transition-all duration-150
-                              min-h-[72px]
-                              ${
-                                index === selectedIndex
-                                  ? "bg-[#FFF4E6]/70 backdrop-blur-sm"
-                                  : "hover:bg-white/60"
-                              }
-                              ${
-                                index < results.length - 1
-                                  ? "border-b border-gray-200/40"
-                                  : ""
-                              }
-                            `}
-                            role="option"
-                            aria-selected={index === selectedIndex}
+                        <div className="w-14 h-14 rounded-2xl overflow-hidden bg-white shadow-sm">
+                          <ImageWithFallback
+                            src={product.image}
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1 text-left min-w-0">
+                          <p
+                            className="text-[#1C2335] truncate"
+                            style={{ fontSize: "1rem", fontWeight: 600 }}
                           >
-                            <div className="flex-shrink-0 w-14 h-14 rounded-2xl overflow-hidden bg-white/80 shadow-sm">
-                              <ImageWithFallback
-                                src={product.image}
-                                alt={product.name}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-
-                            <div className="flex-1 text-left min-w-0">
-                              <p
-                                className="text-[#1C2335] truncate mb-1"
-                                style={{ fontSize: "1rem", fontWeight: 600 }}
-                              >
-                                {highlightMatch(product.name, query)}
-                              </p>
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className="text-[#FF6B00]"
-                                  style={{ fontSize: "1rem", fontWeight: 700 }}
-                                >
-                                  {formatPrecioARS(
-                                    getPrecioFinalConIVA(product.price),
-                                  )}
-                                </span>
-                                <span className="text-[#2E2E2E]/40">•</span>
-                                <span
-                                  className="text-[#2E2E2E]/60 truncate"
-                                  style={{ fontSize: "0.813rem" }}
-                                >
-                                  {product.category}
-                                </span>
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-
-                      <div className="flex-shrink-0 sticky bottom-0 p-4 bg-white/60 backdrop-blur-md border-t border-gray-200/50">
-                        <Button
-                          onClick={handleViewAllResults}
-                          className={`
-                            w-full bg-gradient-to-r from-[#FF6B00] to-[#FF8534] 
-                            hover:from-[#e56000] hover:to-[#FF6B00] 
-                            text-white rounded-2xl h-12
-                            shadow-[0_4px_16px_rgba(255,107,0,0.25)]
-                            hover:shadow-[0_6px_24px_rgba(255,107,0,0.35)]
-                            transition-all duration-200
-                            ${
-                              selectedIndex === results.length
-                                ? "ring-2 ring-[#FF6B00] ring-offset-2"
-                                : ""
-                            }
-                          `}
-                          style={{ fontSize: "1rem", fontWeight: 700 }}
-                        >
-                          Ver todos los resultados ({results.length})
-                        </Button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </motion.div>
-            </AnimatePresence>,
+                            {highlightMatch(product.name, query)}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="text-[#FF6B00]"
+                              style={{ fontSize: "1rem", fontWeight: 700 }}
+                            >
+                              {formatPrecioARS(
+                                getPrecioFinalConIVA(product.price),
+                              )}
+                            </span>
+                            <span className="text-[#2E2E2E]/40">•</span>
+                            <span
+                              className="text-[#2E2E2E]/60 truncate"
+                              style={{ fontSize: "0.813rem" }}
+                            >
+                              {product.category}
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>,
             document.body,
           )}
       </div>
