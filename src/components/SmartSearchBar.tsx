@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Search, X, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
@@ -14,6 +14,8 @@ import {
   orderBy,
   query as fsQuery,
   where,
+  startAt,
+  endAt,
 } from "firebase/firestore";
 import { db } from "../lib/firebase";
 
@@ -21,8 +23,8 @@ export interface Product {
   id: string;
   name: string;
   image: string;
-  price: number;
-  category: string;
+  price: number; // usaremos basePrice
+  category: string; // resolvemos con categories
 }
 
 interface SmartSearchBarProps {
@@ -36,9 +38,6 @@ interface SmartSearchBarProps {
 const DEFAULT_IMG =
   "https://images.unsplash.com/photo-1580915411954-282cb1b0d780?auto=format&fit=crop&w=1200&q=80";
 
-/** =========================
- * Helpers
- * ========================= */
 function toNumber(v: any) {
   const n =
     typeof v === "string"
@@ -47,55 +46,48 @@ function toNumber(v: any) {
   return Number.isFinite(n) ? n : 0;
 }
 
-function isActiveLoose(v: any) {
+function isActiveStatus(v: any) {
+  // tus docs: status: "active"
   if (v === undefined || v === null) return true;
   if (typeof v === "boolean") return v;
-  if (typeof v === "number") return v === 1;
   const s = String(v).trim().toLowerCase();
-  return ["active", "activo", "enabled", "true", "1"].includes(s);
+  return s === "active" || s === "activo" || s === "true" || s === "1";
 }
 
-function pickFirst(obj: any, keys: string[]) {
-  for (const k of keys) {
-    const v = obj?.[k];
-    if (v !== undefined && v !== null && String(v).trim() !== "") return v;
-  }
-  return undefined;
-}
-
-function normalizeProduct(p: any): Product | null {
-  const id = String(p?.id ?? "").trim();
-  if (!id) return null;
-
-  const rawName = pickFirst(p, ["name", "title", "nombre", "productName"]);
-  const name = rawName ? String(rawName).trim() : "";
-  if (!name) return null;
-
-  const rawImg = pickFirst(p, ["imageUrl", "image", "imagen", "img", "photo"]);
-  const image = (rawImg ? String(rawImg).trim() : "") || DEFAULT_IMG;
-
-  const rawPrice = pickFirst(p, ["price", "precio", "cost", "amount"]);
-  const price = toNumber(rawPrice);
-
-  const rawCategoryName = pickFirst(p, [
-    "category",
-    "categoria",
-    "categoryName",
-  ]);
-  const category = rawCategoryName ? String(rawCategoryName) : "Sin categoría";
-
-  return { id, name, image, price, category };
-}
-
-/** Convierte string a tokens para keywords */
-function tokenize(q: string) {
-  return q
+function safeLower(s: any) {
+  return String(s ?? "")
     .trim()
     .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s]/gu, " ")
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 5); // evita queries muy largas
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function normalizeProductFromFirestore(
+  docId: string,
+  data: any,
+  categoryMap: Record<string, string>,
+): Product | null {
+  const name = String(data?.name ?? "").trim();
+  if (!name) return null;
+
+  const images = Array.isArray(data?.images) ? data.images : [];
+  const image = (images?.[0] ? String(images[0]).trim() : "") || DEFAULT_IMG;
+
+  const price = toNumber(data?.basePrice ?? data?.price ?? 0);
+
+  const categoryId = String(data?.categoryId ?? "").trim();
+  const category =
+    (categoryId && categoryMap[categoryId]) ||
+    String(data?.category ?? "").trim() ||
+    "Sin categoría";
+
+  return {
+    id: docId,
+    name,
+    image,
+    price,
+    category,
+  };
 }
 
 export function SmartSearchBar({
@@ -127,6 +119,8 @@ export function SmartSearchBar({
   const inputContainerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const categoryMapRef = useRef<Record<string, string>>({});
+
   /** =========================
    * Detect mobile
    * ========================= */
@@ -138,8 +132,37 @@ export function SmartSearchBar({
   }, []);
 
   /** =========================
-   * Seed fallback (carga inicial)
-   * Si tu BD tiene keywords, casi ni se usa.
+   * Load categories from Firestore
+   * Collection: "categories"
+   * Fields: name
+   * ========================= */
+  useEffect(() => {
+    let alive = true;
+
+    (async () => {
+      try {
+        const snap = await getDocs(collection(db, "categories"));
+        const map: Record<string, string> = {};
+        snap.forEach((d) => {
+          const data = d.data();
+          const name = String(data?.name ?? data?.title ?? "").trim();
+          if (name) map[d.id] = name;
+        });
+        if (alive) categoryMapRef.current = map;
+      } catch (e) {
+        console.warn("[SmartSearchBar] Failed to load categories", e);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  /** =========================
+   * Seed products (fallback local)
+   * Collection: "products"
+   * orderBy updatedAt (string ISO) -> si falla, usamos createdAt -> si falla, sin orderBy
    * ========================= */
   useEffect(() => {
     let alive = true;
@@ -148,26 +171,32 @@ export function SmartSearchBar({
       try {
         setIsLoading(true);
 
-        // Trae una muestra para fallback (los más recientes)
-        const q0 = fsQuery(
-          collection(db, "products"),
-          orderBy("createdAt", "desc"),
-          limit(300),
-        );
+        // intentamos orderBy(updatedAt)
+        let q0;
+        try {
+          q0 = fsQuery(
+            collection(db, "products"),
+            orderBy("updatedAt", "desc"),
+            limit(400),
+          );
+        } catch {
+          q0 = fsQuery(collection(db, "products"), limit(400));
+        }
 
         const snap = await getDocs(q0);
+
         const list = snap.docs
           .map((d) => ({ id: d.id, ...d.data() }))
-          .filter((p: any) =>
-            isActiveLoose(p?.status ?? p?.estado ?? p?.isActive ?? p?.activo),
+          .filter((p: any) => isActiveStatus(p?.status))
+          .map((p: any) =>
+            normalizeProductFromFirestore(p.id, p, categoryMapRef.current),
           )
-          .map((p: any) => normalizeProduct(p))
           .filter(Boolean) as Product[];
 
         if (!alive) return;
         setSeedProducts(list);
       } catch (e) {
-        console.warn("[SmartSearchBar] Seed load failed (Firestore)", e);
+        console.warn("[SmartSearchBar] Seed products load failed", e);
         if (alive) setSeedProducts([]);
       } finally {
         if (alive) setIsLoading(false);
@@ -224,20 +253,20 @@ export function SmartSearchBar({
   }, [isMobileSearchMode]);
 
   /** =========================
-   * ✅ Firestore Search
-   * Recomendado: campo keywords: string[]
+   * ✅ Search logic
    *
-   * - tokens = ["coca","cola"]
-   * - query: where("keywords","array-contains", token)
+   * 1) Intentamos búsqueda Firestore por prefijo usando nameLower (si existe)
+   *    query: orderBy("nameLower").startAt(q).endAt(q+"\uf8ff")
    *
-   * Firestore no soporta múltiples array-contains en una sola query,
-   * por eso buscamos por el primer token y refinamos en memoria.
+   * 2) Si NO existe nameLower o la query falla => fallback local con seedProducts
    * ========================= */
   useEffect(() => {
     let alive = true;
 
-    const q = query.trim();
-    if (!q) {
+    const raw = query.trim();
+    const qNorm = safeLower(raw);
+
+    if (!qNorm) {
       setResults([]);
       setSelectedIndex(-1);
       setIsLoading(false);
@@ -248,69 +277,37 @@ export function SmartSearchBar({
 
     const t = setTimeout(async () => {
       try {
-        const tokens = tokenize(q);
-        const primary = tokens[0]; // usamos 1 para query y refinamos
-        if (!primary) {
-          if (alive) {
-            setResults([]);
-            setIsLoading(false);
-          }
-          return;
-        }
-
-        // 🔥 1) buscar en Firestore por keywords
-        // Nota: si no tienes keywords, esto devolverá 0 siempre.
+        // --- Intento PRO: nameLower en Firestore ---
+        // Si no lo tienes, esto puede fallar: lo capturamos y hacemos fallback.
         const qFs = fsQuery(
           collection(db, "products"),
-          where("keywords", "array-contains", primary),
-          limit(60),
+          where("status", "==", "active"),
+          orderBy("nameLower"),
+          startAt(qNorm),
+          endAt(qNorm + "\uf8ff"),
+          limit(20),
         );
 
         const snap = await getDocs(qFs);
-        const raw = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-        // 2) normalizar + filtrar activos
-        let mapped = raw
-          .filter((p: any) =>
-            isActiveLoose(p?.status ?? p?.estado ?? p?.isActive ?? p?.activo),
+        const mapped = snap.docs
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .map((p: any) =>
+            normalizeProductFromFirestore(p.id, p, categoryMapRef.current),
           )
-          .map((p: any) => normalizeProduct(p))
           .filter(Boolean) as Product[];
 
-        // 3) refinamos por todos los tokens (name/category)
-        const lowerTokens = tokens.map((x) => x.toLowerCase());
-        mapped = mapped.filter((p) => {
-          const hay = `${p.name} ${p.category}`.toLowerCase();
-          return lowerTokens.every((tk) => hay.includes(tk));
+        if (!alive) return;
+        setResults(mapped.slice(0, 12));
+      } catch (e) {
+        // --- Fallback: filtra local (SIEMPRE funciona) ---
+        const filtered = seedProducts.filter((p) => {
+          const hay = safeLower(`${p.name} ${p.category}`);
+          return hay.includes(qNorm);
         });
-
-        // 4) Si no hay resultados por keywords, fallback local (seedProducts)
-        if (mapped.length === 0) {
-          const qLower = q.toLowerCase();
-          const fallback = seedProducts.filter((p) => {
-            const nameMatch = p.name.toLowerCase().includes(qLower);
-            const catMatch = (p.category || "").toLowerCase().includes(qLower);
-            return nameMatch || catMatch;
-          });
-          mapped = fallback.slice(0, 12);
-        } else {
-          mapped = mapped.slice(0, 12);
-        }
 
         if (!alive) return;
-        setResults(mapped);
-      } catch (e) {
-        console.warn("[SmartSearchBar] Firestore search failed", e);
-
-        // fallback local si falla
-        const qLower = query.trim().toLowerCase();
-        const fallback = seedProducts.filter((p) => {
-          const nameMatch = p.name.toLowerCase().includes(qLower);
-          const catMatch = (p.category || "").toLowerCase().includes(qLower);
-          return nameMatch || catMatch;
-        });
-
-        if (alive) setResults(fallback.slice(0, 12));
+        setResults(filtered.slice(0, 12));
       } finally {
         if (alive) setIsLoading(false);
       }
@@ -386,17 +383,14 @@ export function SmartSearchBar({
     }
 
     if (!isOpen) return;
-    const allowViewAll = results.length > 0;
 
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
-        if (!allowViewAll) return;
         setSelectedIndex((prev) => Math.min(prev + 1, results.length));
         break;
       case "ArrowUp":
         e.preventDefault();
-        if (!allowViewAll) return;
         setSelectedIndex((prev) => Math.max(prev - 1, -1));
         break;
       case "Enter":
@@ -440,6 +434,7 @@ export function SmartSearchBar({
         transition={{ duration: 0.3 }}
         className="fixed inset-0 z-[10000] bg-[#FFF4E6] flex flex-col"
       >
+        {/* Header */}
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -472,7 +467,10 @@ export function SmartSearchBar({
                 ref={inputRef}
                 type="text"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setIsOpen(true);
+                }}
                 onKeyDown={handleKeyDown}
                 placeholder={placeholder}
                 autoFocus
@@ -481,7 +479,7 @@ export function SmartSearchBar({
                 aria-label="Buscar productos"
               />
 
-              {/* ✅ X perfecta centrada */}
+              {/* ✅ X centrada perfecto */}
               <AnimatePresence>
                 {query.length > 0 && (
                   <motion.button
@@ -508,6 +506,7 @@ export function SmartSearchBar({
           </div>
         </motion.div>
 
+        {/* Results */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -641,7 +640,7 @@ export function SmartSearchBar({
             aria-label="Buscar productos"
           />
 
-          {/* ✅ X perfecta centrada */}
+          {/* ✅ X centrada perfecto */}
           <AnimatePresence>
             {query.length > 0 && (
               <motion.button

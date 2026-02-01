@@ -696,6 +696,7 @@ export function UnifiedHeader({
       </motion.header>
 
       {/* Mobile Menu */}
+      {/* Mobile Menu */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <>
@@ -703,28 +704,277 @@ export function UnifiedHeader({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.25 }}
               className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[4900] lg:hidden"
               onClick={() => setIsMobileMenuOpen(false)}
             />
 
-            {/* ... (tu menú móvil sigue igual) ... */}
-            <motion.div
+            <motion.aside
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="fixed top-0 right-0 bottom-0 w-[85vw] max-w-sm bg-white z-[5000] lg:hidden overflow-y-auto shadow-2xl"
+              className="fixed top-0 right-0 bottom-0 w-[88vw] max-w-sm bg-white z-[5000] lg:hidden overflow-y-auto shadow-2xl"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Menú móvil"
             >
-              {/* ⬇️ Mantengo el contenido como lo tenías, no lo toqué */}
-              {/* (Dejé el resto igual para no alargar más el archivo aquí) */}
-              <div className="p-6">
-                <p className="text-sm text-gray-500">
-                  (Pegá aquí tu contenido móvil tal como lo tenías, no requiere
-                  cambios para el fix de categorías.)
-                </p>
+              {/* Header del drawer */}
+              <div className="sticky top-0 bg-white z-10 border-b border-gray-200/60">
+                <div className="p-5 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src="https://firebasestorage.googleapis.com/v0/b/heymarket-35d03.firebasestorage.app/o/images%2FHeypoint-header-logo-100x60-orange.svg?alt=media&token=9ee36f7e-ee0d-4dba-9d7b-3af1688b8f94"
+                      alt="HeyPoint"
+                      className="w-[92px] h-auto"
+                    />
+                  </div>
+
+                  <button
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                    aria-label="Cerrar menú"
+                  >
+                    <X className="w-6 h-6 text-[#1C2335]" />
+                  </button>
+                </div>
+
+                {/* Bloque usuario */}
+                <div className="px-5 pb-5">
+                  {effectiveIsLoggedIn ? (
+                    <div className="rounded-2xl border border-gray-200/60 bg-gradient-to-br from-[#FFF8F0] to-white p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-[#FF6B00] flex items-center justify-center">
+                          <User className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="min-w-0">
+                          <p
+                            className="text-[#1C2335] truncate"
+                            style={{ fontSize: "0.95rem", fontWeight: 700 }}
+                          >
+                            {effectiveUserName}
+                          </p>
+                          <p className="text-sm text-[#2E2E2E]/60">Mi cuenta</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-2 gap-3">
+                        <Button
+                          onClick={() => handleNavigation("profile")}
+                          className="h-11 rounded-xl bg-white border border-gray-200 text-[#1C2335] hover:bg-[#FFF4E6]"
+                          style={{ fontSize: "0.9rem", fontWeight: 600 }}
+                        >
+                          <User className="w-4 h-4 mr-2" />
+                          Perfil
+                        </Button>
+
+                        <Button
+                          onClick={() => handleNavigation("orders")}
+                          className="h-11 rounded-xl bg-white border border-gray-200 text-[#1C2335] hover:bg-[#FFF4E6]"
+                          style={{ fontSize: "0.9rem", fontWeight: 600 }}
+                        >
+                          <Package className="w-4 h-4 mr-2" />
+                          Pedidos
+                          {hasPendingOrders && (
+                            <span className="ml-2 w-2 h-2 bg-[#FF6B00] rounded-full inline-block" />
+                          )}
+                        </Button>
+                      </div>
+
+                      <button
+                        onClick={handleLogoutClick}
+                        className="mt-3 w-full h-11 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
+                        style={{ fontSize: "0.9rem", fontWeight: 700 }}
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Cerrar sesión
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-gray-200/60 bg-gradient-to-br from-[#FFF8F0] to-white p-4">
+                      <p
+                        className="text-[#1C2335]"
+                        style={{ fontSize: "0.95rem", fontWeight: 700 }}
+                      >
+                        Iniciá sesión para comprar
+                      </p>
+                      <p className="text-sm text-[#2E2E2E]/60 mt-1">
+                        Guardá tu carrito y revisá tus pedidos.
+                      </p>
+
+                      <div className="mt-4 grid grid-cols-2 gap-3">
+                        <Button
+                          onClick={() => {
+                            setIsMobileMenuOpen(false);
+                            openLoginModal();
+                          }}
+                          className="h-11 rounded-xl bg-[#FF6B00] hover:bg-[#e56000] text-white"
+                          style={{ fontSize: "0.9rem", fontWeight: 700 }}
+                        >
+                          Ingresar
+                        </Button>
+
+                        <Button
+                          onClick={() => {
+                            setIsMobileMenuOpen(false);
+                            openSignupModal();
+                          }}
+                          className="h-11 rounded-xl bg-white border border-gray-200 text-[#1C2335] hover:bg-[#FFF4E6]"
+                          style={{ fontSize: "0.9rem", fontWeight: 700 }}
+                        >
+                          Crear cuenta
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </motion.div>
+
+              {/* Links */}
+              <div className="p-5">
+                <div className="space-y-2">
+                  <button
+                    onClick={() => handleNavigation("home")}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors ${
+                      activeLink === "home"
+                        ? "bg-[#FFF4E6] text-[#FF6B00]"
+                        : "hover:bg-gray-50 text-[#1C2335]"
+                    }`}
+                    style={{ fontSize: "0.98rem", fontWeight: 700 }}
+                  >
+                    <Home className="w-5 h-5" />
+                    Inicio
+                  </button>
+
+                  {/* Tienda (acordeón) */}
+                  <button
+                    onClick={() => setExpandedMobileShop((v) => !v)}
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-colors ${
+                      activeLink === "shop" || expandedMobileShop
+                        ? "bg-[#FFF4E6] text-[#FF6B00]"
+                        : "hover:bg-gray-50 text-[#1C2335]"
+                    }`}
+                    style={{ fontSize: "0.98rem", fontWeight: 700 }}
+                    aria-expanded={expandedMobileShop}
+                  >
+                    <span className="flex items-center gap-3">
+                      <Store className="w-5 h-5" />
+                      Tienda
+                    </span>
+                    <ChevronDown
+                      className={`w-4 h-4 transition-transform ${
+                        expandedMobileShop ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+
+                  <AnimatePresence initial={false}>
+                    {expandedMobileShop && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="mt-2 ml-2 pl-3 border-l border-[#FF6B00]/20 space-y-2">
+                          <button
+                            onClick={() => handleNavigation("shop")}
+                            className="w-full text-left px-4 py-3 rounded-2xl hover:bg-gray-50 text-[#1C2335] flex items-center gap-3"
+                            style={{ fontSize: "0.95rem", fontWeight: 700 }}
+                          >
+                            <Store className="w-4 h-4 text-[#FF6B00]" />
+                            Ver todos los productos
+                          </button>
+
+                          {/* categorías */}
+                          <div className="grid grid-cols-1 gap-2">
+                            {categories.slice(0, 8).map((cat) => (
+                              <button
+                                key={cat.id}
+                                onClick={() => handleCategoryClick(cat.name)}
+                                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-gray-50 text-[#1C2335]"
+                                style={{ fontSize: "0.93rem", fontWeight: 600 }}
+                              >
+                                <div className="w-10 h-10 rounded-xl overflow-hidden bg-[#FFF4E6] flex-shrink-0">
+                                  <ImageWithFallback
+                                    src={cat.image}
+                                    alt={cat.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                                <div className="min-w-0 flex-1 text-left">
+                                  <p className="truncate">{cat.name}</p>
+                                  <p className="text-xs text-[#2E2E2E]/50">
+                                    {cat.items}+ items
+                                  </p>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <button
+                    onClick={() => handleNavigation("business")}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors ${
+                      activeLink === "business"
+                        ? "bg-[#FFF4E6] text-[#FF6B00]"
+                        : "hover:bg-gray-50 text-[#1C2335]"
+                    }`}
+                    style={{ fontSize: "0.98rem", fontWeight: 700 }}
+                  >
+                    <Info className="w-5 h-5" />
+                    El Modelo HeyPoint
+                  </button>
+
+                  <button
+                    onClick={() => handleNavigation("contact")}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors ${
+                      activeLink === "contact"
+                        ? "bg-[#FFF4E6] text-[#FF6B00]"
+                        : "hover:bg-gray-50 text-[#1C2335]"
+                    }`}
+                    style={{ fontSize: "0.98rem", fontWeight: 700 }}
+                  >
+                    <Mail className="w-5 h-5" />
+                    Contacto
+                  </button>
+                </div>
+
+                {/* Acciones inferiores */}
+                <div className="mt-6 space-y-3">
+                  <Button
+                    onClick={handleSupportClick}
+                    className="w-full h-12 rounded-2xl bg-white border border-gray-200 text-[#1C2335] hover:bg-[#FFF4E6] flex items-center justify-center gap-2"
+                    style={{ fontSize: "0.95rem", fontWeight: 700 }}
+                  >
+                    <HelpCircle className="w-5 h-5 text-[#FF6B00]" />
+                    ¿Necesitás ayuda?
+                  </Button>
+
+                  <Button
+                    onClick={handleCartClick}
+                    className="w-full h-12 rounded-2xl bg-[#FF6B00] hover:bg-[#e56000] text-white flex items-center justify-center gap-2"
+                    style={{ fontSize: "0.95rem", fontWeight: 800 }}
+                  >
+                    <ShoppingCart className="w-5 h-5" />
+                    Ir al carrito
+                    {cartCount > 0 && (
+                      <span className="ml-2 inline-flex items-center justify-center min-w-6 h-6 px-2 rounded-full bg-white/20">
+                        {cartCount}
+                      </span>
+                    )}
+                  </Button>
+                </div>
+
+                <div className="mt-6 text-center text-xs text-[#2E2E2E]/50">
+                  © {new Date().getFullYear()} HeyPoint
+                </div>
+              </div>
+            </motion.aside>
           </>
         )}
       </AnimatePresence>
