@@ -548,7 +548,7 @@ export function UnifiedHeader({
                 }`}
                 style={{ fontSize: "0.938rem", fontWeight: 500 }}
               >
-                Nosotros
+                El Modelo HeyPoint
               </button>
 
               <button

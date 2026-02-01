@@ -14,7 +14,7 @@ export function Footer({ onNavigate }: FooterProps) {
   };
 
   const footerLinks = [
-    { id: "about", label: "Sobre nosotros" },
+    { id: "business", label: "El Modelo HeyPoint" },
     { id: "contact", label: "Contacto" },
     { id: "terms", label: "Términos y Condiciones" },
     { id: "privacy", label: "Política de Privacidad" },
