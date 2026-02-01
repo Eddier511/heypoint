@@ -457,10 +457,10 @@ export function SmartSearchBar({
                     onClick={handleClear}
                     aria-label="Limpiar búsqueda"
                     className="
-        absolute right-3 top-1/2 -translate-y-1/2
-        h-10 w-10 rounded-full
-        grid place-items-center
-        leading-none
+        absolute right-3 inset-y-0
+        h-full w-12
+        flex items-center justify-center
+        rounded-full
         hover:bg-gray-100 transition-colors
       "
                   >
@@ -610,11 +610,18 @@ export function SmartSearchBar({
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.15 }}
+                type="button"
                 onClick={handleClear}
-                className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full hover:bg-gray-100 transition-colors flex items-center justify-center"
                 aria-label="Limpiar búsqueda"
+                className="
+        absolute right-3 inset-y-0
+        h-full w-12
+        flex items-center justify-center
+        rounded-full
+        hover:bg-gray-100 transition-colors
+      "
               >
-                <X className="w-5 h-5 text-[#2E2E2E]/60" />
+                <X className="h-5 w-5 text-[#2E2E2E]/60 block" />
               </motion.button>
             )}
           </AnimatePresence>
