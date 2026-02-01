@@ -566,6 +566,7 @@ export function UnifiedHeader({
 
             {/* Right Actions */}
             <div className="flex items-center gap-3 sm:gap-4">
+              {/*
               <motion.button
                 className={`p-2 ${textColor} hover:text-[#FF6B00] transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[#FF6B00] rounded-lg`}
                 whileHover={{ scale: 1.05 }}
@@ -574,7 +575,7 @@ export function UnifiedHeader({
                 onClick={handleSearchClick}
               >
                 <Search className="w-5 h-5 sm:w-6 sm:h-6" aria-hidden="true" />
-              </motion.button>
+              </motion.button>*/}
 
               <motion.button
                 onClick={handleCartClick}
@@ -596,7 +597,6 @@ export function UnifiedHeader({
                   </Badge>
                 )}
               </motion.button>
-
               <div className="hidden lg:flex items-center gap-3">
                 <Button
                   onClick={handleSupportClick}
@@ -679,7 +679,6 @@ export function UnifiedHeader({
                   </Button>
                 )}
               </div>
-
               <motion.button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className={`lg:hidden p-2 ${textColor} hover:text-[#FF6B00] transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[#FF6B00] rounded-lg`}
