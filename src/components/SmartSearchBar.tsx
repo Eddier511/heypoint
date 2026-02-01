@@ -6,25 +6,25 @@ import { formatPrecioARS, getPrecioFinalConIVA } from "../utils/priceUtils";
 import { motion, AnimatePresence } from "motion/react";
 import { createPortal } from "react-dom";
 
-// ✅ Firestore
+import { db } from "../config/firebaseClient";
 import {
   collection,
   getDocs,
-  limit,
-  orderBy,
   query as fsQuery,
   where,
-  startAt,
-  endAt,
+  orderBy,
+  limit,
 } from "firebase/firestore";
-import { db } from "../config/firebaseClient";
 
 export interface Product {
   id: string;
   name: string;
   image: string;
-  price: number; // usaremos basePrice
-  category: string; // resolvemos con categories
+  price: number;
+  category: string;
+  sku?: string;
+  description?: string;
+  categoryId?: string | null;
 }
 
 interface SmartSearchBarProps {
@@ -47,47 +47,9 @@ function toNumber(v: any) {
 }
 
 function isActiveStatus(v: any) {
-  // tus docs: status: "active"
-  if (v === undefined || v === null) return true;
-  if (typeof v === "boolean") return v;
+  if (v === undefined || v === null) return true; // si no existe, lo tratamos como activo
   const s = String(v).trim().toLowerCase();
-  return s === "active" || s === "activo" || s === "true" || s === "1";
-}
-
-function safeLower(s: any) {
-  return String(s ?? "")
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-}
-
-function normalizeProductFromFirestore(
-  docId: string,
-  data: any,
-  categoryMap: Record<string, string>,
-): Product | null {
-  const name = String(data?.name ?? "").trim();
-  if (!name) return null;
-
-  const images = Array.isArray(data?.images) ? data.images : [];
-  const image = (images?.[0] ? String(images[0]).trim() : "") || DEFAULT_IMG;
-
-  const price = toNumber(data?.basePrice ?? data?.price ?? 0);
-
-  const categoryId = String(data?.categoryId ?? "").trim();
-  const category =
-    (categoryId && categoryMap[categoryId]) ||
-    String(data?.category ?? "").trim() ||
-    "Sin categoría";
-
-  return {
-    id: docId,
-    name,
-    image,
-    price,
-    category,
-  };
+  return s !== "inactive";
 }
 
 export function SmartSearchBar({
@@ -97,14 +59,13 @@ export function SmartSearchBar({
   placeholder = "Buscar productos…",
   onClose,
 }: SmartSearchBarProps) {
-  const [query, setQuery] = useState("");
+  const [queryText, setQueryText] = useState("");
   const [isOpen, setIsOpen] = useState(false);
-
   const [results, setResults] = useState<Product[]>([]);
-  const [seedProducts, setSeedProducts] = useState<Product[]>([]); // fallback local
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-
   const [selectedIndex, setSelectedIndex] = useState(-1);
+
   const [dropdownPosition, setDropdownPosition] = useState({
     top: 0,
     left: 0,
@@ -121,9 +82,7 @@ export function SmartSearchBar({
 
   const categoryMapRef = useRef<Record<string, string>>({});
 
-  /** =========================
-   * Detect mobile
-   * ========================= */
+  // Detect mobile
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
@@ -131,11 +90,7 @@ export function SmartSearchBar({
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  /** =========================
-   * Load categories from Firestore
-   * Collection: "categories"
-   * Fields: name
-   * ========================= */
+  // Load categories from Firestore: collection "categories"
   useEffect(() => {
     let alive = true;
 
@@ -143,14 +98,19 @@ export function SmartSearchBar({
       try {
         const snap = await getDocs(collection(db, "categories"));
         const map: Record<string, string> = {};
-        snap.forEach((d) => {
-          const data = d.data();
-          const name = String(data?.name ?? data?.title ?? "").trim();
-          if (name) map[d.id] = name;
+
+        snap.forEach((doc) => {
+          const data = doc.data() as any;
+          const name = (data?.name ?? data?.title ?? "").toString().trim();
+          const status = data?.status;
+          if (!name) return;
+          if (status && String(status).toLowerCase() === "inactive") return;
+          map[doc.id] = name;
         });
+
         if (alive) categoryMapRef.current = map;
       } catch (e) {
-        console.warn("[SmartSearchBar] Failed to load categories", e);
+        console.warn("[SmartSearchBar] categories firestore failed:", e);
       }
     })();
 
@@ -159,45 +119,80 @@ export function SmartSearchBar({
     };
   }, []);
 
-  /** =========================
-   * Seed products (fallback local)
-   * Collection: "products"
-   * orderBy updatedAt (string ISO) -> si falla, usamos createdAt -> si falla, sin orderBy
-   * ========================= */
+  // Load products from Firestore: collection "products"
   useEffect(() => {
     let alive = true;
 
     (async () => {
+      setIsLoading(true);
       try {
-        setIsLoading(true);
+        const col = collection(db, "products");
 
-        // intentamos orderBy(updatedAt)
-        let q0;
+        // Intento #1: query con where(status == "active") + orderBy(name)
+        // (puede pedir índice; si falla, caemos a fallback)
+        let snap;
         try {
-          q0 = fsQuery(
-            collection(db, "products"),
-            orderBy("updatedAt", "desc"),
-            limit(400),
+          const q = fsQuery(
+            col,
+            where("status", "==", "active"),
+            orderBy("name"),
+            limit(1000),
           );
-        } catch {
-          q0 = fsQuery(collection(db, "products"), limit(400));
+          snap = await getDocs(q);
+        } catch (err) {
+          console.warn(
+            "[SmartSearchBar] query index/where failed, fallback to full scan",
+            err,
+          );
+          snap = await getDocs(col);
         }
 
-        const snap = await getDocs(q0);
+        const list: Product[] = [];
+        snap.forEach((doc) => {
+          const d = doc.data() as any;
 
-        const list = snap.docs
-          .map((d) => ({ id: d.id, ...d.data() }))
-          .filter((p: any) => isActiveStatus(p?.status))
-          .map((p: any) =>
-            normalizeProductFromFirestore(p.id, p, categoryMapRef.current),
-          )
-          .filter(Boolean) as Product[];
+          if (!isActiveStatus(d?.status)) return;
+
+          const name = (d?.name ?? "").toString().trim();
+          if (!name) return;
+
+          const basePrice = toNumber(d?.basePrice);
+          const images = Array.isArray(d?.images) ? d.images : [];
+          const image =
+            (images?.[0] ? String(images[0]) : "").trim() || DEFAULT_IMG;
+
+          const categoryId = (d?.categoryId ?? null) as string | null;
+          const category =
+            (categoryId && categoryMapRef.current[categoryId]) ||
+            "Sin categoría";
+
+          const sku = (d?.sku ?? "").toString().trim() || undefined;
+          const description =
+            (d?.description ?? "").toString().trim() || undefined;
+
+          list.push({
+            id: doc.id,
+            name,
+            price: basePrice,
+            image,
+            category,
+            sku,
+            description,
+            categoryId,
+          });
+        });
+
+        // Ordena por name por si vinieron sin orderBy (fallback)
+        list.sort((a, b) => a.name.localeCompare(b.name, "es"));
 
         if (!alive) return;
-        setSeedProducts(list);
+        setAllProducts(list);
+
+        // Debug útil: así confirmás que sí cargó
+        console.log("[SmartSearchBar] loaded products:", list.length, list[0]);
       } catch (e) {
-        console.warn("[SmartSearchBar] Seed products load failed", e);
-        if (alive) setSeedProducts([]);
+        console.warn("[SmartSearchBar] products firestore failed:", e);
+        if (alive) setAllProducts([]);
       } finally {
         if (alive) setIsLoading(false);
       }
@@ -208,9 +203,7 @@ export function SmartSearchBar({
     };
   }, []);
 
-  /** =========================
-   * Dropdown position (desktop)
-   * ========================= */
+  // dropdown position
   useEffect(() => {
     if (isOpen && inputContainerRef.current && !isMobileSearchMode) {
       const rect = inputContainerRef.current.getBoundingClientRect();
@@ -222,9 +215,7 @@ export function SmartSearchBar({
     }
   }, [isOpen, isMobileSearchMode]);
 
-  /** =========================
-   * Disable scroll in mobile mode
-   * ========================= */
+  // disable scroll in mobile fullscreen
   useEffect(() => {
     document.body.style.overflow = isMobileSearchMode ? "hidden" : "";
     return () => {
@@ -232,9 +223,35 @@ export function SmartSearchBar({
     };
   }, [isMobileSearchMode]);
 
-  /** =========================
-   * Close on click outside (desktop)
-   * ========================= */
+  // search debounce (client-side)
+  useEffect(() => {
+    const q = queryText.trim().toLowerCase();
+
+    if (!q) {
+      setResults([]);
+      setSelectedIndex(-1);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    const t = setTimeout(() => {
+      const filtered = allProducts.filter((p) => {
+        const nameMatch = p.name.toLowerCase().includes(q);
+        const skuMatch = (p.sku || "").toLowerCase().includes(q);
+        const catMatch = (p.category || "").toLowerCase().includes(q);
+        const descMatch = (p.description || "").toLowerCase().includes(q);
+        return nameMatch || skuMatch || catMatch || descMatch;
+      });
+
+      setResults(filtered.slice(0, 12));
+      setIsLoading(false);
+    }, 200);
+
+    return () => clearTimeout(t);
+  }, [queryText, allProducts]);
+
+  // click outside (desktop)
   useEffect(() => {
     if (isMobileSearchMode) return;
 
@@ -252,87 +269,17 @@ export function SmartSearchBar({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isMobileSearchMode]);
 
-  /** =========================
-   * ✅ Search logic
-   *
-   * 1) Intentamos búsqueda Firestore por prefijo usando nameLower (si existe)
-   *    query: orderBy("nameLower").startAt(q).endAt(q+"\uf8ff")
-   *
-   * 2) Si NO existe nameLower o la query falla => fallback local con seedProducts
-   * ========================= */
-  useEffect(() => {
-    let alive = true;
-
-    const raw = query.trim();
-    const qNorm = safeLower(raw);
-
-    if (!qNorm) {
-      setResults([]);
-      setSelectedIndex(-1);
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-
-    const t = setTimeout(async () => {
-      try {
-        // --- Intento PRO: nameLower en Firestore ---
-        // Si no lo tienes, esto puede fallar: lo capturamos y hacemos fallback.
-        const qFs = fsQuery(
-          collection(db, "products"),
-          where("status", "==", "active"),
-          orderBy("nameLower"),
-          startAt(qNorm),
-          endAt(qNorm + "\uf8ff"),
-          limit(20),
-        );
-
-        const snap = await getDocs(qFs);
-
-        const mapped = snap.docs
-          .map((d) => ({ id: d.id, ...d.data() }))
-          .map((p: any) =>
-            normalizeProductFromFirestore(p.id, p, categoryMapRef.current),
-          )
-          .filter(Boolean) as Product[];
-
-        if (!alive) return;
-        setResults(mapped.slice(0, 12));
-      } catch (e) {
-        // --- Fallback: filtra local (SIEMPRE funciona) ---
-        const filtered = seedProducts.filter((p) => {
-          const hay = safeLower(`${p.name} ${p.category}`);
-          return hay.includes(qNorm);
-        });
-
-        if (!alive) return;
-        setResults(filtered.slice(0, 12));
-      } finally {
-        if (alive) setIsLoading(false);
-      }
-    }, 250);
-
-    return () => {
-      alive = false;
-      clearTimeout(t);
-    };
-  }, [query, seedProducts]);
-
-  /** =========================
-   * Actions
-   * ========================= */
   const handleProductSelect = (product: Product) => {
     setIsOpen(false);
     setIsMobileSearchMode(false);
-    setQuery("");
+    setQueryText("");
     setResults([]);
     setSelectedIndex(-1);
     onProductClick?.(product);
   };
 
   const handleViewAllResults = () => {
-    const q = query.trim();
+    const q = queryText.trim();
     if (!q) return;
     setIsOpen(false);
     setIsMobileSearchMode(false);
@@ -341,7 +288,7 @@ export function SmartSearchBar({
   };
 
   const handleClear = () => {
-    setQuery("");
+    setQueryText("");
     setResults([]);
     setSelectedIndex(-1);
     setIsLoading(false);
@@ -351,7 +298,7 @@ export function SmartSearchBar({
   const closeMobileSearch = () => {
     setIsMobileSearchMode(false);
     setIsOpen(false);
-    setQuery("");
+    setQueryText("");
     setResults([]);
     setSelectedIndex(-1);
     setIsLoading(false);
@@ -370,7 +317,7 @@ export function SmartSearchBar({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!isOpen && query.trim().length > 0) setIsOpen(true);
+    if (!isOpen && queryText.trim().length > 0) setIsOpen(true);
 
     if (e.key === "Escape") {
       if (isMobileSearchMode) closeMobileSearch();
@@ -384,18 +331,23 @@ export function SmartSearchBar({
 
     if (!isOpen) return;
 
+    // -1 nada, 0..len-1 item, len ver todos
+    const allowViewAll = results.length > 0;
+
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
+        if (!allowViewAll) return;
         setSelectedIndex((prev) => Math.min(prev + 1, results.length));
         break;
       case "ArrowUp":
         e.preventDefault();
+        if (!allowViewAll) return;
         setSelectedIndex((prev) => Math.max(prev - 1, -1));
         break;
       case "Enter":
         e.preventDefault();
-        if (!query.trim()) return;
+        if (!queryText.trim()) return;
         if (results.length === 0) return;
         if (selectedIndex === -1 || selectedIndex === results.length)
           return handleViewAllResults();
@@ -422,9 +374,7 @@ export function SmartSearchBar({
     );
   };
 
-  /** =========================
-   * MOBILE FULLSCREEN
-   * ========================= */
+  // MOBILE FULLSCREEN
   if (isMobileSearchMode && typeof window !== "undefined") {
     return createPortal(
       <motion.div
@@ -452,6 +402,7 @@ export function SmartSearchBar({
               onClick={closeMobileSearch}
               className="flex-shrink-0 p-2 hover:bg-gray-100 rounded-full transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
               aria-label="Cerrar búsqueda"
+              type="button"
             >
               <ArrowLeft className="w-6 h-6 text-[#1C2335]" />
             </button>
@@ -466,11 +417,8 @@ export function SmartSearchBar({
               <input
                 ref={inputRef}
                 type="text"
-                value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value);
-                  setIsOpen(true);
-                }}
+                value={queryText}
+                onChange={(e) => setQueryText(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder={placeholder}
                 autoFocus
@@ -479,9 +427,9 @@ export function SmartSearchBar({
                 aria-label="Buscar productos"
               />
 
-              {/* ✅ X centrada perfecto */}
+              {/* ✅ X alineada */}
               <AnimatePresence>
-                {query.length > 0 && (
+                {queryText.length > 0 && (
                   <motion.button
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -490,13 +438,7 @@ export function SmartSearchBar({
                     type="button"
                     onClick={handleClear}
                     aria-label="Limpiar búsqueda"
-                    className="
-                      absolute right-3 inset-y-0
-                      h-full w-12
-                      flex items-center justify-center
-                      rounded-full
-                      hover:bg-gray-100 transition-colors
-                    "
+                    className="absolute right-3 inset-y-0 h-full w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
                   >
                     <X className="h-5 w-5 text-[#2E2E2E]/60 block" />
                   </motion.button>
@@ -524,27 +466,29 @@ export function SmartSearchBar({
             </div>
           )}
 
-          {!isLoading && query.trim().length > 0 && results.length === 0 && (
-            <div className="flex-1 flex items-center justify-center p-8 text-center">
-              <div>
-                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-sm">
-                  <Search className="w-10 h-10 text-[#FF6B00]/60" />
+          {!isLoading &&
+            queryText.trim().length > 0 &&
+            results.length === 0 && (
+              <div className="flex-1 flex items-center justify-center p-8 text-center">
+                <div>
+                  <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-sm">
+                    <Search className="w-10 h-10 text-[#FF6B00]/60" />
+                  </div>
+                  <p
+                    className="text-[#1C2335]"
+                    style={{ fontSize: "1.125rem", fontWeight: 600 }}
+                  >
+                    No encontramos resultados
+                  </p>
+                  <p
+                    className="text-[#2E2E2E]/60 mt-2"
+                    style={{ fontSize: "1rem" }}
+                  >
+                    Intenta con otro término de búsqueda
+                  </p>
                 </div>
-                <p
-                  className="text-[#1C2335]"
-                  style={{ fontSize: "1.125rem", fontWeight: 600 }}
-                >
-                  No encontramos resultados
-                </p>
-                <p
-                  className="text-[#2E2E2E]/60 mt-2"
-                  style={{ fontSize: "1rem" }}
-                >
-                  Intenta con otro término de búsqueda
-                </p>
               </div>
-            </div>
-          )}
+            )}
 
           {!isLoading && results.length > 0 && (
             <div className="flex-1 flex flex-col overflow-hidden">
@@ -558,6 +502,7 @@ export function SmartSearchBar({
                       ${index === selectedIndex ? "bg-[#FFF4E6]" : "hover:bg-[#FFF4E6]/50 active:bg-[#FFF4E6]"}
                       ${index < results.length - 1 ? "border-b border-gray-200/60" : ""}
                     `}
+                    type="button"
                   >
                     <div className="flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden bg-white shadow-sm">
                       <ImageWithFallback
@@ -572,7 +517,7 @@ export function SmartSearchBar({
                         className="text-[#1C2335] mb-1"
                         style={{ fontSize: "1rem", fontWeight: 600 }}
                       >
-                        {highlightMatch(product.name, query)}
+                        {highlightMatch(product.name, queryText)}
                       </p>
                       <div className="flex items-center gap-2 flex-wrap">
                         <span
@@ -612,9 +557,7 @@ export function SmartSearchBar({
     );
   }
 
-  /** =========================
-   * DESKTOP
-   * ========================= */
+  // DESKTOP
   return (
     <div ref={searchRef} className={`relative w-full ${className}`}>
       <div ref={inputContainerRef} className="relative z-[9999]">
@@ -628,9 +571,9 @@ export function SmartSearchBar({
           <input
             ref={inputRef}
             type="text"
-            value={query}
+            value={queryText}
             onChange={(e) => {
-              setQuery(e.target.value);
+              setQueryText(e.target.value);
               setIsOpen(true);
             }}
             onFocus={handleInputFocus}
@@ -640,9 +583,9 @@ export function SmartSearchBar({
             aria-label="Buscar productos"
           />
 
-          {/* ✅ X centrada perfecto */}
+          {/* ✅ X alineada */}
           <AnimatePresence>
-            {query.length > 0 && (
+            {queryText.length > 0 && (
               <motion.button
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -651,13 +594,7 @@ export function SmartSearchBar({
                 type="button"
                 onClick={handleClear}
                 aria-label="Limpiar búsqueda"
-                className="
-                  absolute right-3 inset-y-0
-                  h-full w-12
-                  flex items-center justify-center
-                  rounded-full
-                  hover:bg-gray-100 transition-colors
-                "
+                className="absolute right-3 inset-y-0 h-full w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
               >
                 <X className="h-5 w-5 text-[#2E2E2E]/60 block" />
               </motion.button>
@@ -666,7 +603,7 @@ export function SmartSearchBar({
         </div>
 
         {isOpen &&
-          query.trim().length > 0 &&
+          queryText.trim().length > 0 &&
           !isMobile &&
           typeof window !== "undefined" &&
           createPortal(
@@ -716,6 +653,7 @@ export function SmartSearchBar({
                         key={product.id}
                         onClick={() => handleProductSelect(product)}
                         className="w-full flex items-center gap-4 p-4 hover:bg-[#FFF4E6]/60"
+                        type="button"
                       >
                         <div className="w-14 h-14 rounded-2xl overflow-hidden bg-white shadow-sm">
                           <ImageWithFallback
@@ -729,7 +667,7 @@ export function SmartSearchBar({
                             className="text-[#1C2335] truncate"
                             style={{ fontSize: "1rem", fontWeight: 600 }}
                           >
-                            {highlightMatch(product.name, query)}
+                            {highlightMatch(product.name, queryText)}
                           </p>
                           <div className="flex items-center gap-2">
                             <span
