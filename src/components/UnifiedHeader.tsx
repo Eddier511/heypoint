@@ -164,7 +164,7 @@ export function UnifiedHeader({
   const aboutHoverCloseTimer = useRef<NodeJS.Timeout | null>(null);
 
   const aboutLinks = [
-    { id: "business", label: "Nosotros" },
+    { id: "business", label: "El Modelo HeyPoint" },
     { id: "ourcompany", label: "Nuestra Empresa" },
   ];
 
