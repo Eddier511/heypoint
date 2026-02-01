@@ -378,7 +378,18 @@ export function SmartSearchBar({
                 onKeyDown={handleKeyDown}
                 placeholder={placeholder}
                 autoFocus
-                className="w-full pl-14 pr-14 py-4 outline-none text-[#2E2E2E] bg-transparent placeholder:text-[#2E2E2E]/40"
+                className="
+    w-full h-14 pl-14 pr-14
+    rounded-full bg-transparent
+    outline-none text-[#2E2E2E]
+    placeholder:text-[#2E2E2E]/40
+
+    appearance-none
+    [&::-webkit-search-cancel-button]:appearance-none
+    [&::-webkit-search-decoration]:appearance-none
+    [&::-webkit-search-results-button]:appearance-none
+    [&::-webkit-search-results-decoration]:appearance-none
+  "
                 style={{ fontSize: "1rem", fontWeight: 400 }}
                 aria-label="Buscar productos"
               />
@@ -537,8 +548,19 @@ export function SmartSearchBar({
             onFocus={handleInputFocus}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            className="w-full h-14 pl-14 pr-14 outline-none text-[#2E2E2E] rounded-full bg-transparent placeholder:text-[#2E2E2E]/40"
             aria-label="Buscar productos"
+            className="
+    w-full h-14 pl-14 pr-14
+    rounded-full bg-transparent
+    outline-none text-[#2E2E2E]
+    placeholder:text-[#2E2E2E]/40
+
+    appearance-none
+    [&::-webkit-search-cancel-button]:appearance-none
+    [&::-webkit-search-decoration]:appearance-none
+    [&::-webkit-search-results-button]:appearance-none
+    [&::-webkit-search-results-decoration]:appearance-none
+  "
           />
 
           {/* ✅ X perfecta centrada */}
