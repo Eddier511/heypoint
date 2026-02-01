@@ -1,14 +1,21 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Search, X, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { formatPrecioARS, getPrecioFinalConIVA } from "../utils/priceUtils";
 import { motion, AnimatePresence } from "motion/react";
 import { createPortal } from "react-dom";
-import { ProductsAPI, CategoriesAPI } from "../lib/api";
 
-type ApiProduct = Record<string, any>;
-type ApiCategory = { id?: string; name?: string } | Record<string, any>;
+// ✅ Firestore
+import {
+  collection,
+  getDocs,
+  limit,
+  orderBy,
+  query as fsQuery,
+  where,
+} from "firebase/firestore";
+import { db } from "../lib/firebase";
 
 export interface Product {
   id: string;
@@ -29,6 +36,9 @@ interface SmartSearchBarProps {
 const DEFAULT_IMG =
   "https://images.unsplash.com/photo-1580915411954-282cb1b0d780?auto=format&fit=crop&w=1200&q=80";
 
+/** =========================
+ * Helpers
+ * ========================= */
 function toNumber(v: any) {
   const n =
     typeof v === "string"
@@ -53,59 +63,39 @@ function pickFirst(obj: any, keys: string[]) {
   return undefined;
 }
 
-function normalizeProduct(
-  p: ApiProduct,
-  categoryMap: Record<string, string>,
-): Product | null {
-  // id (acepta id, _id, uid, productId, etc)
-  const rawId = pickFirst(p, ["id", "_id", "uid", "productId", "productoId"]);
-  const id = rawId ? String(rawId).trim() : "";
+function normalizeProduct(p: any): Product | null {
+  const id = String(p?.id ?? "").trim();
+  if (!id) return null;
 
-  // name (acepta name, title, nombre, etc)
-  const rawName = pickFirst(p, [
-    "name",
-    "title",
-    "nombre",
-    "nombreProducto",
-    "productName",
-  ]);
+  const rawName = pickFirst(p, ["name", "title", "nombre", "productName"]);
   const name = rawName ? String(rawName).trim() : "";
+  if (!name) return null;
 
-  if (!id || !name) return null;
-
-  // image
-  const rawImg = pickFirst(p, [
-    "imageUrl",
-    "image",
-    "imagen",
-    "img",
-    "photo",
-    "urlImagen",
-  ]);
+  const rawImg = pickFirst(p, ["imageUrl", "image", "imagen", "img", "photo"]);
   const image = (rawImg ? String(rawImg).trim() : "") || DEFAULT_IMG;
 
-  // price
-  const rawPrice = pickFirst(p, ["price", "precio", "cost", "monto", "amount"]);
+  const rawPrice = pickFirst(p, ["price", "precio", "cost", "amount"]);
   const price = toNumber(rawPrice);
 
-  // category
   const rawCategoryName = pickFirst(p, [
     "category",
     "categoria",
     "categoryName",
-    "nombreCategoria",
   ]);
-  const rawCategoryId = pickFirst(p, [
-    "categoryId",
-    "categoriaId",
-    "category_id",
-  ]);
-  const category =
-    (rawCategoryName ? String(rawCategoryName) : "") ||
-    (rawCategoryId ? categoryMap[String(rawCategoryId)] : "") ||
-    "Sin categoría";
+  const category = rawCategoryName ? String(rawCategoryName) : "Sin categoría";
 
   return { id, name, image, price, category };
+}
+
+/** Convierte string a tokens para keywords */
+function tokenize(q: string) {
+  return q
+    .trim()
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 5); // evita queries muy largas
 }
 
 export function SmartSearchBar({
@@ -117,11 +107,12 @@ export function SmartSearchBar({
 }: SmartSearchBarProps) {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
-  const [results, setResults] = useState<Product[]>([]);
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(-1);
 
+  const [results, setResults] = useState<Product[]>([]);
+  const [seedProducts, setSeedProducts] = useState<Product[]>([]); // fallback local
+  const [isLoading, setIsLoading] = useState(false);
+
+  const [selectedIndex, setSelectedIndex] = useState(-1);
   const [dropdownPosition, setDropdownPosition] = useState({
     top: 0,
     left: 0,
@@ -136,9 +127,9 @@ export function SmartSearchBar({
   const inputContainerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const categoryMapRef = useRef<Record<string, string>>({});
-
-  // Detect mobile
+  /** =========================
+   * Detect mobile
+   * ========================= */
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
@@ -146,78 +137,38 @@ export function SmartSearchBar({
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Load categories
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const res = await CategoriesAPI.getAll();
-        const raw = (res as any)?.data;
-        const list: any[] = Array.isArray(raw)
-          ? raw
-          : Array.isArray(raw?.data)
-            ? raw.data
-            : [];
-        const map: Record<string, string> = {};
-        list.forEach((c) => {
-          const id = pickFirst(c, [
-            "id",
-            "_id",
-            "uid",
-            "categoryId",
-            "categoriaId",
-          ]);
-          const name = pickFirst(c, ["name", "nombre", "title"]);
-          if (id && name) map[String(id)] = String(name);
-        });
-        if (alive) categoryMapRef.current = map;
-      } catch (e) {
-        console.warn("[SmartSearchBar] Categories load failed", e);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  // Load products
+  /** =========================
+   * Seed fallback (carga inicial)
+   * Si tu BD tiene keywords, casi ni se usa.
+   * ========================= */
   useEffect(() => {
     let alive = true;
 
     (async () => {
       try {
         setIsLoading(true);
-        const res = await ProductsAPI.getAll();
 
-        // 🔥 Esto suele variar: a veces viene res.data, a veces res.data.data
-        const raw = (res as any)?.data;
-        const list: ApiProduct[] = Array.isArray(raw)
-          ? raw
-          : Array.isArray(raw?.data)
-            ? raw.data
-            : Array.isArray(raw?.items)
-              ? raw.items
-              : [];
+        // Trae una muestra para fallback (los más recientes)
+        const q0 = fsQuery(
+          collection(db, "products"),
+          orderBy("createdAt", "desc"),
+          limit(300),
+        );
 
-        console.log("[SmartSearchBar] products raw sample:", list?.[0]);
-        console.log("[SmartSearchBar] products raw count:", list.length);
-
-        const mapped = list
-          // status flexible
-          .filter((p) =>
+        const snap = await getDocs(q0);
+        const list = snap.docs
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .filter((p: any) =>
             isActiveLoose(p?.status ?? p?.estado ?? p?.isActive ?? p?.activo),
           )
-          .map((p) => normalizeProduct(p, categoryMapRef.current))
+          .map((p: any) => normalizeProduct(p))
           .filter(Boolean) as Product[];
 
-        console.log("[SmartSearchBar] products mapped count:", mapped.length);
-        console.log("[SmartSearchBar] products mapped sample:", mapped?.[0]);
-
         if (!alive) return;
-        setAllProducts(mapped);
+        setSeedProducts(list);
       } catch (e) {
-        console.warn("[SmartSearchBar] Failed to load products", e);
-        if (alive) setAllProducts([]);
+        console.warn("[SmartSearchBar] Seed load failed (Firestore)", e);
+        if (alive) setSeedProducts([]);
       } finally {
         if (alive) setIsLoading(false);
       }
@@ -228,7 +179,9 @@ export function SmartSearchBar({
     };
   }, []);
 
-  // dropdown position
+  /** =========================
+   * Dropdown position (desktop)
+   * ========================= */
   useEffect(() => {
     if (isOpen && inputContainerRef.current && !isMobileSearchMode) {
       const rect = inputContainerRef.current.getBoundingClientRect();
@@ -240,7 +193,9 @@ export function SmartSearchBar({
     }
   }, [isOpen, isMobileSearchMode]);
 
-  // disable scroll in mobile fullscreen
+  /** =========================
+   * Disable scroll in mobile mode
+   * ========================= */
   useEffect(() => {
     document.body.style.overflow = isMobileSearchMode ? "hidden" : "";
     return () => {
@@ -248,31 +203,9 @@ export function SmartSearchBar({
     };
   }, [isMobileSearchMode]);
 
-  // search debounce
-  useEffect(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) {
-      setResults([]);
-      setSelectedIndex(-1);
-      return;
-    }
-
-    setIsLoading(true);
-    const t = setTimeout(() => {
-      const filtered = allProducts.filter((p) => {
-        const nameMatch = p.name.toLowerCase().includes(q);
-        const catMatch = (p.category || "").toLowerCase().includes(q);
-        return nameMatch || catMatch;
-      });
-
-      setResults(filtered.slice(0, 12));
-      setIsLoading(false);
-    }, 250);
-
-    return () => clearTimeout(t);
-  }, [query, allProducts]);
-
-  // click outside (desktop)
+  /** =========================
+   * Close on click outside (desktop)
+   * ========================= */
   useEffect(() => {
     if (isMobileSearchMode) return;
 
@@ -290,6 +223,108 @@ export function SmartSearchBar({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isMobileSearchMode]);
 
+  /** =========================
+   * ✅ Firestore Search
+   * Recomendado: campo keywords: string[]
+   *
+   * - tokens = ["coca","cola"]
+   * - query: where("keywords","array-contains", token)
+   *
+   * Firestore no soporta múltiples array-contains en una sola query,
+   * por eso buscamos por el primer token y refinamos en memoria.
+   * ========================= */
+  useEffect(() => {
+    let alive = true;
+
+    const q = query.trim();
+    if (!q) {
+      setResults([]);
+      setSelectedIndex(-1);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+
+    const t = setTimeout(async () => {
+      try {
+        const tokens = tokenize(q);
+        const primary = tokens[0]; // usamos 1 para query y refinamos
+        if (!primary) {
+          if (alive) {
+            setResults([]);
+            setIsLoading(false);
+          }
+          return;
+        }
+
+        // 🔥 1) buscar en Firestore por keywords
+        // Nota: si no tienes keywords, esto devolverá 0 siempre.
+        const qFs = fsQuery(
+          collection(db, "products"),
+          where("keywords", "array-contains", primary),
+          limit(60),
+        );
+
+        const snap = await getDocs(qFs);
+        const raw = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+        // 2) normalizar + filtrar activos
+        let mapped = raw
+          .filter((p: any) =>
+            isActiveLoose(p?.status ?? p?.estado ?? p?.isActive ?? p?.activo),
+          )
+          .map((p: any) => normalizeProduct(p))
+          .filter(Boolean) as Product[];
+
+        // 3) refinamos por todos los tokens (name/category)
+        const lowerTokens = tokens.map((x) => x.toLowerCase());
+        mapped = mapped.filter((p) => {
+          const hay = `${p.name} ${p.category}`.toLowerCase();
+          return lowerTokens.every((tk) => hay.includes(tk));
+        });
+
+        // 4) Si no hay resultados por keywords, fallback local (seedProducts)
+        if (mapped.length === 0) {
+          const qLower = q.toLowerCase();
+          const fallback = seedProducts.filter((p) => {
+            const nameMatch = p.name.toLowerCase().includes(qLower);
+            const catMatch = (p.category || "").toLowerCase().includes(qLower);
+            return nameMatch || catMatch;
+          });
+          mapped = fallback.slice(0, 12);
+        } else {
+          mapped = mapped.slice(0, 12);
+        }
+
+        if (!alive) return;
+        setResults(mapped);
+      } catch (e) {
+        console.warn("[SmartSearchBar] Firestore search failed", e);
+
+        // fallback local si falla
+        const qLower = query.trim().toLowerCase();
+        const fallback = seedProducts.filter((p) => {
+          const nameMatch = p.name.toLowerCase().includes(qLower);
+          const catMatch = (p.category || "").toLowerCase().includes(qLower);
+          return nameMatch || catMatch;
+        });
+
+        if (alive) setResults(fallback.slice(0, 12));
+      } finally {
+        if (alive) setIsLoading(false);
+      }
+    }, 250);
+
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+  }, [query, seedProducts]);
+
+  /** =========================
+   * Actions
+   * ========================= */
   const handleProductSelect = (product: Product) => {
     setIsOpen(false);
     setIsMobileSearchMode(false);
@@ -351,8 +386,6 @@ export function SmartSearchBar({
     }
 
     if (!isOpen) return;
-
-    // -1 nada, 0..len-1 item, len ver todos
     const allowViewAll = results.length > 0;
 
     switch (e.key) {
@@ -369,7 +402,7 @@ export function SmartSearchBar({
       case "Enter":
         e.preventDefault();
         if (!query.trim()) return;
-        if (results.length === 0) return; // no hay nada que seleccionar
+        if (results.length === 0) return;
         if (selectedIndex === -1 || selectedIndex === results.length)
           return handleViewAllResults();
         return handleProductSelect(results[selectedIndex]);
@@ -395,7 +428,9 @@ export function SmartSearchBar({
     );
   };
 
-  // MOBILE FULLSCREEN
+  /** =========================
+   * MOBILE FULLSCREEN
+   * ========================= */
   if (isMobileSearchMode && typeof window !== "undefined") {
     return createPortal(
       <motion.div
@@ -446,6 +481,7 @@ export function SmartSearchBar({
                 aria-label="Buscar productos"
               />
 
+              {/* ✅ X perfecta centrada */}
               <AnimatePresence>
                 {query.length > 0 && (
                   <motion.button
@@ -457,12 +493,12 @@ export function SmartSearchBar({
                     onClick={handleClear}
                     aria-label="Limpiar búsqueda"
                     className="
-        absolute right-3 inset-y-0
-        h-full w-12
-        flex items-center justify-center
-        rounded-full
-        hover:bg-gray-100 transition-colors
-      "
+                      absolute right-3 inset-y-0
+                      h-full w-12
+                      flex items-center justify-center
+                      rounded-full
+                      hover:bg-gray-100 transition-colors
+                    "
                   >
                     <X className="h-5 w-5 text-[#2E2E2E]/60 block" />
                   </motion.button>
@@ -577,7 +613,9 @@ export function SmartSearchBar({
     );
   }
 
-  // DESKTOP
+  /** =========================
+   * DESKTOP
+   * ========================= */
   return (
     <div ref={searchRef} className={`relative w-full ${className}`}>
       <div ref={inputContainerRef} className="relative z-[9999]">
@@ -603,6 +641,7 @@ export function SmartSearchBar({
             aria-label="Buscar productos"
           />
 
+          {/* ✅ X perfecta centrada */}
           <AnimatePresence>
             {query.length > 0 && (
               <motion.button
@@ -614,12 +653,12 @@ export function SmartSearchBar({
                 onClick={handleClear}
                 aria-label="Limpiar búsqueda"
                 className="
-        absolute right-3 inset-y-0
-        h-full w-12
-        flex items-center justify-center
-        rounded-full
-        hover:bg-gray-100 transition-colors
-      "
+                  absolute right-3 inset-y-0
+                  h-full w-12
+                  flex items-center justify-center
+                  rounded-full
+                  hover:bg-gray-100 transition-colors
+                "
               >
                 <X className="h-5 w-5 text-[#2E2E2E]/60 block" />
               </motion.button>
