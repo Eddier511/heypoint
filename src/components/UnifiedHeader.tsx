@@ -164,7 +164,7 @@ export function UnifiedHeader({
   const aboutHoverCloseTimer = useRef<NodeJS.Timeout | null>(null);
 
   const aboutLinks = [
-    { id: "business", label: "El Modelo HeyPoint" },
+    { id: "business", label: "Nosotros" },
     { id: "ourcompany", label: "Nuestra Empresa" },
   ];
 
@@ -538,60 +538,18 @@ export function UnifiedHeader({
                 </AnimatePresence>
               </div>
 
-              {/* About Dropdown */}
-              <div className="relative">
-                <button
-                  ref={aboutButtonRef}
-                  onClick={handleAboutClick}
-                  onMouseEnter={handleAboutMouseEnter}
-                  onMouseLeave={handleAboutMouseLeave}
-                  className={`px-5 py-2 rounded-full transition-all inline-flex items-center gap-1.5 ${
-                    activeLink === "about" ||
-                    activeLink === "ourcompany" ||
-                    isAboutDropdownOpen
-                      ? "bg-[#FF6B00] text-white"
-                      : `${textColor} hover:bg-[#FF6B00]/10`
-                  }`}
-                  style={{ fontSize: "0.938rem", fontWeight: 500 }}
-                  aria-expanded={isAboutDropdownOpen}
-                  aria-haspopup="true"
-                >
-                  Nosotros
-                  <ChevronDown
-                    className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                      isAboutDropdownOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-
-                <AnimatePresence>
-                  {isAboutDropdownOpen && (
-                    <motion.div
-                      ref={aboutDropdownRef}
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.2 }}
-                      onMouseEnter={handleAboutDropdownMouseEnter}
-                      onMouseLeave={handleAboutDropdownMouseLeave}
-                      className="absolute left-1/2 transform -translate-x-1/2 mt-2 w-56"
-                    >
-                      <Card className="bg-white border-none shadow-xl rounded-2xl overflow-hidden p-2">
-                        {aboutLinks.map((link) => (
-                          <button
-                            key={link.id}
-                            onClick={() => handleNavigation(link.id)}
-                            className="w-full text-left px-4 py-3 rounded-xl hover:bg-[#FFF4E6] text-[#2E2E2E] hover:text-[#FF6B00] transition-colors"
-                            style={{ fontSize: "0.938rem", fontWeight: 500 }}
-                          >
-                            {link.label}
-                          </button>
-                        ))}
-                      </Card>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+              {/* About Button */}
+              <button
+                onClick={() => handleNavigation("business")}
+                className={`px-5 py-2 rounded-full transition-all ${
+                  activeLink === "business"
+                    ? "bg-[#FF6B00] text-white"
+                    : `${textColor} hover:bg-[#FF6B00]/10`
+                }`}
+                style={{ fontSize: "0.938rem", fontWeight: 500 }}
+              >
+                Nosotros
+              </button>
 
               <button
                 onClick={() => handleNavigation("contact")}
