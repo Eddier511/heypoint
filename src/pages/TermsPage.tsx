@@ -11,12 +11,12 @@ interface TermsPageProps {
 export function TermsPage({ onNavigate }: TermsPageProps) {
   // Set page title for SEO
   useEffect(() => {
-    document.title = "Terms & Conditions | Hey Point!";
+    document.title = "Términos y Privacidad | Hey Point!";
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) {
       metaDescription.setAttribute(
         "content",
-        "Terms and Conditions of Use for Hey Point! smart mini-store system. Read our terms of service, user responsibilities, and usage policies."
+        "Términos y Condiciones de uso y Política de Privacidad de Hey Point!. Conocé cómo funciona el servicio y cómo protegemos tus datos."
       );
     }
     
@@ -40,11 +40,10 @@ export function TermsPage({ onNavigate }: TermsPageProps) {
               className="text-center"
             >
               <h1 className="text-white mb-4">
-                Términos y Condiciones de Uso
+                Términos y Condiciones
               </h1>
               <p className="text-white/90 max-w-2xl mx-auto">
-                Última actualización: 15 de noviembre de 2025
-              </p>
+                Incluye nuestra Política de Privacidad y tratamiento de datos personales.</p>
             </motion.div>
           </div>
         </section>
@@ -62,7 +61,7 @@ export function TermsPage({ onNavigate }: TermsPageProps) {
               <h2 className="text-[#2E2E2E] mb-4">1. Aceptación de los Términos</h2>
               <p className="text-[#2E2E2E]/80 mb-6">
                 Bienvenido a Hey Point!. Al acceder y utilizar nuestro sistema de mini-tiendas inteligentes, 
-                usted acepta estar sujeto a estos Términos y Condiciones de Uso. Si no está de acuerdo con 
+                usted acepta estar sujeto a estos Términos y Condiciones. Si no está de acuerdo con 
                 alguna parte de estos términos, por favor no utilice nuestros servicios.
               </p>
               <p className="text-[#2E2E2E]/80 mb-8">
@@ -223,9 +222,7 @@ export function TermsPage({ onNavigate }: TermsPageProps) {
               {/* Section 10 */}
               <h2 className="text-[#2E2E2E] mb-4">10. Privacidad y Protección de Datos</h2>
               <p className="text-[#2E2E2E]/80 mb-8">
-                El uso de su información personal está regido por nuestra Política de Privacidad, la cual forma 
-                parte integral de estos Términos y Condiciones. Al utilizar nuestros servicios, usted acepta el 
-                tratamiento de sus datos personales según lo descrito en nuestra Política de Privacidad.
+                El uso de su información personal está regido por nuestra <a href="#politica-privacidad" className="text-[#FF6B00] underline">Política de Privacidad</a>, la cual forma parte integral de estos Términos y Condiciones. Al utilizar nuestros servicios, usted acepta el tratamiento de sus datos personales según lo allí establecido.
               </p>
 
               {/* Section 11 */}
@@ -283,7 +280,198 @@ export function TermsPage({ onNavigate }: TermsPageProps) {
               </p>
               <p className="text-[#2E2E2E]/80">
                 Al utilizar los servicios de Hey Point!, usted reconoce que ha leído, entendido y aceptado estar 
-                sujeto a estos Términos y Condiciones de Uso.
+                sujeto a estos Términos y Condiciones.
+              </p>
+                          {/* Divider */}
+              <hr className="my-12 border-[#EDEDED]" />
+
+              {/* Privacy Policy */}
+              <h2 id="politica-privacidad" className="text-[#2E2E2E] mb-4">Política de Privacidad</h2>
+              <p className="text-[#2E2E2E]/80 mb-8">
+                Esta Política describe qué datos recopilamos, para qué los usamos y cuáles son tus derechos al utilizar Hey Point!.
+              </p>
+
+              <h3 className="text-[#2E2E2E] mb-3">1. Información que recopilamos</h3>
+              <h4 className="text-[#2E2E2E] mb-2">1.1 Información que usted proporciona</h4>
+              <ul className="list-disc pl-6 mb-6 text-[#2E2E2E]/80 space-y-2">
+                <li><strong>Información de cuenta:</strong> nombre completo, correo electrónico, número de teléfono y contraseña (encriptada).</li>
+                <li><strong>Información de pago:</strong> datos de tarjetas de crédito/débito (procesados únicamente por terceros certificados PCI-DSS).</li>
+                <li><strong>Información de perfil:</strong> preferencias de productos, historial de compras, direcciones de entrega.</li>
+                <li><strong>Comunicaciones:</strong> mensajes o consultas enviadas a nuestro servicio de atención al cliente.</li>
+              </ul>
+
+              <h4 className="text-[#2E2E2E] mb-2">1.2 Información recopilada automáticamente</h4>
+              <ul className="list-disc pl-6 mb-6 text-[#2E2E2E]/80 space-y-2">
+                <li><strong>Datos de uso:</strong> páginas visitadas, productos visualizados, tiempo de navegación y actividad general.</li>
+                <li><strong>Datos del dispositivo:</strong> dirección IP, navegador, sistema operativo e identificadores únicos del dispositivo.</li>
+                <li><strong>Datos de ubicación:</strong> ubicación aproximada basada en IP (y ubicación GPS precisa si usted lo autoriza).</li>
+                <li><strong>Cookies y tecnologías similares:</strong> para personalizar la experiencia y mejorar el funcionamiento del servicio.</li>
+              </ul>
+
+              <h4 className="text-[#2E2E2E] mb-2">1.3 Información de transacciones</h4>
+              <ul className="list-disc pl-6 mb-8 text-[#2E2E2E]/80 space-y-2">
+                <li>Detalles de pedidos (productos, cantidades, precios).</li>
+                <li>Fechas y horarios de transacciones.</li>
+                <li>Códigos de acceso generados para los casilleros.</li>
+                <li>Ubicación del casillero utilizado y estado de retiro de productos.</li>
+              </ul>
+
+              <h3 className="text-[#2E2E2E] mb-3">2. Cómo utilizamos su información</h3>
+              <h4 className="text-[#2E2E2E] mb-2">2.1 Provisión de servicios</h4>
+              <ul className="list-disc pl-6 mb-6 text-[#2E2E2E]/80 space-y-2">
+                <li>Procesar y completar pedidos.</li>
+                <li>Administrar su cuenta y brindar soporte al cliente.</li>
+                <li>Generar códigos de acceso para casilleros.</li>
+                <li>Enviar confirmaciones y notificaciones del estado del pedido.</li>
+                <li>Procesar pagos y prevenir fraudes.</li>
+              </ul>
+
+              <h4 className="text-[#2E2E2E] mb-2">2.2 Mejora y personalización</h4>
+              <ul className="list-disc pl-6 mb-6 text-[#2E2E2E]/80 space-y-2">
+                <li>Personalizar la experiencia del usuario.</li>
+                <li>Recomendar productos según historial y preferencias.</li>
+                <li>Analizar patrones de uso y optimizar la plataforma.</li>
+                <li>Desarrollar nuevas funciones.</li>
+              </ul>
+
+              <h4 className="text-[#2E2E2E] mb-2">2.3 Comunicación</h4>
+              <ul className="list-disc pl-6 mb-6 text-[#2E2E2E]/80 space-y-2">
+                <li>Informar sobre el estado de sus pedidos.</li>
+                <li>Responder consultas y solicitudes de soporte.</li>
+                <li>Notificar cambios relevantes en nuestros servicios.</li>
+                <li>Enviar promociones y comunicaciones comerciales (solo con su consentimiento).</li>
+              </ul>
+
+              <h4 className="text-[#2E2E2E] mb-2">2.4 Seguridad y cumplimiento</h4>
+              <ul className="list-disc pl-6 mb-8 text-[#2E2E2E]/80 space-y-2">
+                <li>Prevenir fraudes y actividades ilegales.</li>
+                <li>Proteger la seguridad de usuarios y sistemas.</li>
+                <li>Cumplir obligaciones legales.</li>
+                <li>Resolver disputas y hacer valer nuestros acuerdos.</li>
+              </ul>
+
+              <h3 className="text-[#2E2E2E] mb-3">3. Cómo compartimos su información</h3>
+              <p className="text-[#2E2E2E]/80 mb-4">
+                Hey Point! no vende su información personal. Solo la compartimos en las siguientes situaciones:
+              </p>
+              <h4 className="text-[#2E2E2E] mb-2">3.1 Proveedores de servicios</h4>
+              <ul className="list-disc pl-6 mb-6 text-[#2E2E2E]/80 space-y-2">
+                <li>Procesadores de pago.</li>
+                <li>Servicios en la nube y almacenamiento.</li>
+                <li>Plataformas de análisis y estadísticas.</li>
+                <li>Servicios de marketing y correo electrónico.</li>
+                <li>Proveedores de seguridad y prevención de fraudes.</li>
+              </ul>
+              <p className="text-[#2E2E2E]/80 mb-6">
+                Todos los proveedores están contractualmente obligados a usar su información únicamente para prestar servicios a Hey Point!.
+              </p>
+
+              <h4 className="text-[#2E2E2E] mb-2">3.2 Cumplimiento legal</h4>
+              <ul className="list-disc pl-6 mb-6 text-[#2E2E2E]/80 space-y-2">
+                <li>Cuando lo exige la ley o un proceso judicial.</li>
+                <li>Cuando lo solicita una autoridad competente.</li>
+                <li>Cuando sea necesario para proteger nuestros derechos o prevenir actividades ilegales.</li>
+              </ul>
+
+              <h4 className="text-[#2E2E2E] mb-2">3.3 Transacciones corporativas</h4>
+              <p className="text-[#2E2E2E]/80 mb-6">
+                En caso de fusión, adquisición o reestructuración, su información puede transferirse como parte del proceso.
+              </p>
+
+              <h4 className="text-[#2E2E2E] mb-2">3.4 Con su consentimiento</h4>
+              <p className="text-[#2E2E2E]/80 mb-8">
+                Compartimos información con terceros solo si contamos con su autorización explícita.
+              </p>
+
+              <h3 className="text-[#2E2E2E] mb-3">4. Seguridad de los datos</h3>
+              <p className="text-[#2E2E2E]/80 mb-4">Implementamos medidas técnicas y administrativas para proteger su información:</p>
+              <ul className="list-disc pl-6 mb-6 text-[#2E2E2E]/80 space-y-2">
+                <li>Encriptación SSL/TLS para datos en tránsito y AES-256 para datos en reposo.</li>
+                <li>Acceso restringido solo a personal autorizado.</li>
+                <li>Contraseñas hasheadas (bcrypt).</li>
+                <li>Monitoreo continuo para detectar vulnerabilidades.</li>
+                <li>Auditorías periódicas de seguridad.</li>
+              </ul>
+              <p className="text-[#2E2E2E]/80 mb-8">
+                Aun así, ningún sistema es 100% seguro. Nos comprometemos a hacer todo lo razonable para proteger su información, pero no podemos garantizar su seguridad absoluta.
+              </p>
+
+              <h3 className="text-[#2E2E2E] mb-3">5. Sus derechos y opciones</h3>
+              <ul className="list-disc pl-6 mb-6 text-[#2E2E2E]/80 space-y-2">
+                <li><strong>Acceso y portabilidad:</strong> solicitar una copia de la información y obtenerla en un formato estructurado y de uso común.</li>
+                <li><strong>Rectificación:</strong> actualizar o corregir datos inexactos y modificar preferencias de cuenta.</li>
+                <li><strong>Eliminación:</strong> solicitar la eliminación de su información y cerrar su cuenta (algunas retenciones pueden ser obligatorias por ley).</li>
+                <li><strong>Restricción y objeción:</strong> solicitar limitaciones u oponerse a ciertos usos basados en intereses legítimos.</li>
+                <li><strong>Marketing:</strong> optar por no recibir comunicaciones comerciales.</li>
+                <li><strong>Cookies:</strong> bloquear/eliminar desde su navegador o ajustar preferencias en nuestro panel.</li>
+              </ul>
+              <p className="text-[#2E2E2E]/80 mb-8">
+                Para ejercer cualquier derecho: <a className="text-[#FF6B00] underline" href="mailto:heypoint.arg@gmail.com">heypoint.arg@gmail.com</a>
+              </p>
+
+              <h3 className="text-[#2E2E2E] mb-3">6. Retención de datos</h3>
+              <ul className="list-disc pl-6 mb-8 text-[#2E2E2E]/80 space-y-2">
+                <li><strong>Información de cuenta:</strong> mientras esté activa + un período razonable posterior.</li>
+                <li><strong>Historial de transacciones:</strong> mínimo 7 años (obligaciones fiscales/contables).</li>
+                <li><strong>Comunicaciones:</strong> 3–5 años.</li>
+                <li><strong>Datos de marketing:</strong> hasta retirar el consentimiento.</li>
+                <li><strong>Registros de seguridad:</strong> según lo exija la ley.</li>
+              </ul>
+
+              <h3 className="text-[#2E2E2E] mb-3">7. Privacidad de menores</h3>
+              <p className="text-[#2E2E2E]/80 mb-8">
+                No ofrecemos servicios a menores de 18 años. Si cree que un menor nos proporcionó información, contáctenos y la eliminaremos de inmediato.
+              </p>
+
+              <h3 className="text-[#2E2E2E] mb-3">8. Transferencias internacionales</h3>
+              <p className="text-[#2E2E2E]/80 mb-8">
+                Su información puede ser procesada en otros países. En esos casos implementamos garantías como cláusulas contractuales estándar para proteger sus datos.
+              </p>
+
+              <h3 className="text-[#2E2E2E] mb-3">9. Cookies y tecnologías de rastreo</h3>
+              <p className="text-[#2E2E2E]/80 mb-4">Usamos:</p>
+              <ul className="list-disc pl-6 mb-6 text-[#2E2E2E]/80 space-y-2">
+                <li>Cookies esenciales.</li>
+                <li>Cookies de rendimiento.</li>
+                <li>Cookies funcionales.</li>
+                <li>Cookies de marketing (solo con su consentimiento).</li>
+              </ul>
+              <p className="text-[#2E2E2E]/80 mb-8">
+                Las puede gestionar desde su navegador o nuestro panel de preferencias.
+              </p>
+
+              <h3 className="text-[#2E2E2E] mb-3">10. Enlaces a terceros</h3>
+              <p className="text-[#2E2E2E]/80 mb-8">
+                No somos responsables del contenido ni de las prácticas de privacidad de sitios externos vinculados desde nuestra plataforma.
+              </p>
+
+              <h3 className="text-[#2E2E2E] mb-3">11. Cambios a esta política</h3>
+              <p className="text-[#2E2E2E]/80 mb-4">Podemos actualizar la Política de Privacidad. Cuando haya cambios importantes, lo informaremos mediante:</p>
+              <ul className="list-disc pl-6 mb-8 text-[#2E2E2E]/80 space-y-2">
+                <li>Aviso destacado en el sitio web.</li>
+                <li>Email.</li>
+                <li>Actualización de la fecha de “Última actualización”.</li>
+              </ul>
+
+              <h3 className="text-[#2E2E2E] mb-3">12. Cómo contactarnos</h3>
+              <ul className="list-disc pl-6 mb-6 text-[#2E2E2E]/80 space-y-2">
+                <li><strong>Email general:</strong> <a className="text-[#FF6B00] underline" href="mailto:heypoint.arg@gmail.com">heypoint.arg@gmail.com</a></li>
+                <li><strong>Protección de datos:</strong> <a className="text-[#FF6B00] underline" href="mailto:heypoint.arg@gmail.com">heypoint.arg@gmail.com</a></li>
+                <li><strong>Teléfono:</strong> <a className="text-[#FF6B00] underline" href="tel:+5491131475522">+54 9 11 3147 5522</a></li>
+                <li><strong>Dirección postal:</strong> Cacique Coliqueo 1020, El Palomar, CP 1685</li>
+              </ul>
+              <p className="text-[#2E2E2E]/80 mb-8">
+                Respondemos dentro de un plazo máximo de 30 días.
+              </p>
+
+              <h3 className="text-[#2E2E2E] mb-3">13. Autoridad de protección de datos</h3>
+              <p className="text-[#2E2E2E]/80 mb-8">
+                Si no está conforme con nuestra respuesta, puede presentar un reclamo ante la autoridad de protección de datos correspondiente a su jurisdicción.
+              </p>
+
+              <h3 className="text-[#2E2E2E] mb-3">Consentimiento</h3>
+              <p className="text-[#2E2E2E]/80">
+                Al utilizar Hey Point!, usted confirma que ha leído y entendido esta Política de Privacidad y acepta el tratamiento de sus datos según lo aquí establecido.
               </p>
             </div>
           </motion.div>
