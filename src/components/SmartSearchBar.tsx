@@ -1,3 +1,4 @@
+// src/components/SmartSearchBar.tsx
 import React, { useEffect, useRef, useState } from "react";
 import { Search, X, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "./ui/button";
@@ -6,15 +7,8 @@ import { formatPrecioARS, getPrecioFinalConIVA } from "../utils/priceUtils";
 import { motion, AnimatePresence } from "motion/react";
 import { createPortal } from "react-dom";
 
+import { collection, getDocs } from "firebase/firestore";
 import { db } from "../config/firebaseClient";
-import {
-  collection,
-  getDocs,
-  query as fsQuery,
-  where,
-  orderBy,
-  limit,
-} from "firebase/firestore";
 
 export interface Product {
   id: string;
@@ -22,9 +16,6 @@ export interface Product {
   image: string;
   price: number;
   category: string;
-  sku?: string;
-  description?: string;
-  categoryId?: string | null;
 }
 
 interface SmartSearchBarProps {
@@ -47,9 +38,10 @@ function toNumber(v: any) {
 }
 
 function isActiveStatus(v: any) {
-  if (v === undefined || v === null) return true; // si no existe, lo tratamos como activo
+  if (v === undefined || v === null || v === "") return true;
+  if (typeof v === "boolean") return v;
   const s = String(v).trim().toLowerCase();
-  return s !== "inactive";
+  return s === "active" || s === "activo" || s === "true" || s === "1";
 }
 
 export function SmartSearchBar({
@@ -59,7 +51,7 @@ export function SmartSearchBar({
   placeholder = "Buscar productos…",
   onClose,
 }: SmartSearchBarProps) {
-  const [queryText, setQueryText] = useState("");
+  const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [results, setResults] = useState<Product[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -90,106 +82,74 @@ export function SmartSearchBar({
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Load categories from Firestore: collection "categories"
+  // Load categories from Firestore
   useEffect(() => {
     let alive = true;
-
     (async () => {
       try {
         const snap = await getDocs(collection(db, "categories"));
         const map: Record<string, string> = {};
-
         snap.forEach((doc) => {
-          const data = doc.data() as any;
-          const name = (data?.name ?? data?.title ?? "").toString().trim();
-          const status = data?.status;
+          const d: any = doc.data();
+          const name = String(d?.name ?? "").trim();
+          const status = d?.status;
           if (!name) return;
-          if (status && String(status).toLowerCase() === "inactive") return;
+          if (!isActiveStatus(status)) return;
           map[doc.id] = name;
         });
-
         if (alive) categoryMapRef.current = map;
       } catch (e) {
         console.warn("[SmartSearchBar] categories firestore failed:", e);
       }
     })();
-
     return () => {
       alive = false;
     };
   }, []);
 
-  // Load products from Firestore: collection "products"
+  // Load products from Firestore (once)
   useEffect(() => {
     let alive = true;
 
     (async () => {
-      setIsLoading(true);
       try {
-        const col = collection(db, "products");
+        setIsLoading(true);
 
-        // Intento #1: query con where(status == "active") + orderBy(name)
-        // (puede pedir índice; si falla, caemos a fallback)
-        let snap;
-        try {
-          const q = fsQuery(
-            col,
-            where("status", "==", "active"),
-            orderBy("name"),
-            limit(1000),
-          );
-          snap = await getDocs(q);
-        } catch (err) {
-          console.warn(
-            "[SmartSearchBar] query index/where failed, fallback to full scan",
-            err,
-          );
-          snap = await getDocs(col);
-        }
+        const snap = await getDocs(collection(db, "products"));
+        const mapped: Product[] = [];
 
-        const list: Product[] = [];
         snap.forEach((doc) => {
-          const d = doc.data() as any;
+          const p: any = doc.data();
 
-          if (!isActiveStatus(d?.status)) return;
+          if (!isActiveStatus(p?.status)) return;
 
-          const name = (d?.name ?? "").toString().trim();
+          const name = String(p?.name ?? "").trim();
           if (!name) return;
 
-          const basePrice = toNumber(d?.basePrice);
-          const images = Array.isArray(d?.images) ? d.images : [];
+          const images: any[] = Array.isArray(p?.images) ? p.images : [];
           const image =
-            (images?.[0] ? String(images[0]) : "").trim() || DEFAULT_IMG;
+            String(images?.[0] ?? "").trim() ||
+            String(p?.imageUrl ?? "").trim() ||
+            DEFAULT_IMG;
 
-          const categoryId = (d?.categoryId ?? null) as string | null;
+          const price = toNumber(p?.basePrice ?? p?.price ?? 0);
+
+          const categoryId = String(p?.categoryId ?? "").trim();
           const category =
             (categoryId && categoryMapRef.current[categoryId]) ||
             "Sin categoría";
 
-          const sku = (d?.sku ?? "").toString().trim() || undefined;
-          const description =
-            (d?.description ?? "").toString().trim() || undefined;
-
-          list.push({
+          mapped.push({
             id: doc.id,
             name,
-            price: basePrice,
             image,
+            price,
             category,
-            sku,
-            description,
-            categoryId,
           });
         });
 
-        // Ordena por name por si vinieron sin orderBy (fallback)
-        list.sort((a, b) => a.name.localeCompare(b.name, "es"));
-
         if (!alive) return;
-        setAllProducts(list);
-
-        // Debug útil: así confirmás que sí cargó
-        console.log("[SmartSearchBar] loaded products:", list.length, list[0]);
+        setAllProducts(mapped);
       } catch (e) {
         console.warn("[SmartSearchBar] products firestore failed:", e);
         if (alive) setAllProducts([]);
@@ -203,7 +163,7 @@ export function SmartSearchBar({
     };
   }, []);
 
-  // dropdown position
+  // dropdown position (desktop)
   useEffect(() => {
     if (isOpen && inputContainerRef.current && !isMobileSearchMode) {
       const rect = inputContainerRef.current.getBoundingClientRect();
@@ -223,10 +183,9 @@ export function SmartSearchBar({
     };
   }, [isMobileSearchMode]);
 
-  // search debounce (client-side)
+  // Debounced search (client side)
   useEffect(() => {
-    const q = queryText.trim().toLowerCase();
-
+    const q = query.trim().toLowerCase();
     if (!q) {
       setResults([]);
       setSelectedIndex(-1);
@@ -234,22 +193,22 @@ export function SmartSearchBar({
       return;
     }
 
+    // si todavía está cargando productos, deja loader
     setIsLoading(true);
-    const t = setTimeout(() => {
+
+    const t = window.setTimeout(() => {
       const filtered = allProducts.filter((p) => {
         const nameMatch = p.name.toLowerCase().includes(q);
-        const skuMatch = (p.sku || "").toLowerCase().includes(q);
         const catMatch = (p.category || "").toLowerCase().includes(q);
-        const descMatch = (p.description || "").toLowerCase().includes(q);
-        return nameMatch || skuMatch || catMatch || descMatch;
+        return nameMatch || catMatch;
       });
 
       setResults(filtered.slice(0, 12));
       setIsLoading(false);
     }, 200);
 
-    return () => clearTimeout(t);
-  }, [queryText, allProducts]);
+    return () => window.clearTimeout(t);
+  }, [query, allProducts]);
 
   // click outside (desktop)
   useEffect(() => {
@@ -272,14 +231,14 @@ export function SmartSearchBar({
   const handleProductSelect = (product: Product) => {
     setIsOpen(false);
     setIsMobileSearchMode(false);
-    setQueryText("");
+    setQuery("");
     setResults([]);
     setSelectedIndex(-1);
     onProductClick?.(product);
   };
 
   const handleViewAllResults = () => {
-    const q = queryText.trim();
+    const q = query.trim();
     if (!q) return;
     setIsOpen(false);
     setIsMobileSearchMode(false);
@@ -288,7 +247,7 @@ export function SmartSearchBar({
   };
 
   const handleClear = () => {
-    setQueryText("");
+    setQuery("");
     setResults([]);
     setSelectedIndex(-1);
     setIsLoading(false);
@@ -298,7 +257,7 @@ export function SmartSearchBar({
   const closeMobileSearch = () => {
     setIsMobileSearchMode(false);
     setIsOpen(false);
-    setQueryText("");
+    setQuery("");
     setResults([]);
     setSelectedIndex(-1);
     setIsLoading(false);
@@ -317,7 +276,7 @@ export function SmartSearchBar({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!isOpen && queryText.trim().length > 0) setIsOpen(true);
+    if (!isOpen && query.trim().length > 0) setIsOpen(true);
 
     if (e.key === "Escape") {
       if (isMobileSearchMode) closeMobileSearch();
@@ -330,25 +289,21 @@ export function SmartSearchBar({
     }
 
     if (!isOpen) return;
+    if (results.length === 0) return;
 
     // -1 nada, 0..len-1 item, len ver todos
-    const allowViewAll = results.length > 0;
-
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
-        if (!allowViewAll) return;
         setSelectedIndex((prev) => Math.min(prev + 1, results.length));
         break;
       case "ArrowUp":
         e.preventDefault();
-        if (!allowViewAll) return;
         setSelectedIndex((prev) => Math.max(prev - 1, -1));
         break;
       case "Enter":
         e.preventDefault();
-        if (!queryText.trim()) return;
-        if (results.length === 0) return;
+        if (!query.trim()) return;
         if (selectedIndex === -1 || selectedIndex === results.length)
           return handleViewAllResults();
         return handleProductSelect(results[selectedIndex]);
@@ -374,7 +329,9 @@ export function SmartSearchBar({
     );
   };
 
+  // =========================
   // MOBILE FULLSCREEN
+  // =========================
   if (isMobileSearchMode && typeof window !== "undefined") {
     return createPortal(
       <motion.div
@@ -384,7 +341,6 @@ export function SmartSearchBar({
         transition={{ duration: 0.3 }}
         className="fixed inset-0 z-[10000] bg-[#FFF4E6] flex flex-col"
       >
-        {/* Header */}
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -417,8 +373,8 @@ export function SmartSearchBar({
               <input
                 ref={inputRef}
                 type="text"
-                value={queryText}
-                onChange={(e) => setQueryText(e.target.value)}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder={placeholder}
                 autoFocus
@@ -427,9 +383,9 @@ export function SmartSearchBar({
                 aria-label="Buscar productos"
               />
 
-              {/* ✅ X alineada */}
+              {/* ✅ X perfecta centrada */}
               <AnimatePresence>
-                {queryText.length > 0 && (
+                {query.length > 0 && (
                   <motion.button
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -438,9 +394,12 @@ export function SmartSearchBar({
                     type="button"
                     onClick={handleClear}
                     aria-label="Limpiar búsqueda"
-                    className="absolute right-3 inset-y-0 h-full w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2
+                               w-10 h-10 rounded-full
+                               hover:bg-gray-100 transition-colors
+                               flex items-center justify-center"
                   >
-                    <X className="h-5 w-5 text-[#2E2E2E]/60 block" />
+                    <X className="w-5 h-5 text-[#2E2E2E]/60" />
                   </motion.button>
                 )}
               </AnimatePresence>
@@ -448,7 +407,6 @@ export function SmartSearchBar({
           </div>
         </motion.div>
 
-        {/* Results */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -466,29 +424,27 @@ export function SmartSearchBar({
             </div>
           )}
 
-          {!isLoading &&
-            queryText.trim().length > 0 &&
-            results.length === 0 && (
-              <div className="flex-1 flex items-center justify-center p-8 text-center">
-                <div>
-                  <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-sm">
-                    <Search className="w-10 h-10 text-[#FF6B00]/60" />
-                  </div>
-                  <p
-                    className="text-[#1C2335]"
-                    style={{ fontSize: "1.125rem", fontWeight: 600 }}
-                  >
-                    No encontramos resultados
-                  </p>
-                  <p
-                    className="text-[#2E2E2E]/60 mt-2"
-                    style={{ fontSize: "1rem" }}
-                  >
-                    Intenta con otro término de búsqueda
-                  </p>
+          {!isLoading && query.trim().length > 0 && results.length === 0 && (
+            <div className="flex-1 flex items-center justify-center p-8 text-center">
+              <div>
+                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-sm">
+                  <Search className="w-10 h-10 text-[#FF6B00]/60" />
                 </div>
+                <p
+                  className="text-[#1C2335]"
+                  style={{ fontSize: "1.125rem", fontWeight: 600 }}
+                >
+                  No encontramos resultados
+                </p>
+                <p
+                  className="text-[#2E2E2E]/60 mt-2"
+                  style={{ fontSize: "1rem" }}
+                >
+                  Intenta con otro término de búsqueda
+                </p>
               </div>
-            )}
+            </div>
+          )}
 
           {!isLoading && results.length > 0 && (
             <div className="flex-1 flex flex-col overflow-hidden">
@@ -517,7 +473,7 @@ export function SmartSearchBar({
                         className="text-[#1C2335] mb-1"
                         style={{ fontSize: "1rem", fontWeight: 600 }}
                       >
-                        {highlightMatch(product.name, queryText)}
+                        {highlightMatch(product.name, query)}
                       </p>
                       <div className="flex items-center gap-2 flex-wrap">
                         <span
@@ -557,7 +513,9 @@ export function SmartSearchBar({
     );
   }
 
+  // =========================
   // DESKTOP
+  // =========================
   return (
     <div ref={searchRef} className={`relative w-full ${className}`}>
       <div ref={inputContainerRef} className="relative z-[9999]">
@@ -571,21 +529,21 @@ export function SmartSearchBar({
           <input
             ref={inputRef}
             type="text"
-            value={queryText}
+            value={query}
             onChange={(e) => {
-              setQueryText(e.target.value);
+              setQuery(e.target.value);
               setIsOpen(true);
             }}
             onFocus={handleInputFocus}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            className="w-full h-14 pl-14 pr-16 outline-none text-[#2E2E2E] rounded-full bg-transparent placeholder:text-[#2E2E2E]/40"
+            className="w-full h-14 pl-14 pr-14 outline-none text-[#2E2E2E] rounded-full bg-transparent placeholder:text-[#2E2E2E]/40"
             aria-label="Buscar productos"
           />
 
-          {/* ✅ X alineada */}
+          {/* ✅ X perfecta centrada */}
           <AnimatePresence>
-            {queryText.length > 0 && (
+            {query.length > 0 && (
               <motion.button
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -594,16 +552,19 @@ export function SmartSearchBar({
                 type="button"
                 onClick={handleClear}
                 aria-label="Limpiar búsqueda"
-                className="absolute right-3 inset-y-0 h-full w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2
+                           w-10 h-10 rounded-full
+                           hover:bg-gray-100 transition-colors
+                           flex items-center justify-center"
               >
-                <X className="h-5 w-5 text-[#2E2E2E]/60 block" />
+                <X className="w-5 h-5 text-[#2E2E2E]/60" />
               </motion.button>
             )}
           </AnimatePresence>
         </div>
 
         {isOpen &&
-          queryText.trim().length > 0 &&
+          query.trim().length > 0 &&
           !isMobile &&
           typeof window !== "undefined" &&
           createPortal(
@@ -667,7 +628,7 @@ export function SmartSearchBar({
                             className="text-[#1C2335] truncate"
                             style={{ fontSize: "1rem", fontWeight: 600 }}
                           >
-                            {highlightMatch(product.name, queryText)}
+                            {highlightMatch(product.name, query)}
                           </p>
                           <div className="flex items-center gap-2">
                             <span
@@ -689,6 +650,16 @@ export function SmartSearchBar({
                         </div>
                       </button>
                     ))}
+
+                    <div className="p-4 border-t bg-white">
+                      <Button
+                        onClick={handleViewAllResults}
+                        className="w-full bg-[#FF6B00] hover:bg-[#e56000] text-white rounded-2xl h-12"
+                        style={{ fontSize: "1rem", fontWeight: 700 }}
+                      >
+                        Ver todos los resultados ({results.length})
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
