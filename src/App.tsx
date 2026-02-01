@@ -497,7 +497,7 @@ function AppContent() {
         {/* Background Image with Overlay */}
         <div className="absolute inset-0 z-0">
           <ImageWithFallback
-            src="https://images.unsplash.com/photo-1629643476559-69bdc26d7331?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhdXRvbWF0ZWQlMjBzbWFydCUyMGtpb3NrJTIwZGFya3xlbnwxfHx8fDE3NjMzNTM5ODR8MA&ixlib=rb-4.1.0&q=80&w=1080"
+            src="https://firebasestorage.googleapis.com/v0/b/heymarket-35d03.firebasestorage.app/o/images%2Fbg-banner-hey-point.png?alt=media&token=4c622e18-92de-4b26-85db-b293da0030e6"
             alt="HeyPoint! Estación inteligente automatizada"
             className="w-full h-full object-cover"
           />
