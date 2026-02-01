@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { ArrowLeft, Share2, Truck, Shield, Clock } from "lucide-react";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
@@ -13,34 +13,86 @@ import { StockIndicator } from "../components/StockIndicator";
 import { BackToTopButton } from "../components/BackToTopButton";
 import { toast } from "sonner";
 import { formatPrecioARS, getPrecioFinalConIVA } from "../utils/priceUtils";
-import { motion } from "motion/react";
 import { useStoreSettings } from "../hooks/useStoreSettings";
 import { api } from "../lib/api";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "../components/ui/carousel";
 
-interface Product {
+type ApiProduct = {
+  id: string;
+  name: string;
+  sku?: string | null;
+  description?: string;
+  categoryId?: string | null;
+  basePrice: number;
+  discount?: number; // %
+  discountPct?: number; // %
+  stock?: number;
+  status?: "active" | "inactive";
+  images?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+interface UiProduct {
   id: string;
   name: string;
   image: string;
-  price: number;
-  originalPrice?: number;
+  price: number; // base (sin IVA) ya con descuento aplicado
+  originalPrice?: number; // base (sin IVA) antes de descuento
   rating: number;
-  category: string;
+  category: string; // (si no hay nombre real, usamos categoryId)
   badges?: string[];
   stock: number;
 }
 
 interface ProductDetailsPageProps {
-  product: Product;
+  product: UiProduct;
   onBack: () => void;
   onNavigate?: (page: string) => void;
-  onProductClick?: (product: Product) => void;
+  onProductClick?: (product: UiProduct) => void;
+}
+
+const PLACEHOLDER_IMG = "https://placehold.co/600x400?text=HeyPoint";
+
+function normalizeArray(raw: any): any[] {
+  if (Array.isArray(raw)) return raw;
+  if (Array.isArray(raw?.products)) return raw.products;
+  if (Array.isArray(raw?.items)) return raw.items;
+  if (Array.isArray(raw?.data)) return raw.data;
+  if (Array.isArray(raw?.result)) return raw.result;
+  return [];
+}
+
+function toDiscountPct(p: ApiProduct): number {
+  const d = p.discount ?? p.discountPct ?? 0;
+  const n = Number(d);
+  return Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : 0;
+}
+
+/**
+ * ✅ Mapea el Product real del backend a tu UI ProductDetails
+ * - basePrice: precio base (sin IVA) "lista"
+ * - discount: % => price final = basePrice * (1 - discount/100)
+ */
+function mapApiToUi(p: ApiProduct): UiProduct {
+  const discountPct = toDiscountPct(p);
+  const base = Number(p.basePrice ?? 0) || 0;
+
+  const finalBase =
+    discountPct > 0 ? Math.round(base * (1 - discountPct / 100)) : base;
+
+  const image = (p.images?.[0] || "").trim() || PLACEHOLDER_IMG;
+
+  return {
+    id: String(p.id),
+    name: String(p.name ?? "Producto"),
+    image,
+    price: finalBase,
+    originalPrice: discountPct > 0 ? base : undefined,
+    rating: 0,
+    category: String(p.categoryId ?? "Otros"),
+    badges: discountPct > 0 ? ["Sale"] : [],
+    stock: Number(p.stock ?? 0) || 0,
+  };
 }
 
 export function ProductDetailsPage({
@@ -50,14 +102,16 @@ export function ProductDetailsPage({
   onProductClick,
 }: ProductDetailsPageProps) {
   const [quantity, setQuantity] = useState(1);
+
+  // ✅ IVA dinámico
   const { settings } = useStoreSettings();
   const ivaPct = settings.iva ?? 21;
 
   // ✅ relacionados reales
-  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [relatedProducts, setRelatedProducts] = useState<UiProduct[]>([]);
   const [loadingRelated, setLoadingRelated] = useState(false);
 
-  // cantidades por producto relacionado
+  // ✅ cantidades por producto relacionado
   const [relatedQuantities, setRelatedQuantities] = useState<
     Record<string, number>
   >({});
@@ -66,7 +120,15 @@ export function ProductDetailsPage({
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
   }, [product.id]);
 
-  // 🔥 cargar relacionados desde backend (BLINDADO)
+  // ✅ útil para filtrar por categoría con lo que tengas disponible
+  const currentCategoryKey = useMemo(() => {
+    // En tu UI, product.category puede venir como nombre o como categoryId.
+    // Para relacionados, lo mejor es usar categoryId si lo tenés.
+    // Si tu UI ya tiene categoryId aparte, lo ideal es pasarla también.
+    return (product.category || "").toString().trim();
+  }, [product.category]);
+
+  // 🔥 cargar relacionados desde backend, pero SIEMPRE limit 3 en front
   useEffect(() => {
     let alive = true;
 
@@ -74,50 +136,84 @@ export function ProductDetailsPage({
       try {
         setLoadingRelated(true);
 
+        // Intentamos pedir filtrado al backend (si no lo soporta, igual filtramos acá)
         const res = await api.get<any>("/products", {
           params: {
-            category: product.category,
+            // IMPORTANTE: tu estructura real maneja categoryId,
+            // así que mandamos categoryId (y también category por compatibilidad)
+            categoryId: currentCategoryKey,
+            category: currentCategoryKey,
             exclude: product.id,
             limit: 3,
+            status: "active",
           },
         });
 
         const raw = res?.data;
+        const list = normalizeArray(raw) as ApiProduct[];
 
-        // ✅ Normaliza: acepta array directo o wrappers comunes
-        const list: Product[] = Array.isArray(raw)
-          ? raw
-          : Array.isArray(raw?.products)
-            ? raw.products
-            : Array.isArray(raw?.items)
-              ? raw.items
-              : Array.isArray(raw?.data)
-                ? raw.data
-                : [];
+        // ✅ mapea a UI, filtra, excluye actual, status active, misma categoría, limita 3
+        const mapped = list
+          .filter(Boolean)
+          .filter((p) => String(p.id) !== String(product.id))
+          .filter((p) => (p.status ?? "active") !== "inactive")
+          .filter(
+            (p) => String(p.categoryId ?? "") === String(currentCategoryKey),
+          )
+          .map(mapApiToUi)
+          .filter((p) => p.price > 0) // evita $0 si viene basura
+          .slice(0, 3);
+
+        // Si el backend NO filtró por categoría y vino vacío,
+        // hacemos fallback: traemos todos y filtramos acá.
+        if (mapped.length === 0) {
+          const allRes = await api.get<any>("/products");
+          const allRaw = allRes?.data;
+          const allList = normalizeArray(allRaw) as ApiProduct[];
+
+          const fallback = allList
+            .filter(Boolean)
+            .filter((p) => String(p.id) !== String(product.id))
+            .filter((p) => (p.status ?? "active") !== "inactive")
+            .filter(
+              (p) => String(p.categoryId ?? "") === String(currentCategoryKey),
+            )
+            .map(mapApiToUi)
+            .filter((p) => p.price > 0)
+            .slice(0, 3);
+
+          if (!alive) return;
+          setRelatedProducts(fallback);
+          return;
+        }
 
         if (!alive) return;
-
-        // ✅ extra safety: filtra por si viene null/undefined
-        setRelatedProducts(list.filter(Boolean));
+        setRelatedProducts(mapped);
       } catch (e) {
-        console.error("Error loading related products", e);
+        console.error("[ProductDetails] Error loading related products", e);
         if (alive) setRelatedProducts([]);
       } finally {
         if (alive) setLoadingRelated(false);
       }
     }
 
+    // si no hay categoría, no buscamos relacionados
+    if (!currentCategoryKey) {
+      setRelatedProducts([]);
+      return;
+    }
+
     loadRelated();
     return () => {
       alive = false;
     };
-  }, [product.id, product.category]);
+  }, [product.id, currentCategoryKey]);
 
   const getRelatedQty = (id: string) => relatedQuantities[id] || 1;
   const setRelatedQty = (id: string, q: number) =>
-    setRelatedQuantities((p) => ({ ...p, [id]: q }));
+    setRelatedQuantities((prev) => ({ ...prev, [id]: q }));
 
-  const handleRelatedClick = (p: Product) => {
+  const handleRelatedClick = (p: UiProduct) => {
     onProductClick?.(p);
   };
 
@@ -136,8 +232,12 @@ export function ProductDetailsPage({
         toast.success("¡Compartido exitosamente!");
       } catch {}
     } else {
-      await navigator.clipboard.writeText(window.location.href);
-      toast.success("¡Enlace copiado!");
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success("¡Enlace copiado!");
+      } catch {
+        toast.error("No se pudo copiar el enlace.");
+      }
     }
   };
 
@@ -212,16 +312,18 @@ export function ProductDetailsPage({
 
                 {product.originalPrice && (
                   <>
-                    <span className="ml-3 line-through text-xl">
+                    <span className="ml-3 line-through text-xl text-[#2E2E2E]">
                       {formatPrecioARS(
                         getPrecioFinalConIVA(product.originalPrice, ivaPct),
                       )}
                     </span>
-                    <Badge className="ml-2 bg-[#FF6B00]">Sale</Badge>
+                    <Badge className="ml-2 bg-[#FF6B00] text-white border-none">
+                      Sale
+                    </Badge>
                   </>
                 )}
 
-                <p className="text-sm mt-2">
+                <p className="text-sm mt-2 text-[#2E2E2E]">
                   Precio sin impuestos: {formatPrecioARS(product.price)}
                 </p>
               </div>
@@ -229,7 +331,7 @@ export function ProductDetailsPage({
               <StockIndicator stock={product.stock} variant="detail" />
 
               <Card className="bg-white border-none shadow-md rounded-2xl p-6 mt-6">
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex justify-between items-center mb-4 gap-4">
                   <QuantitySelector
                     quantity={quantity}
                     onQuantityChange={setQuantity}
@@ -237,8 +339,10 @@ export function ProductDetailsPage({
                     size="large"
                   />
                   <div className="text-right">
-                    <div className="text-sm">Total</div>
-                    <div className="text-2xl font-bold">{totalPrice}</div>
+                    <div className="text-sm text-[#2E2E2E]">Total</div>
+                    <div className="text-2xl font-bold text-[#1C2335]">
+                      {totalPrice}
+                    </div>
                   </div>
                 </div>
 
@@ -252,48 +356,88 @@ export function ProductDetailsPage({
                     className="flex-1"
                     stock={product.stock}
                   />
-                  <Button size="icon" variant="outline" onClick={handleShare}>
-                    <Share2 />
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    className="rounded-full"
+                    onClick={handleShare}
+                    aria-label="Compartir producto"
+                  >
+                    <Share2 className="w-5 h-5" />
                   </Button>
                 </div>
               </Card>
+
+              <div className="grid grid-cols-3 gap-4 mt-6">
+                <Card className="bg-white border-none shadow-sm rounded-xl p-4 text-center">
+                  <Truck className="w-8 h-8 text-[#FF6B00] mx-auto mb-2" />
+                  <p className="text-[#1C2335] text-sm font-semibold mb-1">
+                    Envío gratis
+                  </p>
+                  <p className="text-[#2E2E2E] text-xs">En pedidos +$50</p>
+                </Card>
+
+                <Card className="bg-white border-none shadow-sm rounded-xl p-4 text-center">
+                  <Shield className="w-8 h-8 text-[#FF6B00] mx-auto mb-2" />
+                  <p className="text-[#1C2335] text-sm font-semibold mb-1">
+                    Garantía de calidad
+                  </p>
+                  <p className="text-[#2E2E2E] text-xs">100% fresco</p>
+                </Card>
+
+                <Card className="bg-white border-none shadow-sm rounded-xl p-4 text-center">
+                  <Clock className="w-8 h-8 text-[#FF6B00] mx-auto mb-2" />
+                  <p className="text-[#1C2335] text-sm font-semibold mb-1">
+                    Envío el mismo día
+                  </p>
+                  <p className="text-[#2E2E2E] text-xs">Pedidos antes 14hs</p>
+                </Card>
+              </div>
             </div>
           </div>
 
-          {/* 🔥 RELACIONADOS REAL */}
-          <h2 className="text-2xl font-bold mb-6">Productos relacionados</h2>
+          {/* 🔥 RELACIONADOS REAL (solo 3) */}
+          <h2 className="text-2xl font-bold mb-6 text-[#1C2335]">
+            Productos relacionados
+          </h2>
 
-          {loadingRelated && <p>Cargando productos...</p>}
+          {loadingRelated && (
+            <p className="text-[#2E2E2E]">Cargando productos...</p>
+          )}
 
           {!loadingRelated && relatedProducts.length === 0 && (
-            <p>No hay productos relacionados.</p>
+            <p className="text-[#2E2E2E]/70">No hay productos relacionados.</p>
           )}
 
           <div className="grid md:grid-cols-3 gap-6">
-            {relatedProducts.map((p) => (
+            {relatedProducts.slice(0, 3).map((p) => (
               <Card
                 key={p.id}
-                className="cursor-pointer p-4 hover:shadow-xl"
+                className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md hover:shadow-xl transition-all p-4"
                 onClick={() => handleRelatedClick(p)}
               >
-                <div className="aspect-square rounded-xl overflow-hidden mb-3">
+                <div className="relative aspect-square rounded-xl overflow-hidden mb-3 bg-gray-50">
                   <ImageWithFallback
                     src={p.image}
                     alt={p.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                   />
                 </div>
 
-                <h3 className="font-semibold mb-2 line-clamp-2">{p.name}</h3>
+                <h3 className="font-semibold mb-2 line-clamp-2 text-[#1C2335]">
+                  {p.name}
+                </h3>
 
-                <p className="font-bold mb-2">
+                <p className="font-bold mb-2 text-[#1C2335]">
                   {formatPrecioARS(getPrecioFinalConIVA(p.price, ivaPct))}
                 </p>
 
-                <StockIndicator stock={p.stock} variant="card" />
+                <div className="mb-3">
+                  <StockIndicator stock={p.stock} variant="card" />
+                </div>
 
                 <div
-                  className="mt-3 flex gap-2"
+                  className="mt-auto flex gap-2"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <QuantitySelector
@@ -309,6 +453,7 @@ export function ProductDetailsPage({
                     quantity={getRelatedQty(p.id)}
                     variant="compact"
                     stock={p.stock}
+                    disabled={p.stock === 0}
                   />
                 </div>
               </Card>
