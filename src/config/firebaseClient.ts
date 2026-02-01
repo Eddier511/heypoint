@@ -1,6 +1,7 @@
 // src/config/firebaseClient.ts
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 function must(name: string) {
   const v = import.meta.env[name];
@@ -20,4 +21,6 @@ const firebaseConfig = {
 export const firebaseApp = getApps().length
   ? getApps()[0]
   : initializeApp(firebaseConfig);
+
 export const auth = getAuth(firebaseApp);
+export const db = getFirestore(firebaseApp);

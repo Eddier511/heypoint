@@ -17,7 +17,7 @@ import {
   startAt,
   endAt,
 } from "firebase/firestore";
-import { db } from "../lib/firebase";
+import { db } from "../config/firebaseClient";
 
 export interface Product {
   id: string;
