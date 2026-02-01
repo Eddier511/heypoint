@@ -66,7 +66,7 @@ export function ProductDetailsPage({
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
   }, [product.id]);
 
-  // 🔥 cargar relacionados desde backend
+  // 🔥 cargar relacionados desde backend (BLINDADO)
   useEffect(() => {
     let alive = true;
 
@@ -74,7 +74,7 @@ export function ProductDetailsPage({
       try {
         setLoadingRelated(true);
 
-        const { data } = await api.get<Product[]>("/products", {
+        const res = await api.get<any>("/products", {
           params: {
             category: product.category,
             exclude: product.id,
@@ -82,8 +82,23 @@ export function ProductDetailsPage({
           },
         });
 
+        const raw = res?.data;
+
+        // ✅ Normaliza: acepta array directo o wrappers comunes
+        const list: Product[] = Array.isArray(raw)
+          ? raw
+          : Array.isArray(raw?.products)
+            ? raw.products
+            : Array.isArray(raw?.items)
+              ? raw.items
+              : Array.isArray(raw?.data)
+                ? raw.data
+                : [];
+
         if (!alive) return;
-        setRelatedProducts(data);
+
+        // ✅ extra safety: filtra por si viene null/undefined
+        setRelatedProducts(list.filter(Boolean));
       } catch (e) {
         console.error("Error loading related products", e);
         if (alive) setRelatedProducts([]);
