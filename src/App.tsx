@@ -517,7 +517,7 @@ function AppContent() {
                 </Button>
               </motion.div>
 
-              <motion.div className="w-full sm:flex-1 min-w-[280px] sm:min-w-[380px] sm:max-w-md">
+              <motion.div className="w-full sm:w-auto sm:flex-1 sm:max-w-md">
                 <SmartSearchBar
                   onProductClick={(product) => {
                     setSelectedProduct(product);

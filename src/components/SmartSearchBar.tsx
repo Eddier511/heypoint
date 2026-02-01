@@ -535,20 +535,31 @@ export function SmartSearchBar({
 
           <input
             ref={inputRef}
-            type="text"
+            type="search"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setIsOpen(true);
+            }}
+            onFocus={handleInputFocus}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            autoFocus
-            className="absolute right-2 inset-y-0 my-auto
-           w-10 h-10 rounded-full
-           hover:bg-gray-100 transition-colors
-           flex items-center justify-center"
             aria-label="Buscar productos"
+            className="
+    w-full h-14 pl-14 pr-14
+    rounded-full bg-transparent
+    outline-none text-[#2E2E2E]
+    placeholder:text-[#2E2E2E]/40
+
+    appearance-none
+    [&::-webkit-search-cancel-button]:appearance-none
+    [&::-webkit-search-decoration]:appearance-none
+    [&::-webkit-search-results-button]:appearance-none
+    [&::-webkit-search-results-decoration]:appearance-none
+  "
           />
 
-          {/* ✅ X centrada cross-browser */}
+          {/* ✅ X perfecta centrada */}
           <AnimatePresence>
             {query.length > 0 && (
               <motion.button
@@ -560,12 +571,11 @@ export function SmartSearchBar({
                 onClick={handleClear}
                 aria-label="Limpiar búsqueda"
                 className="absolute right-2 top-1/2 -translate-y-1/2
-                 w-10 h-10 rounded-full
-                 hover:bg-gray-100 transition-colors
-                 flex items-center justify-center
-                 leading-none"
+                           w-10 h-10 rounded-full
+                           hover:bg-gray-100 transition-colors
+                           flex items-center justify-center"
               >
-                <X className="w-5 h-5 block text-[#2E2E2E]/60" />
+                <X className="w-5 h-5 text-[#2E2E2E]/60" />
               </motion.button>
             )}
           </AnimatePresence>
