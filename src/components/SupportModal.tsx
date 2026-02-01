@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "motion/react";
-import { X, MessageCircle, Package, CreditCard, Truck } from "lucide-react";
+import { X, MessageCircle, UserPlus, Zap } from "lucide-react";
+import type { ReactNode } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Separator } from "./ui/separator";
@@ -9,30 +10,89 @@ interface SupportModalProps {
   onClose: () => void;
 }
 
+type FaqItem = {
+  icon: React.ComponentType<{ className?: string }>;
+  question: string;
+  answer: ReactNode;
+};
+
 export function SupportModal({ isOpen, onClose }: SupportModalProps) {
-  const faqs = [
+  // WhatsApp: +54 9 11 3147-5522  -> wa.me uses digits only
+  const phoneNumber = "5491131475522";
+
+  // URLs
+  const storeUrl = "https://www.heypoint.com.ar";
+  const videoUrl = "#"; // TODO: Reemplazar por link real al video
+
+  const faqs: FaqItem[] = [
     {
-      icon: Package,
-      question: "¿Cómo puedo seguir mi pedido?",
-      answer: "Visitá 'Mis Pedidos' desde el menú de tu perfil para ver actualizaciones en tiempo real, estimaciones de entrega y ubicaciones de lockers para todos tus pedidos."
+      icon: UserPlus,
+      question: "¿Cómo crear una cuenta en HeyPoint!?",
+      answer: (
+        <>
+          Lo podés hacer ingresando a nuestra tienda web en{" "}
+          <a
+            href={storeUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="text-[#FF6B00] underline underline-offset-2 hover:opacity-80"
+          >
+            heypoint.com.ar
+          </a>
+          . Completá el formulario con tus datos personales y ¡listo!
+        </>
+      ),
     },
     {
-      icon: Truck,
-      question: "¿Cuándo llega mi pedido?",
-      answer: "¡La mayoría de los pedidos llegan en 24 horas! Vas a recibir una notificación cuando tu pedido esté listo para retirar en el locker HeyPoint! que elegiste."
+      icon: Zap,
+      question: "¿Cómo funciona HeyPoint!?",
+      answer: (
+        <>
+          ¡En tres simples pasos!
+          <ol className="list-decimal pl-5 mt-2 space-y-1">
+            <li>Ingresá a la tienda virtual y seleccioná el producto que deseás.</li>
+            <li>Pagá con tu billetera virtual vía Mercado Pago.</li>
+            <li>
+              Acercate a tu HeyPoint!, ingresá el código que recibiste por mail y retirás
+              tu compra.
+            </li>
+          </ol>
+
+          <div className="mt-2">
+            <a
+              href={videoUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-[#FF6B00] underline underline-offset-2 hover:opacity-80"
+            >
+              Ver video explicativo
+            </a>
+          </div>
+        </>
+      ),
     },
     {
-      icon: CreditCard,
-      question: "¿Necesitás confirmación de tu pago?",
-      answer: "Todos los comprobantes de pago se envían automáticamente a tu email. También podés ver los detalles de pago en la sección 'Mis Pedidos' de tu cuenta."
-    }
+      icon: MessageCircle,
+      question: "¿Necesitás contactarte con nosotros?",
+      answer: (
+        <>
+          Hacelo desde aquí:{" "}
+          <button
+            type="button"
+            onClick={() => handleWhatsAppClick()}
+            className="text-[#FF6B00] underline underline-offset-2 hover:opacity-80"
+          >
+            contactanos por WhatsApp
+          </button>
+          .
+        </>
+      ),
+    },
   ];
 
   const handleWhatsAppClick = () => {
-    // Replace with actual WhatsApp business number
-    const phoneNumber = "1234567890"; // Format: country code + number without +
-    const message = encodeURIComponent("¡Hola! Necesito ayuda con mi pedido de HeyPoint!.");
-    window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
+    const message = encodeURIComponent("¡Hola! Necesito ayuda con HeyPoint!.");
+    window.open(`https://wa.me/${phoneNumber}?text=${message}`, "_blank");
   };
 
   return (
@@ -59,11 +119,11 @@ export function SupportModal({ isOpen, onClose }: SupportModalProps) {
             onClick={onClose}
           >
             <Card
-              className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[85vh] sm:max-h-[90vh] overflow-y-auto"
+              className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[85vh] sm:max-h-[90vh] overflow-y-auto border-0 ring-0"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="bg-gradient-to-r from-[#FF6B00] to-[#ff8534] p-4 sm:p-6 relative">
+              <div className="bg-gradient-to-r from-[#FF6B00] to-[#ff8534] p-4 sm:p-6 relative rounded-t-3xl">
                 <button
                   onClick={onClose}
                   className="absolute top-3 right-3 sm:top-4 sm:right-4 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
@@ -71,10 +131,18 @@ export function SupportModal({ isOpen, onClose }: SupportModalProps) {
                 >
                   <X className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 </button>
-                <h2 className="text-white pr-10 sm:pr-12" style={{ fontSize: 'clamp(1.25rem, 4vw, 1.75rem)', fontWeight: 700 }}>
+
+                <h2
+                  className="text-white pr-10 sm:pr-12"
+                  style={{
+                    fontSize: "clamp(1.25rem, 4vw, 1.75rem)",
+                    fontWeight: 700,
+                  }}
+                >
                   ¿En qué te podemos ayudar?
                 </h2>
-                <p className="text-white/90 mt-1 sm:mt-2" style={{ fontSize: '0.875rem' }}>
+
+                <p className="text-white/90 mt-1 sm:mt-2" style={{ fontSize: "0.875rem" }}>
                   Respuestas rápidas a preguntas frecuentes
                 </p>
               </div>
@@ -87,36 +155,49 @@ export function SupportModal({ isOpen, onClose }: SupportModalProps) {
                       <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#FFF4E6] flex items-center justify-center">
                         <faq.icon className="w-5 h-5 sm:w-6 sm:h-6 text-[#FF6B00]" />
                       </div>
+
                       <div className="flex-1">
-                        <h3 className="text-[#1C2335] mb-1.5 sm:mb-2" style={{ fontSize: '0.938rem', fontWeight: 600 }}>
+                        <h3
+                          className="text-[#1C2335] mb-1.5 sm:mb-2"
+                          style={{ fontSize: "0.938rem", fontWeight: 600 }}
+                        >
                           {faq.question}
                         </h3>
-                        <p className="text-[#2E2E2E]" style={{ fontSize: '0.875rem', lineHeight: '1.6' }}>
+
+                        {/* Cambié <p> a <div> para soportar JSX (links/listas) */}
+                        <div
+                          className="text-[#2E2E2E]"
+                          style={{ fontSize: "0.875rem", lineHeight: "1.6" }}
+                        >
                           {faq.answer}
-                        </p>
+                        </div>
                       </div>
                     </div>
-                    {index < faqs.length - 1 && (
-                      <Separator className="mt-4 sm:mt-5 bg-gray-100" />
-                    )}
+
+                    {index < faqs.length - 1 && <Separator className="mt-4 sm:mt-5 bg-gray-100" />}
                   </div>
                 ))}
               </div>
 
               {/* Footer with WhatsApp Button */}
               <div className="bg-[#FFF4E6] p-4 sm:p-6 border-t border-gray-100">
-                <p className="text-[#2E2E2E] mb-3 sm:mb-4 text-center" style={{ fontSize: '0.875rem' }}>
+                <p
+                  className="text-[#2E2E2E] mb-3 sm:mb-4 text-center"
+                  style={{ fontSize: "0.875rem" }}
+                >
                   ¿Todavía necesitás ayuda?
                 </p>
+
                 <Button
                   onClick={handleWhatsAppClick}
                   className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-full h-12 sm:h-14 shadow-md"
-                  style={{ fontSize: '0.938rem', fontWeight: 600 }}
+                  style={{ fontSize: "0.938rem", fontWeight: 600 }}
                 >
                   <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                   Contactanos por WhatsApp
                 </Button>
-                <p className="text-[#2E2E2E] mt-2 sm:mt-3 text-center" style={{ fontSize: '0.75rem' }}>
+
+                <p className="text-[#2E2E2E] mt-2 sm:mt-3 text-center" style={{ fontSize: "0.75rem" }}>
                   Respondemos en minutos
                 </p>
               </div>
