@@ -17,29 +17,31 @@ interface ContactPageProps {
 const faqs = [
   {
     question: "¿Qué es Hey Point?",
-    answer:
-      "Hey Point! es un mini-market autónomo pensado para edificios, oficinas, gimnasios y comunidades que necesitan un punto de abastecimiento interno.",
-      "Funciona sin intermediarios y se adapta a las necesidades reales de consumo de cada lugar."
+    answer: `Hey Point! es un mini-market autónomo pensado para edificios, oficinas, gimnasios y comunidades que necesitan un punto de abastecimiento interno.
+Funciona sin intermediarios y se adapta a las necesidades reales de consumo de cada lugar.`,
   },
   {
-    question: "¿Ofrecen productos orgánicos?",
-    answer:
-      "¡Sí! Tenemos una amplia selección de productos orgánicos certificados, lácteos y alimentos envasados. Buscá la etiqueta 'Orgánico' en las páginas de productos.",
+    question: "¿Cómo funciona Hey Point!?",
+    answer: `Comprás desde la tienda web, pagás online y retirás tus productos en el stand.
+Elegís los productos en la tienda web.
+Pagás de forma rápida con Mercado Pago.
+Recibís un código token por mail y lo ingresás en el stand para retirar tu compra.`,
   },
   {
-    question: "¿Cuál es su política de devolución?",
-    answer:
-      "Respaldamos la calidad de nuestros productos. Si no estás satisfecho con algún artículo, contactanos dentro de las 48 horas posteriores a la entrega para obtener un reembolso completo o reemplazo.",
+    question: "¿Qué productos puedo encontrar?",
+    answer: `Vas a encontrar productos de consumo cotidiano, seleccionados según cada comunidad.
+La oferta puede incluir bebidas, snacks, alimentos, productos básicos del día a día y otros artículos de conveniencia.`,
   },
   {
-    question: "¿Cómo puedo rastrear mi pedido?",
-    answer:
-      "Una vez que tu pedido esté confirmado, recibirás un enlace de seguimiento por correo electrónico y SMS. También podés rastrear tu pedido en tiempo real a través del panel de tu cuenta.",
+    question: "¿Cómo se realiza el pago?",
+    answer: `Los pagos se realizan a través de Mercado Pago, utilizando cualquier medio habilitado en tu cuenta.
+Es un proceso rápido, seguro y sin contacto.`,
   },
   {
-    question: "¿Cómo puedo rastrear mi pedido?",
-    answer:
-      "Una vez que tu pedido esté confirmado, recibirás un enlace de seguimiento por correo electrónico y SMS. También podés rastrear tu pedido en tiempo real a través del panel de tu cuenta.",
+    question: "¿Mis datos y mis medios de pago están seguros?",
+    answer: `Sí. Hey Point! no almacena ni accede a datos de tarjetas.
+Los pagos se procesan directamente a través de Mercado Pago, que se encarga de la seguridad y encriptación de la información.
+Solo utilizamos los datos necesarios para gestionar tu compra y generar el código token.`,
   },
 ];
 
