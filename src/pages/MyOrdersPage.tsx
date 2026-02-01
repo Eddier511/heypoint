@@ -35,17 +35,44 @@ import { formatPrecioARS } from "../utils/priceUtils";
 import { motion, AnimatePresence } from "motion/react";
 
 /** =========================
- * API Helper (self-contained)
+ * API Helper (fixed)
+ * - Normaliza /api
+ * - Agrega Authorization Bearer automáticamente
  * ========================= */
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+const raw =
+  (import.meta.env.VITE_API_URL as string | undefined) ||
+  (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
+  "";
+
+const normalizedBase = raw.split(",")[0].trim().replace(/\/+$/, "");
+
+const API_URL =
+  normalizedBase.length > 0
+    ? normalizedBase.endsWith("/api")
+      ? normalizedBase
+      : `${normalizedBase}/api`
+    : import.meta.env.PROD
+      ? "https://api.heypoint.com.ar/api"
+      : "http://localhost:4000/api";
+
+const STORAGE_KEYS = {
+  idToken: "heypoint_id_token",
+} as const;
+
+function getIdTokenFromStorage() {
+  return localStorage.getItem(STORAGE_KEYS.idToken);
+}
 
 async function apiGet<T>(path: string, opts?: RequestInit): Promise<T> {
+  const token = getIdTokenFromStorage();
+
   const res = await fetch(`${API_URL}${path}`, {
     ...opts,
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(opts?.headers || {}),
-    }
+    },
   });
 
   if (!res.ok) {
