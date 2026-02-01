@@ -1,11 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import {
-  Search,
-  X,
-  ArrowLeft,
-  Loader2,
-} from "lucide-react";
-import { Card } from "./ui/card";
+import React, { useEffect, useRef, useState } from "react";
+import { Search, X, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { formatPrecioARS, getPrecioFinalConIVA } from "../utils/priceUtils";
@@ -21,7 +15,7 @@ type ApiProduct = {
   image?: string;
   price?: number | string;
   categoryId?: string;
-  category?: string; // a veces viene nombre directo
+  category?: string;
   status?: "active" | "inactive" | boolean;
 };
 
@@ -31,7 +25,7 @@ type ApiCategory = {
 };
 
 export interface Product {
-  id: string; // ✅ Firestore friendly
+  id: string;
   name: string;
   image: string;
   price: number;
@@ -72,12 +66,19 @@ export function SmartSearchBar({
   const [results, setResults] = useState<Product[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // selectedIndex:
+  // -1 = nada seleccionado
+  // 0..results.length-1 = un item
+  // results.length = botón "Ver todos"
   const [selectedIndex, setSelectedIndex] = useState(-1);
+
   const [dropdownPosition, setDropdownPosition] = useState({
     top: 0,
     left: 0,
     width: 0,
   });
+
   const [isMobileSearchMode, setIsMobileSearchMode] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -96,12 +97,12 @@ export function SmartSearchBar({
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Load categories (optional: to show category name)
+  // Load categories
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
-        const res = await CategoriesAPI.getAll(); // GET /api/categories
+        const res = await CategoriesAPI.getAll();
         const list: ApiCategory[] = Array.isArray(res.data) ? res.data : [];
         const map: Record<string, string> = {};
         list.forEach((c) => {
@@ -109,7 +110,7 @@ export function SmartSearchBar({
         });
         if (alive) categoryMapRef.current = map;
       } catch {
-        // ok si falla
+        // ok
       }
     })();
     return () => {
@@ -117,14 +118,14 @@ export function SmartSearchBar({
     };
   }, []);
 
-  // Load products real from API (once)
+  // Load products
   useEffect(() => {
     let alive = true;
 
     (async () => {
       try {
         setIsLoading(true);
-        const res = await ProductsAPI.getAll(); // GET /api/products
+        const res = await ProductsAPI.getAll();
         const raw: ApiProduct[] = Array.isArray(res.data) ? res.data : [];
 
         const mapped: Product[] = raw
@@ -134,12 +135,15 @@ export function SmartSearchBar({
             const name = String(p.name ?? p.title ?? "").trim();
             if (!id || !name) return null;
 
-            const image = String(p.imageUrl ?? p.image ?? "").trim() || DEFAULT_IMG;
+            const image =
+              String(p.imageUrl ?? p.image ?? "").trim() || DEFAULT_IMG;
             const price = toNumber(p.price);
 
             const category =
               (p.category ? String(p.category) : "") ||
-              (p.categoryId ? categoryMapRef.current[String(p.categoryId)] : "") ||
+              (p.categoryId
+                ? categoryMapRef.current[String(p.categoryId)]
+                : "") ||
               "Sin categoría";
 
             return { id, name, image, price, category };
@@ -161,7 +165,7 @@ export function SmartSearchBar({
     };
   }, []);
 
-  // Calculate dropdown position
+  // Calculate dropdown position (desktop)
   useEffect(() => {
     if (isOpen && inputContainerRef.current && !isMobileSearchMode) {
       const rect = inputContainerRef.current.getBoundingClientRect();
@@ -173,7 +177,7 @@ export function SmartSearchBar({
     }
   }, [isOpen, isMobileSearchMode]);
 
-  // Disable body scroll when mobile search mode is active
+  // Disable body scroll on mobile fullscreen
   useEffect(() => {
     document.body.style.overflow = isMobileSearchMode ? "hidden" : "";
     return () => {
@@ -181,11 +185,11 @@ export function SmartSearchBar({
     };
   }, [isMobileSearchMode]);
 
-  // Close dropdown on scroll (desktop only)
+  // Close dropdown on scroll (desktop)
   useEffect(() => {
     if (!isOpen || isMobileSearchMode) return;
-    let lastScrollY = window.scrollY;
 
+    let lastScrollY = window.scrollY;
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       const diff = Math.abs(currentScrollY - lastScrollY);
@@ -200,7 +204,7 @@ export function SmartSearchBar({
     return () => window.removeEventListener("scroll", handleScroll, true);
   }, [isOpen, isMobileSearchMode]);
 
-  // Update position on resize (desktop only)
+  // Update position on resize (desktop)
   useEffect(() => {
     if (!isOpen || isMobileSearchMode) return;
 
@@ -225,10 +229,12 @@ export function SmartSearchBar({
     if (!q) {
       setResults([]);
       setSelectedIndex(-1);
+      setIsLoading(false);
       return;
     }
 
     setIsLoading(true);
+    setSelectedIndex(-1);
 
     const timer = setTimeout(() => {
       const filtered = allProducts.filter((p) => {
@@ -237,25 +243,22 @@ export function SmartSearchBar({
         return nameMatch || catMatch;
       });
 
-      setResults(filtered.slice(0, 12)); // limit para UI
+      setResults(filtered.slice(0, 12));
       setIsLoading(false);
     }, 250);
 
     return () => clearTimeout(timer);
   }, [query, allProducts]);
 
-  // Close dropdown when clicking outside (desktop only)
+  // Close dropdown when clicking outside (desktop)
   useEffect(() => {
     if (isMobileSearchMode) return;
 
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      if (
-        searchRef.current &&
-        !searchRef.current.contains(target) &&
-        dropdownRef.current &&
-        !dropdownRef.current.contains(target)
-      ) {
+      const insideInput = searchRef.current?.contains(target);
+      const insideDrop = dropdownRef.current?.contains(target);
+      if (!insideInput && !insideDrop) {
         setIsOpen(false);
         setSelectedIndex(-1);
       }
@@ -264,41 +267,6 @@ export function SmartSearchBar({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isMobileSearchMode]);
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!isOpen && query.trim().length > 0) setIsOpen(true);
-
-    if (e.key === "Escape") {
-      if (isMobileSearchMode) closeMobileSearch();
-      else {
-        setIsOpen(false);
-        setSelectedIndex(-1);
-        inputRef.current?.blur();
-      }
-      return;
-    }
-
-    if (!isOpen || results.length === 0) return;
-
-    switch (e.key) {
-      case "ArrowDown":
-        e.preventDefault();
-        setSelectedIndex((prev) => (prev < results.length ? prev + 1 : prev));
-        break;
-      case "ArrowUp":
-        e.preventDefault();
-        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
-        break;
-      case "Enter":
-        e.preventDefault();
-        if (selectedIndex === -1 || selectedIndex === results.length) {
-          handleViewAllResults();
-        } else if (selectedIndex >= 0 && selectedIndex < results.length) {
-          handleProductSelect(results[selectedIndex]);
-        }
-        break;
-    }
-  };
 
   const handleProductSelect = (product: Product) => {
     setIsOpen(false);
@@ -322,16 +290,8 @@ export function SmartSearchBar({
     setQuery("");
     setResults([]);
     setSelectedIndex(-1);
+    setIsLoading(false);
     inputRef.current?.focus();
-  };
-
-  const handleInputFocus = () => {
-    if (isMobile) {
-      setIsMobileSearchMode(true);
-      setIsOpen(true);
-    } else {
-      if (query.trim().length > 0) setIsOpen(true);
-    }
   };
 
   const closeMobileSearch = () => {
@@ -340,8 +300,86 @@ export function SmartSearchBar({
     setQuery("");
     setResults([]);
     setSelectedIndex(-1);
+    setIsLoading(false);
     inputRef.current?.blur();
     onClose?.();
+  };
+
+  const handleInputFocus = () => {
+    if (isMobile) {
+      setIsMobileSearchMode(true);
+      setIsOpen(true);
+      // enfocar después del render del portal
+      setTimeout(() => inputRef.current?.focus(), 0);
+    } else {
+      if (query.trim().length > 0) setIsOpen(true);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    const q = query.trim();
+    if (!isOpen && q.length > 0) setIsOpen(true);
+
+    if (e.key === "Escape") {
+      if (isMobileSearchMode) closeMobileSearch();
+      else {
+        setIsOpen(false);
+        setSelectedIndex(-1);
+        inputRef.current?.blur();
+      }
+      return;
+    }
+
+    if (!isOpen) return;
+
+    const maxIndex = results.length > 0 ? results.length : -1; // botón ver todos = results.length (solo si hay resultados)
+    const allowViewAll = results.length > 0;
+
+    switch (e.key) {
+      case "ArrowDown": {
+        e.preventDefault();
+        setSelectedIndex((prev) => {
+          if (!allowViewAll) return -1;
+          const next = prev + 1;
+          return Math.min(next, maxIndex); // maxIndex = results.length
+        });
+        break;
+      }
+      case "ArrowUp": {
+        e.preventDefault();
+        setSelectedIndex((prev) => {
+          if (!allowViewAll) return -1;
+          const next = prev - 1;
+          return Math.max(next, -1);
+        });
+        break;
+      }
+      case "Enter": {
+        e.preventDefault();
+        if (!q) return;
+
+        // si no hay resultados, enter = ver todos
+        if (results.length === 0) {
+          handleViewAllResults();
+          return;
+        }
+
+        if (selectedIndex === -1) {
+          handleViewAllResults();
+          return;
+        }
+
+        if (selectedIndex === results.length) {
+          handleViewAllResults();
+          return;
+        }
+
+        if (selectedIndex >= 0 && selectedIndex < results.length) {
+          handleProductSelect(results[selectedIndex]);
+        }
+        break;
+      }
+    }
   };
 
   const highlightMatch = (text: string, searchQuery: string) => {
@@ -363,7 +401,7 @@ export function SmartSearchBar({
     );
   };
 
-  // Mobile fullscreen mode
+  // ✅ MOBILE FULLSCREEN
   if (isMobileSearchMode && typeof window !== "undefined") {
     return createPortal(
       <motion.div
@@ -415,7 +453,6 @@ export function SmartSearchBar({
                 aria-label="Buscar productos"
               />
 
-              {/* ✅ Clear bien alineado */}
               <AnimatePresence>
                 {query.length > 0 && (
                   <motion.button
@@ -436,7 +473,7 @@ export function SmartSearchBar({
               </AnimatePresence>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Results */}
         <motion.div
@@ -525,8 +562,16 @@ export function SmartSearchBar({
                     onClick={() => handleProductSelect(product)}
                     className={`
                       w-full flex items-center gap-4 p-4 transition-all duration-150
-                      ${index === selectedIndex ? "bg-[#FFF4E6]" : "hover:bg-[#FFF4E6]/50 active:bg-[#FFF4E6]"}
-                      ${index < results.length - 1 ? "border-b border-gray-200/60" : ""}
+                      ${
+                        index === selectedIndex
+                          ? "bg-[#FFF4E6]"
+                          : "hover:bg-[#FFF4E6]/50 active:bg-[#FFF4E6]"
+                      }
+                      ${
+                        index < results.length - 1
+                          ? "border-b border-gray-200/60"
+                          : ""
+                      }
                     `}
                   >
                     <div className="flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden bg-white shadow-sm">
@@ -588,7 +633,7 @@ export function SmartSearchBar({
     );
   }
 
-  // Desktop mode
+  // ✅ DESKTOP
   return (
     <div ref={searchRef} className={`relative w-full ${className}`}>
       <AnimatePresence>
@@ -599,7 +644,10 @@ export function SmartSearchBar({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[9998]"
-            onClick={() => setIsOpen(false)}
+            onClick={() => {
+              setIsOpen(false);
+              setSelectedIndex(-1);
+            }}
           />
         )}
       </AnimatePresence>
@@ -622,7 +670,11 @@ export function SmartSearchBar({
           <Search
             className={`
               absolute left-5 top-1/2 -translate-y-1/2 transition-colors duration-200
-              ${isOpen && query.trim().length > 0 ? "text-[#FF6B00]" : "text-[#2E2E2E]/50"}
+              ${
+                isOpen && query.trim().length > 0
+                  ? "text-[#FF6B00]"
+                  : "text-[#2E2E2E]/50"
+              }
             `}
             style={{ width: "20px", height: "20px" }}
             aria-hidden="true"
@@ -649,7 +701,6 @@ export function SmartSearchBar({
             }
           />
 
-          {/* ✅ X PERFECTA (centrada y con hit-area) */}
           <AnimatePresence>
             {query.length > 0 && (
               <motion.button
@@ -676,167 +727,161 @@ export function SmartSearchBar({
           typeof window !== "undefined" &&
           createPortal(
             <AnimatePresence>
-              {isOpen && query.trim().length > 0 && (
-                <motion.div
-                  ref={dropdownRef}
-                  id="search-results"
-                  initial={{ opacity: 0, y: 8, scale: 0.96 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 8, scale: 0.96 }}
-                  transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
-                  className="fixed z-[9999]"
-                  role="listbox"
+              <motion.div
+                ref={dropdownRef}
+                id="search-results"
+                initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+                className="fixed z-[9999]"
+                role="listbox"
+                style={{
+                  top: `${dropdownPosition.top}px`,
+                  left: `${dropdownPosition.left}px`,
+                  width: `${dropdownPosition.width}px`,
+                  maxHeight: "calc(100vh - 180px)",
+                }}
+              >
+                <div
+                  className="overflow-hidden flex flex-col"
                   style={{
-                    top: `${dropdownPosition.top}px`,
-                    left: `${dropdownPosition.left}px`,
-                    width: `${dropdownPosition.width}px`,
+                    background: "rgba(255, 255, 255, 0.95)",
+                    backdropFilter: "blur(20px)",
+                    WebkitBackdropFilter: "blur(20px)",
+                    borderRadius: "24px",
+                    border: "1px solid rgba(255, 255, 255, 0.3)",
+                    boxShadow:
+                      "0 20px 60px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 107, 0, 0.15)",
                     maxHeight: "calc(100vh - 180px)",
                   }}
                 >
-                  <div
-                    className="overflow-hidden flex flex-col"
-                    style={{
-                      background: "rgba(255, 255, 255, 0.95)",
-                      backdropFilter: "blur(20px)",
-                      WebkitBackdropFilter: "blur(20px)",
-                      borderRadius: "24px",
-                      border: "1px solid rgba(255, 255, 255, 0.3)",
-                      boxShadow:
-                        "0 20px 60px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 107, 0, 0.15)",
-                      maxHeight: "calc(100vh - 180px)",
-                    }}
-                  >
-                    {isLoading && (
-                      <div className="p-8">
-                        <div className="flex items-center justify-center gap-3 text-[#2E2E2E]/60">
-                          <Loader2 className="w-5 h-5 animate-spin text-[#FF6B00]" />
-                          <span style={{ fontSize: "1rem", fontWeight: 500 }}>
-                            Buscando...
-                          </span>
-                        </div>
+                  {isLoading && (
+                    <div className="p-8">
+                      <div className="flex items-center justify-center gap-3 text-[#2E2E2E]/60">
+                        <Loader2 className="w-5 h-5 animate-spin text-[#FF6B00]" />
+                        <span style={{ fontSize: "1rem", fontWeight: 500 }}>
+                          Buscando...
+                        </span>
                       </div>
-                    )}
+                    </div>
+                  )}
 
-                    {!isLoading && results.length === 0 && (
-                      <div className="p-10 text-center">
-                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#FFF4E6]/80 backdrop-blur-sm flex items-center justify-center">
-                          <Search className="w-8 h-8 text-[#FF6B00]/60" />
-                        </div>
-                        <p
-                          className="text-[#2E2E2E]"
-                          style={{ fontSize: "1.063rem", fontWeight: 600 }}
-                        >
-                          No encontramos resultados
-                        </p>
-                        <p
-                          className="text-[#2E2E2E]/60 mt-2"
-                          style={{ fontSize: "0.938rem" }}
-                        >
-                          Intenta con otro término de búsqueda
-                        </p>
+                  {!isLoading && results.length === 0 && (
+                    <div className="p-10 text-center">
+                      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#FFF4E6]/80 backdrop-blur-sm flex items-center justify-center">
+                        <Search className="w-8 h-8 text-[#FF6B00]/60" />
                       </div>
-                    )}
+                      <p
+                        className="text-[#2E2E2E]"
+                        style={{ fontSize: "1.063rem", fontWeight: 600 }}
+                      >
+                        No encontramos resultados
+                      </p>
+                      <p
+                        className="text-[#2E2E2E]/60 mt-2"
+                        style={{ fontSize: "0.938rem" }}
+                      >
+                        Intenta con otro término de búsqueda
+                      </p>
+                    </div>
+                  )}
 
-                    {!isLoading && results.length > 0 && (
-                      <>
-                        <div
-                          className="overflow-y-auto overscroll-contain"
-                          style={{
-                            scrollbarWidth: "thin",
-                            scrollbarColor:
-                              "#FF6B00 rgba(255, 244, 230, 0.5)",
-                            maxHeight: `${7 * 72}px`,
-                            minHeight: "80px",
-                          }}
-                        >
-                          {results.map((product, index) => (
-                            <button
-                              key={product.id}
-                              id={`search-result-${index}`}
-                              onClick={() => handleProductSelect(product)}
-                              className={`
-                                w-full flex items-center gap-4 p-3.5 transition-all duration-150
-                                min-h-[72px]
-                                ${
-                                  index === selectedIndex
-                                    ? "bg-[#FFF4E6]/70 backdrop-blur-sm"
-                                    : "hover:bg-white/60"
-                                }
-                                ${
-                                  index < results.length - 1
-                                    ? "border-b border-gray-200/40"
-                                    : ""
-                                }
-                              `}
-                              role="option"
-                              aria-selected={index === selectedIndex}
-                            >
-                              <div className="flex-shrink-0 w-14 h-14 rounded-2xl overflow-hidden bg-white/80 shadow-sm">
-                                <ImageWithFallback
-                                  src={product.image}
-                                  alt={product.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-
-                              <div className="flex-1 text-left min-w-0">
-                                <p
-                                  className="text-[#1C2335] truncate mb-1"
-                                  style={{ fontSize: "1rem", fontWeight: 600 }}
-                                >
-                                  {highlightMatch(product.name, query)}
-                                </p>
-                                <div className="flex items-center gap-2">
-                                  <span
-                                    className="text-[#FF6B00]"
-                                    style={{
-                                      fontSize: "1rem",
-                                      fontWeight: 700,
-                                    }}
-                                  >
-                                    {formatPrecioARS(
-                                      getPrecioFinalConIVA(product.price),
-                                    )}
-                                  </span>
-                                  <span className="text-[#2E2E2E]/40">•</span>
-                                  <span
-                                    className="text-[#2E2E2E]/60 truncate"
-                                    style={{ fontSize: "0.813rem" }}
-                                  >
-                                    {product.category}
-                                  </span>
-                                </div>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-
-                        <div className="flex-shrink-0 sticky bottom-0 p-4 bg-white/60 backdrop-blur-md border-t border-gray-200/50">
-                          <Button
-                            onClick={handleViewAllResults}
+                  {!isLoading && results.length > 0 && (
+                    <>
+                      <div
+                        className="overflow-y-auto overscroll-contain"
+                        style={{
+                          scrollbarWidth: "thin",
+                          scrollbarColor: "#FF6B00 rgba(255, 244, 230, 0.5)",
+                          maxHeight: `${7 * 72}px`,
+                          minHeight: "80px",
+                        }}
+                      >
+                        {results.map((product, index) => (
+                          <button
+                            key={product.id}
+                            id={`search-result-${index}`}
+                            onClick={() => handleProductSelect(product)}
                             className={`
-                              w-full bg-gradient-to-r from-[#FF6B00] to-[#FF8534] 
-                              hover:from-[#e56000] hover:to-[#FF6B00] 
-                              text-white rounded-2xl h-12
-                              shadow-[0_4px_16px_rgba(255,107,0,0.25)]
-                              hover:shadow-[0_6px_24px_rgba(255,107,0,0.35)]
-                              transition-all duration-200
+                              w-full flex items-center gap-4 p-3.5 transition-all duration-150
+                              min-h-[72px]
                               ${
-                                selectedIndex === results.length
-                                  ? "ring-2 ring-[#FF6B00] ring-offset-2"
+                                index === selectedIndex
+                                  ? "bg-[#FFF4E6]/70 backdrop-blur-sm"
+                                  : "hover:bg-white/60"
+                              }
+                              ${
+                                index < results.length - 1
+                                  ? "border-b border-gray-200/40"
                                   : ""
                               }
                             `}
-                            style={{ fontSize: "1rem", fontWeight: 700 }}
+                            role="option"
+                            aria-selected={index === selectedIndex}
                           >
-                            Ver todos los resultados ({results.length})
-                          </Button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </motion.div>
-              )}
+                            <div className="flex-shrink-0 w-14 h-14 rounded-2xl overflow-hidden bg-white/80 shadow-sm">
+                              <ImageWithFallback
+                                src={product.image}
+                                alt={product.name}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+
+                            <div className="flex-1 text-left min-w-0">
+                              <p
+                                className="text-[#1C2335] truncate mb-1"
+                                style={{ fontSize: "1rem", fontWeight: 600 }}
+                              >
+                                {highlightMatch(product.name, query)}
+                              </p>
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className="text-[#FF6B00]"
+                                  style={{ fontSize: "1rem", fontWeight: 700 }}
+                                >
+                                  {formatPrecioARS(
+                                    getPrecioFinalConIVA(product.price),
+                                  )}
+                                </span>
+                                <span className="text-[#2E2E2E]/40">•</span>
+                                <span
+                                  className="text-[#2E2E2E]/60 truncate"
+                                  style={{ fontSize: "0.813rem" }}
+                                >
+                                  {product.category}
+                                </span>
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="flex-shrink-0 sticky bottom-0 p-4 bg-white/60 backdrop-blur-md border-t border-gray-200/50">
+                        <Button
+                          onClick={handleViewAllResults}
+                          className={`
+                            w-full bg-gradient-to-r from-[#FF6B00] to-[#FF8534] 
+                            hover:from-[#e56000] hover:to-[#FF6B00] 
+                            text-white rounded-2xl h-12
+                            shadow-[0_4px_16px_rgba(255,107,0,0.25)]
+                            hover:shadow-[0_6px_24px_rgba(255,107,0,0.35)]
+                            transition-all duration-200
+                            ${
+                              selectedIndex === results.length
+                                ? "ring-2 ring-[#FF6B00] ring-offset-2"
+                                : ""
+                            }
+                          `}
+                          style={{ fontSize: "1rem", fontWeight: 700 }}
+                        >
+                          Ver todos los resultados ({results.length})
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </motion.div>
             </AnimatePresence>,
             document.body,
           )}

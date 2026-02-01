@@ -53,13 +53,17 @@ type Page =
   | "terms"
   | "privacy";
 
+/**
+ * ✅ Product actualizado para buscador/Firestore
+ * - id: string (no number)
+ */
 interface Product {
-  id: number;
+  id: string;
   name: string;
   image: string;
   price: number;
   originalPrice?: number;
-  rating: number;
+  rating?: number;
   category: string;
   badges?: string[];
 }
@@ -122,8 +126,10 @@ function AppContent() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [scrollY, setScrollY] = useState(0);
 
-  // ✅ categorías desde API para la home
+  // ✅ categorías API
   const [dbCategories, setDbCategories] = useState<UiCategory[]>([]);
+  // 🔥 ya no usamos loader visual para home categorías
+  // (seguimos guardando el estado por si lo ocupás en otro lado)
   const [loadingCategories, setLoadingCategories] = useState(false);
 
   // Use contexts
@@ -132,21 +138,18 @@ function AppContent() {
     useModal();
   const { clearCart } = useCart();
 
-  // Derive user info from context
   const userName = user?.fullName || "User";
   const userEmail = user?.email || "";
 
-  // Generate pickup code once - stable across renders
   const pickupCodeGenerated = useMemo(() => {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Evitar 0, O, 1, I, l
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     let code = "";
     for (let i = 0; i < 6; i++) {
       code += chars[Math.floor(Math.random() * chars.length)];
     }
     return code;
-  }, []); // Empty deps = generate only once
+  }, []);
 
-  // Global window bridge for modal access from anywhere
   useEffect(() => {
     (window as any).heypoint = (window as any).heypoint || {};
     (window as any).heypoint.openLogin = openLoginModal;
@@ -162,17 +165,14 @@ function AppContent() {
     };
   }, [openLoginModal, openSignupModal, closeAllModals]);
 
-  // Close all modals when navigation changes (route-change behavior)
   useEffect(() => {
     if (openedAt && Date.now() - openedAt < 200) return;
     closeAllModals();
   }, [currentPage]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Listen for custom navigation events from HeaderAccountButton
   useEffect(() => {
     const handleCustomNavigation = (event: CustomEvent) => {
       const path = event.detail?.path;
-      console.log("[App] Custom navigation event received:", path);
 
       if (path === "/account" || path === "profile") {
         setCurrentPage("profile");
@@ -195,29 +195,20 @@ function AppContent() {
     };
   }, []);
 
-  // Listen for logout events and redirect to homepage
   useEffect(() => {
     const handleLogout = () => {
-      if (loadingAuth) {
-        console.log("[App] Logout event ignored while loadingAuth=true");
-        return;
-      }
-      console.log("[App] Logout event received - redirecting to home");
+      if (loadingAuth) return;
       setCurrentPage("home");
     };
 
     window.addEventListener("heypoint:logout", handleLogout);
-    return () => {
-      window.removeEventListener("heypoint:logout", handleLogout);
-    };
+    return () => window.removeEventListener("heypoint:logout", handleLogout);
   }, [loadingAuth]);
 
-  // Scroll to top whenever page changes
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [currentPage]);
 
-  // Track scroll position for chevron animation
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
     window.addEventListener("scroll", handleScroll, { passive: true });
@@ -225,7 +216,52 @@ function AppContent() {
   }, []);
 
   /** =========================
-   * ✅ cargar categorías desde backend (Home)
+   * ✅ FALLBACK LOCAL (se pinta INMEDIATO)
+   * ========================= */
+  const PLACEHOLDER_IMG = "https://placehold.co/600x400?text=HeyPoint";
+
+  const newCategories: UiCategory[] = [
+    {
+      id: "snacks",
+      name: "Snacks",
+      items: 120,
+      image:
+        "https://images.unsplash.com/photo-1762417582697-f17df0c69348?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
+    },
+    {
+      id: "bebidas",
+      name: "Bebidas",
+      items: 90,
+      image:
+        "https://images.unsplash.com/photo-1672826979189-faae44e1b7a6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
+    },
+    {
+      id: "electronica",
+      name: "Electrónica",
+      items: 45,
+      image:
+        "https://images.unsplash.com/photo-1707485122968-56916bd2c464?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
+    },
+    {
+      id: "higiene",
+      name: "Higiene",
+      items: 110,
+      image:
+        "https://images.unsplash.com/photo-1629198688000-71f23e745b6e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
+    },
+    {
+      id: "otros",
+      name: "Otros",
+      items: 75,
+      image:
+        "https://images.unsplash.com/photo-1651383140368-9b3ee59c2981?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
+    },
+  ];
+
+  /** =========================
+   * ✅ cargar categorías desde backend (SIN loader en UI)
+   * - pinta fallback al instante
+   * - cuando llega API, reemplaza
    * ========================= */
   useEffect(() => {
     let alive = true;
@@ -236,10 +272,7 @@ function AppContent() {
 
         const raw = await apiGet<ApiCategoriesResponse>("/categories");
         const list = Array.isArray(raw) ? raw : raw?.categories || [];
-
         const active = list.filter((c) => c.status !== "inactive");
-
-        const PLACEHOLDER_IMG = "https://placehold.co/600x400?text=HeyPoint";
 
         const FALLBACK_IMAGES: Record<string, string> = {
           Snacks:
@@ -261,10 +294,12 @@ function AppContent() {
           image: c.imageUrl || FALLBACK_IMAGES[c.name] || PLACEHOLDER_IMG,
         }));
 
-        if (alive) setDbCategories(mapped);
+        // ✅ si API viene vacío, no rompas el fallback
+        if (!alive) return;
+        if (mapped.length > 0) setDbCategories(mapped);
       } catch (e) {
         console.warn("[Home] Failed to load categories", e);
-        if (alive) setDbCategories([]);
+        // ✅ no seteamos [] para no “borrar” fallback
       } finally {
         if (alive) setLoadingCategories(false);
       }
@@ -275,61 +310,7 @@ function AppContent() {
     };
   }, []);
 
-  const heroImages = [
-    {
-      url: "https://images.unsplash.com/photo-1754195451509-00c25c20fdde?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjB2ZW5kaW5nJTIwbWFjaGluZSUyMHN0b3JlfGVufDF8fHx8MTc2MjMxMjQ0Nnww&ixlib=rb-4.1.0&q=80&w=1080",
-      alt: "Modern HeyPoint! mini-store",
-    },
-    {
-      url: "https://images.unsplash.com/photo-1611250308498-9e325502f8ee?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb252ZW5pZW5jZSUyMHN0b3JlJTIwaW50ZXJpb3J8ZW58MXx8fHwxNzYyMjk4NTYwfDA&ixlib=rb-4.1.0&q=80&w=1080",
-      alt: "HeyPoint! store interior",
-    },
-    {
-      url: "https://images.unsplash.com/photo-1758721321642-485c02d07009?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhdXRvbWF0ZWQlMjByZXRhaWwlMjBraW9za3xlbnwxfHx8fDE3NjIzMTI5Mzd8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      alt: "Automated retail technology",
-    },
-  ];
-
-  // ✅ fallback local (si el API está vacío o falla)
-  const newCategories: UiCategory[] = [
-    {
-      id: "snacks",
-      name: "Snacks",
-      items: 120,
-      image:
-        "https://images.unsplash.com/photo-1762417582697-f17df0c69348?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzbmFja3MlMjBkaXNwbGF5JTIwc2hlbGZ8ZW58MXx8fHwxNzYzMDg4OTk0fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-    },
-    {
-      id: "bebidas",
-      name: "Bebidas",
-      items: 90,
-      image:
-        "https://images.unsplash.com/photo-1672826979189-faae44e1b7a6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiZXZlcmFnZXMlMjBkcmlua3MlMjBjb29sZXJ8ZW58MXx8fHwxNzYzMDg4OTk0fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-    },
-    {
-      id: "electronica",
-      name: "Electrónica",
-      items: 45,
-      image:
-        "https://images.unsplash.com/photo-1707485122968-56916bd2c464?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlbGVjdHJvbmljcyUyMGdhZGdldHMlMjBkaXNwbGF5fGVufDF8fHx8MTc2MzA4ODk5NHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-    },
-    {
-      id: "higiene",
-      name: "Higiene",
-      items: 110,
-      image:
-        "https://images.unsplash.com/photo-1629198688000-71f23e745b6e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwZXJzb25hbCUyMGNhcmUlMjBwcm9kdWN0c3xlbnwxfHx8fDE3NjMwODkwMTR8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-    },
-    {
-      id: "otros",
-      name: "Otros",
-      items: 75,
-      image:
-        "https://images.unsplash.com/photo-1651383140368-9b3ee59c2981?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmcm96ZW4lMjBmb29kfGVufDF8fHx8MTc2MjIzNDM1OHww&ixlib=rb-4.1.0&q=80&w=1080",
-    },
-  ];
-
-  // ✅ lo que se muestra en home:
+  // ✅ lo que se muestra (carga de una):
   const homeCategories = dbCategories.length ? dbCategories : newCategories;
 
   const howItWorksSteps = [
@@ -542,8 +523,8 @@ function AppContent() {
                     setSelectedProduct(product);
                     setCurrentPage("productDetails");
                   }}
-                  onViewAllResults={(query) => {
-                    setSearchQuery(query);
+                  onViewAllResults={(q) => {
+                    setSearchQuery(q);
                     setSelectedCategory(null);
                     setCurrentPage("shop");
                   }}
@@ -657,12 +638,7 @@ function AppContent() {
           </motion.div>
 
           <div className="relative">
-            {/* ✅ loader simple */}
-            {loadingCategories && dbCategories.length === 0 ? (
-              <div className="text-center text-[#2E2E2E] py-6">
-                Cargando categorías...
-              </div>
-            ) : null}
+            {/* ✅ SIN loader: pinta directo con fallback, luego se reemplaza */}
 
             {/* Mobile */}
             <div className="md:hidden overflow-x-auto pb-8 scrollbar-hide snap-x snap-mandatory">
@@ -750,6 +726,9 @@ function AppContent() {
                 ))}
               </div>
             </div>
+
+            {/* (opcional) si querés, podés usar loadingCategories para algo sutil:
+                ej. un shimmer o una barra arriba. Por ahora lo dejamos sin UI. */}
           </div>
         </div>
       </section>
@@ -856,7 +835,4 @@ function AppContent() {
 /**
  * ✅ API requerido (backend):
  * GET {VITE_API_URL}/api/categories
- * Respuesta:
- *  - array: [{ id, name, productCount?, status?, imageUrl? }]
- *  - o { categories: [...] }
  */
