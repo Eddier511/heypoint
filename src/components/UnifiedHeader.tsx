@@ -4,7 +4,6 @@ import {
   Menu,
   X,
   User,
-  Search,
   ChevronDown,
   Home,
   Store,
@@ -28,7 +27,7 @@ import { useModal } from "../contexts/ModalContext";
 import { useCart } from "../contexts/CartContext";
 import { useHasPendingOrders } from "../hooks/useHasPendingOrders";
 import { toast } from "sonner";
-import { CategoriesAPI } from "../lib/api"; // ✅ usa tu api.ts
+import { CategoriesAPI } from "../lib/api"; // ✅ tu api.ts
 
 interface UnifiedHeaderProps {
   onNavigate?: (page: string) => void;
@@ -103,13 +102,18 @@ const FALLBACK_CATEGORIES: HeaderCategory[] = [
   },
 ];
 
+const DEFAULT_CATEGORY_IMAGE =
+  "https://images.unsplash.com/photo-1580915411954-282cb1b0d780?auto=format&fit=crop&w=1200&q=80";
+
 function mapCategoryToHeader(c: ApiCategory): HeaderCategory | null {
   const id = (c?.id ?? "").toString().trim();
   const name = (c?.name ?? "").toString().trim();
   if (!id || !name) return null;
   if (c?.status && c.status !== "active") return null;
 
-  const image = (c?.imageUrl || c?.image || "").toString().trim();
+  const imageRaw = (c?.imageUrl || c?.image || "").toString().trim();
+  const image = imageRaw || DEFAULT_CATEGORY_IMAGE;
+
   const items = Number(c?.productCount ?? c?.items ?? 0);
 
   return {
@@ -124,19 +128,16 @@ export function UnifiedHeader({
   onNavigate,
   currentPage = "home",
   isLoggedIn = false,
-  onAuthRequired,
   onCategorySelect,
   onLogout,
   userName: userNameProp = "User",
   isTransparent = true,
 }: UnifiedHeaderProps) {
-  // Use auth and modal contexts
   const { isAuthenticated, user, logout } = useAuth();
   const { openLoginModal, openSignupModal } = useModal();
   const { cartCount } = useCart();
   const hasPendingOrders = useHasPendingOrders();
 
-  // Use context values, fallback to props for backward compatibility
   const effectiveIsLoggedIn = isAuthenticated || isLoggedIn;
   const effectiveUserName = user?.fullName || userNameProp;
 
@@ -145,7 +146,6 @@ export function UnifiedHeader({
   const [isShopDropdownOpen, setIsShopDropdownOpen] = useState(false);
   const [isAboutDropdownOpen, setIsAboutDropdownOpen] = useState(false);
   const [expandedMobileShop, setExpandedMobileShop] = useState(false);
-  const [expandedMobileAbout, setExpandedMobileAbout] = useState(false);
   const [activeLink, setActiveLink] = useState(currentPage);
   const [showEmptyCartModal, setShowEmptyCartModal] = useState(false);
   const [showGlobalSearchModal, setShowGlobalSearchModal] = useState(false);
@@ -163,19 +163,24 @@ export function UnifiedHeader({
   const shopHoverCloseTimer = useRef<NodeJS.Timeout | null>(null);
   const aboutHoverCloseTimer = useRef<NodeJS.Timeout | null>(null);
 
-  const aboutLinks = [
-    { id: "business", label: "Nosotros" },
-    { id: "ourcompany", label: "Nuestra Empresa" },
-  ];
-
-  // ✅ Cargar categorías del backend una sola vez
+  // ✅ Cargar categorías públicas (NO admin)
   useEffect(() => {
     let mounted = true;
 
     (async () => {
       try {
-        const res = await CategoriesAPI.getAll();
-        const raw = Array.isArray(res.data) ? res.data : [];
+        // ✅ IMPORTANTE: esto debe pegarle a /api/categories (público)
+        // Si tu lib/api.ts no tiene getPublic(), dejé fallback:
+        const res =
+          (CategoriesAPI as any).getPublic?.() ??
+          (CategoriesAPI as any).getPublicCategories?.() ??
+          (CategoriesAPI as any).getAllPublic?.() ??
+          // último fallback: si "getAll" ya apunta al público en tu proyecto
+          (CategoriesAPI as any).getAll?.();
+
+        const resolved = await res;
+        const raw = Array.isArray(resolved?.data) ? resolved.data : [];
+
         const mapped = raw
           .map(mapCategoryToHeader)
           .filter(Boolean) as HeaderCategory[];
@@ -184,7 +189,6 @@ export function UnifiedHeader({
         if (mapped.length > 0) setCategories(mapped);
       } catch (e) {
         console.warn("[UnifiedHeader] categories load failed:", e);
-        // se queda con fallback
       }
     })();
 
@@ -193,7 +197,7 @@ export function UnifiedHeader({
     };
   }, []);
 
-  // Handle scroll detection for sticky header
+  // Sticky header on scroll
   useEffect(() => {
     if (!isTransparent) {
       setScrolled(true);
@@ -209,28 +213,24 @@ export function UnifiedHeader({
     return () => window.removeEventListener("scroll", handleScroll);
   }, [isTransparent]);
 
-  // Update active link when page changes
+  // Active link sync
   useEffect(() => {
     setActiveLink(currentPage);
   }, [currentPage]);
 
-  // Detect touch device
+  // Touch device detect
   useEffect(() => {
     const checkTouchDevice = () => {
       setIsTouchDevice(
         "ontouchstart" in window || navigator.maxTouchPoints > 0,
       );
     };
-
     checkTouchDevice();
     window.addEventListener("touchstart", checkTouchDevice, { once: true });
-
-    return () => {
-      window.removeEventListener("touchstart", checkTouchDevice);
-    };
+    return () => window.removeEventListener("touchstart", checkTouchDevice);
   }, []);
 
-  // Close dropdowns when clicking outside
+  // Close dropdowns on outside click / ESC
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -297,7 +297,6 @@ export function UnifiedHeader({
     else handleNavigation("cart");
   };
 
-  const handleSearchClick = () => setShowGlobalSearchModal(true);
   const handleSupportClick = () => setShowSupportModal(true);
 
   // Shop dropdown handlers
@@ -384,7 +383,6 @@ export function UnifiedHeader({
     }, 300);
   };
 
-  // Dynamic classes based on scroll state
   const textColor = scrolled ? "text-[#0D0D0D]" : "text-white";
   const borderColor = scrolled ? "border-gray-200/50" : "border-white/10";
 
@@ -566,17 +564,6 @@ export function UnifiedHeader({
 
             {/* Right Actions */}
             <div className="flex items-center gap-3 sm:gap-4">
-              {/*
-              <motion.button
-                className={`p-2 ${textColor} hover:text-[#FF6B00] transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[#FF6B00] rounded-lg`}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                aria-label="Buscar"
-                onClick={handleSearchClick}
-              >
-                <Search className="w-5 h-5 sm:w-6 sm:h-6" aria-hidden="true" />
-              </motion.button>*/}
-
               <motion.button
                 onClick={handleCartClick}
                 className={`relative p-2 ${textColor} hover:text-[#FF6B00] transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[#FF6B00] rounded-lg`}
@@ -597,6 +584,7 @@ export function UnifiedHeader({
                   </Badge>
                 )}
               </motion.button>
+
               <div className="hidden lg:flex items-center gap-3">
                 <Button
                   onClick={handleSupportClick}
@@ -640,6 +628,7 @@ export function UnifiedHeader({
                           <User className="w-4 h-4" />
                           Mi perfil
                         </button>
+
                         <button
                           onClick={() => handleNavigation("orders")}
                           className="w-full text-left px-4 py-3 rounded-xl hover:bg-[#FFF4E6] text-[#2E2E2E] hover:text-[#FF6B00] transition-colors flex items-center gap-3"
@@ -653,7 +642,9 @@ export function UnifiedHeader({
                             )}
                           </span>
                         </button>
+
                         <div className="border-t border-gray-100 my-2"></div>
+
                         <button
                           onClick={handleLogoutClick}
                           className="w-full text-left px-4 py-3 rounded-xl hover:bg-red-50 text-red-600 transition-colors flex items-center gap-3"
@@ -679,6 +670,7 @@ export function UnifiedHeader({
                   </Button>
                 )}
               </div>
+
               <motion.button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className={`lg:hidden p-2 ${textColor} hover:text-[#FF6B00] transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[#FF6B00] rounded-lg`}
@@ -777,9 +769,7 @@ export function UnifiedHeader({
                         Tienda
                       </div>
                       <ChevronDown
-                        className={`w-4 h-4 transition-transform ${
-                          expandedMobileShop ? "rotate-180" : ""
-                        }`}
+                        className={`w-4 h-4 transition-transform ${expandedMobileShop ? "rotate-180" : ""}`}
                       />
                     </button>
 
@@ -821,7 +811,6 @@ export function UnifiedHeader({
                     </AnimatePresence>
                   </div>
 
-                  {/* About Accordion */}
                   <button
                     onClick={() => handleNavigation("business")}
                     className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#FFF4E6] text-[#2E2E2E] hover:text-[#FF6B00] transition-colors"
