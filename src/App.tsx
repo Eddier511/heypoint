@@ -64,6 +64,41 @@ interface Product {
   badges?: string[];
 }
 
+/** =========================
+ * API helper (categorías Home)
+ * ========================= */
+const API_ORIGIN = import.meta.env.VITE_API_URL || "http://localhost:4000";
+
+async function apiGet<T>(path: string): Promise<T> {
+  const res = await fetch(`${API_ORIGIN}/api${path}`, {
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) {
+    const msg = await res.text().catch(() => "");
+    throw new Error(msg || `HTTP ${res.status}`);
+  }
+  return (await res.json()) as T;
+}
+
+/** =========================
+ * Category DTOs
+ * ========================= */
+type ApiCategory = {
+  id: string;
+  name: string;
+  productCount?: number;
+  status?: "active" | "inactive";
+  imageUrl?: string;
+};
+type ApiCategoriesResponse = ApiCategory[] | { categories: ApiCategory[] };
+
+type UiCategory = {
+  id: string;
+  name: string;
+  items: number;
+  image: string;
+};
+
 export default function App() {
   return (
     <AuthProvider>
@@ -87,11 +122,15 @@ function AppContent() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [scrollY, setScrollY] = useState(0);
 
+  // ✅ categorías desde API para la home
+  const [dbCategories, setDbCategories] = useState<UiCategory[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+
   // Use contexts
-  const { isAuthenticated, user, login, logout, loadingAuth } = useAuth();
+  const { user, login, loadingAuth } = useAuth();
   const { openLoginModal, openSignupModal, closeAllModals, openedAt } =
     useModal();
-  const { cartCount, clearCart } = useCart();
+  const { clearCart } = useCart();
 
   // Derive user info from context
   const userName = user?.fullName || "User";
@@ -115,7 +154,6 @@ function AppContent() {
     (window as any).heypoint.closeModals = closeAllModals;
 
     return () => {
-      // Cleanup on unmount
       if ((window as any).heypoint) {
         delete (window as any).heypoint.openLogin;
         delete (window as any).heypoint.openSignup;
@@ -125,14 +163,10 @@ function AppContent() {
   }, [openLoginModal, openSignupModal, closeAllModals]);
 
   // Close all modals when navigation changes (route-change behavior)
-  // Guard: Don't close if modal was just opened (within 200ms)
   useEffect(() => {
-    // Don't close if modal was opened very recently (prevents immediate close on open)
-    if (openedAt && Date.now() - openedAt < 200) {
-      return;
-    }
+    if (openedAt && Date.now() - openedAt < 200) return;
     closeAllModals();
-  }, [currentPage]); // Only run when page changes, not when openedAt changes
+  }, [currentPage]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Listen for custom navigation events from HeaderAccountButton
   useEffect(() => {
@@ -164,12 +198,10 @@ function AppContent() {
   // Listen for logout events and redirect to homepage
   useEffect(() => {
     const handleLogout = () => {
-      // ✅ si Firebase todavía está rehidratando sesión (F5), NO redirigir
       if (loadingAuth) {
         console.log("[App] Logout event ignored while loadingAuth=true");
         return;
       }
-
       console.log("[App] Logout event received - redirecting to home");
       setCurrentPage("home");
     };
@@ -182,17 +214,65 @@ function AppContent() {
 
   // Scroll to top whenever page changes
   useEffect(() => {
-    window.scrollTo(0, 0); // Instant scroll for page changes
+    window.scrollTo(0, 0);
   }, [currentPage]);
 
   // Track scroll position for chevron animation
   useEffect(() => {
-    const handleScroll = () => {
-      setScrollY(window.scrollY);
-    };
-
+    const handleScroll = () => setScrollY(window.scrollY);
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  /** =========================
+   * ✅ cargar categorías desde backend (Home)
+   * ========================= */
+  useEffect(() => {
+    let alive = true;
+
+    (async () => {
+      try {
+        setLoadingCategories(true);
+
+        const raw = await apiGet<ApiCategoriesResponse>("/categories");
+        const list = Array.isArray(raw) ? raw : raw?.categories || [];
+
+        const active = list.filter((c) => c.status !== "inactive");
+
+        const PLACEHOLDER_IMG = "https://placehold.co/600x400?text=HeyPoint";
+
+        const FALLBACK_IMAGES: Record<string, string> = {
+          Snacks:
+            "https://images.unsplash.com/photo-1762417582697-f17df0c69348?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
+          Bebidas:
+            "https://images.unsplash.com/photo-1672826979189-faae44e1b7a6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
+          Electrónica:
+            "https://images.unsplash.com/photo-1707485122968-56916bd2c464?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
+          Higiene:
+            "https://images.unsplash.com/photo-1629198688000-71f23e745b6e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
+          Otros:
+            "https://images.unsplash.com/photo-1651383140368-9b3ee59c2981?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
+        };
+
+        const mapped: UiCategory[] = active.map((c) => ({
+          id: c.id,
+          name: c.name,
+          items: Number(c.productCount ?? 0),
+          image: c.imageUrl || FALLBACK_IMAGES[c.name] || PLACEHOLDER_IMG,
+        }));
+
+        if (alive) setDbCategories(mapped);
+      } catch (e) {
+        console.warn("[Home] Failed to load categories", e);
+        if (alive) setDbCategories([]);
+      } finally {
+        if (alive) setLoadingCategories(false);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
   }, []);
 
   const heroImages = [
@@ -210,39 +290,47 @@ function AppContent() {
     },
   ];
 
-  // New categories for Spanish version
-  const newCategories = [
+  // ✅ fallback local (si el API está vacío o falla)
+  const newCategories: UiCategory[] = [
     {
+      id: "snacks",
       name: "Snacks",
       items: 120,
       image:
         "https://images.unsplash.com/photo-1762417582697-f17df0c69348?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzbmFja3MlMjBkaXNwbGF5JTIwc2hlbGZ8ZW58MXx8fHwxNzYzMDg4OTk0fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
     },
     {
+      id: "bebidas",
       name: "Bebidas",
       items: 90,
       image:
         "https://images.unsplash.com/photo-1672826979189-faae44e1b7a6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiZXZlcmFnZXMlMjBkcmlua3MlMjBjb29sZXJ8ZW58MXx8fHwxNzYzMDg4OTk0fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
     },
     {
+      id: "electronica",
       name: "Electrónica",
       items: 45,
       image:
         "https://images.unsplash.com/photo-1707485122968-56916bd2c464?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlbGVjdHJvbmljcyUyMGdhZGdldHMlMjBkaXNwbGF5fGVufDF8fHx8MTc2MzA4ODk5NHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
     },
     {
+      id: "higiene",
       name: "Higiene",
       items: 110,
       image:
         "https://images.unsplash.com/photo-1629198688000-71f23e745b6e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwZXJzb25hbCUyMGNhcmUlMjBwcm9kdWN0c3xlbnwxfHx8fDE3NjMwODkwMTR8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
     },
     {
+      id: "otros",
       name: "Otros",
       items: 75,
       image:
         "https://images.unsplash.com/photo-1651383140368-9b3ee59c2981?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmcm96ZW4lMjBmb29kfGVufDF8fHx8MTc2MjIzNDM1OHww&ixlib=rb-4.1.0&q=80&w=1080",
     },
   ];
+
+  // ✅ lo que se muestra en home:
+  const homeCategories = dbCategories.length ? dbCategories : newCategories;
 
   const howItWorksSteps = [
     {
@@ -290,34 +378,19 @@ function AppContent() {
     setCurrentPage("productDetails");
   };
 
-  const handleBackToShop = () => {
-    setCurrentPage("shop");
-  };
-
-  const handleBackToHome = () => {
-    setCurrentPage("home");
-  };
+  const handleBackToShop = () => setCurrentPage("shop");
 
   const handleNavigation = (page: string) => {
     setCurrentPage(page as Page);
-    // Clear category selection when navigating away from shop
     if (page !== "shop") {
       setSelectedCategory(null);
-      setSearchQuery(""); // Clear search query when leaving shop
+      setSearchQuery("");
     }
   };
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
     setCurrentPage("shop");
-  };
-
-  const handleAuthRequired = () => {
-    // This function is no longer needed - AuthModal handles it
-    // Keeping for backward compatibility
-    console.warn(
-      "handleAuthRequired is deprecated. Use AuthModal component instead.",
-    );
   };
 
   const handleLoginSuccess = (userData?: any) => {
@@ -339,149 +412,78 @@ function AppContent() {
   };
 
   const handleGoogleSignUpSuccess = (fullName: string) => {
-    // Google sign-up skips email verification, goes straight to profile completion
     login({
-      email: "user@gmail.com", // Would come from Google OAuth
+      email: "user@gmail.com",
       fullName,
     });
-    setCurrentPage("completeProfile");
+    setCurrentPage("success");
   };
 
-  const handleAddToCart = () => {
-    // This function is no longer needed - AddToCartButton handles it
-    // Keeping for backward compatibility
-    console.warn(
-      "handleAddToCart is deprecated. Use AddToCartButton component instead.",
-    );
-  };
-
-  // Smooth scroll to "How It Works" section
   const scrollToHowItWorks = () => {
     const section = document.getElementById("como-funciona");
-    if (section) {
-      section.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    section?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  // Render the appropriate page based on currentPage state
+  // Render pages
   if (currentPage === "shop") {
     return (
-      <>
-        <ShopPage
-          onProductClick={handleProductClick}
-          onNavigate={handleNavigation}
-          selectedCategory={selectedCategory}
-          onCategorySelect={handleCategorySelect}
-          searchQuery={searchQuery}
-          onClearSearch={() => setSearchQuery("")}
-        />
-      </>
+      <ShopPage
+        onProductClick={handleProductClick}
+        onNavigate={handleNavigation}
+        selectedCategory={selectedCategory}
+        onCategorySelect={handleCategorySelect}
+        searchQuery={searchQuery}
+        onClearSearch={() => setSearchQuery("")}
+      />
     );
   }
 
   if (currentPage === "productDetails" && selectedProduct) {
     return (
-      <>
-        <ProductDetailsPage
-          product={selectedProduct}
-          onBack={handleBackToShop}
-          onNavigate={handleNavigation}
-          onProductClick={handleProductClick}
-        />
-      </>
+      <ProductDetailsPage
+        product={selectedProduct}
+        onBack={handleBackToShop}
+        onNavigate={handleNavigation}
+        onProductClick={handleProductClick}
+      />
     );
   }
 
-  if (currentPage === "contact") {
-    return (
-      <>
-        <ContactPage onNavigate={handleNavigation} />
-      </>
-    );
-  }
-
-  if (currentPage === "about") {
-    return (
-      <>
-        <AboutPage onNavigate={handleNavigation} />
-      </>
-    );
-  }
-
-  if (currentPage === "ourcompany") {
-    return (
-      <>
-        <OurCompanyPage onNavigate={handleNavigation} />
-      </>
-    );
-  }
-
-  if (currentPage === "profile") {
-    return (
-      <>
-        <UserProfilePage onNavigate={handleNavigation} />
-      </>
-    );
-  }
-
-  if (currentPage === "cart") {
-    return (
-      <>
-        <ShoppingCartPage onNavigate={handleNavigation} />
-      </>
-    );
-  }
-
-  if (currentPage === "checkout") {
-    return (
-      <>
-        <CheckoutPage onNavigate={handleNavigation} />
-      </>
-    );
-  }
+  if (currentPage === "contact")
+    return <ContactPage onNavigate={handleNavigation} />;
+  if (currentPage === "about")
+    return <AboutPage onNavigate={handleNavigation} />;
+  if (currentPage === "ourcompany")
+    return <OurCompanyPage onNavigate={handleNavigation} />;
+  if (currentPage === "profile")
+    return <UserProfilePage onNavigate={handleNavigation} />;
+  if (currentPage === "cart")
+    return <ShoppingCartPage onNavigate={handleNavigation} />;
+  if (currentPage === "checkout")
+    return <CheckoutPage onNavigate={handleNavigation} />;
 
   if (currentPage === "success") {
     return (
-      <>
-        <PurchaseSuccessPage
-          onNavigate={handleNavigation}
-          userEmail={userEmail}
-          userName={userName}
-          pickupCode={pickupCodeGenerated}
-          onClearCart={clearCart}
-        />
-      </>
+      <PurchaseSuccessPage
+        onNavigate={handleNavigation}
+        userEmail={userEmail}
+        userName={userName}
+        pickupCode={pickupCodeGenerated}
+        onClearCart={clearCart}
+      />
     );
   }
 
-  if (currentPage === "orders") {
-    return (
-      <>
-        <MyOrdersPage onNavigate={handleNavigation} />
-      </>
-    );
-  }
-
-  if (currentPage === "terms") {
-    return (
-      <>
-        <TermsPage onNavigate={handleNavigation} />
-      </>
-    );
-  }
-
-  if (currentPage === "privacy") {
-    return (
-      <>
-        <PrivacyPage onNavigate={handleNavigation} />
-      </>
-    );
-  }
+  if (currentPage === "orders")
+    return <MyOrdersPage onNavigate={handleNavigation} />;
+  if (currentPage === "terms")
+    return <TermsPage onNavigate={handleNavigation} />;
+  if (currentPage === "privacy")
+    return <PrivacyPage onNavigate={handleNavigation} />;
 
   // Home Page
   return (
     <div className="min-h-screen bg-[#FFF4E6]">
-      {/* Header */}
       <UnifiedHeader
         onNavigate={handleNavigation}
         currentPage={currentPage}
@@ -489,23 +491,19 @@ function AppContent() {
         isTransparent={currentPage === "home"}
       />
 
-      {/* Back to Top Button */}
       <BackToTopButton />
 
       {/* Hero Section */}
       <section className="relative min-h-[100vh] flex items-center justify-center overflow-hidden bg-[#FFF4E6]">
-        {/* Background Image with Overlay */}
         <div className="absolute inset-0 z-0">
           <ImageWithFallback
             src="https://firebasestorage.googleapis.com/v0/b/heymarket-35d03.firebasestorage.app/o/images%2Fbg-banner-hey-point.png?alt=media&token=4c622e18-92de-4b26-85db-b293da0030e6"
             alt="HeyPoint! Estación inteligente automatizada"
             className="w-full h-full object-cover"
           />
-          {/* Single overlay for better text contrast */}
           <div className="absolute inset-0 bg-black/40" />
         </div>
 
-        {/* Content */}
         <div className="container mx-auto px-6 relative z-10 text-center max-w-5xl py-20">
           <motion.div
             initial={{ opacity: 0, y: 40 }}
@@ -513,21 +511,17 @@ function AppContent() {
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="space-y-8"
           >
-            {/* Main Headline */}
             <h1 className="text-white text-5xl md:text-7xl mb-6 font-[Inter] font-bold text-[48px]">
               Comprá online.
               <br />
               Retirá en minutos.
             </h1>
 
-            {/* Subheadline */}
             <p className="text-white/95 max-w-2xl mx-auto text-lg md:text-xl">
               Elegí tus productos, pagá online y retirá en tu HeyPoint.
             </p>
 
-            {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-center max-w-3xl mx-auto mt-10">
-              {/* Primary CTA Button */}
               <motion.div
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
@@ -542,7 +536,6 @@ function AppContent() {
                 </Button>
               </motion.div>
 
-              {/* Search Bar */}
               <motion.div className="w-full sm:w-auto sm:flex-1 sm:max-w-md">
                 <SmartSearchBar
                   onProductClick={(product) => {
@@ -557,7 +550,6 @@ function AppContent() {
                 />
               </motion.div>
 
-              {/* Secondary CTA - How to Buy Button */}
               <motion.div
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
@@ -586,7 +578,6 @@ function AppContent() {
           </motion.div>
         </div>
 
-        {/* Scroll Indicator */}
         <motion.div
           className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20"
           animate={{ y: [0, 10, 0] }}
@@ -665,14 +656,20 @@ function AppContent() {
             </p>
           </motion.div>
 
-          {/* Categories Grid/Carousel - Responsive */}
           <div className="relative">
-            {/* Mobile: Horizontal Scroll Carousel */}
+            {/* ✅ loader simple */}
+            {loadingCategories && dbCategories.length === 0 ? (
+              <div className="text-center text-[#2E2E2E] py-6">
+                Cargando categorías...
+              </div>
+            ) : null}
+
+            {/* Mobile */}
             <div className="md:hidden overflow-x-auto pb-8 scrollbar-hide snap-x snap-mandatory">
               <div className="flex gap-4 pl-4 pr-4 min-w-max">
-                {newCategories.map((category, index) => (
+                {homeCategories.map((category, index) => (
                   <motion.button
-                    key={category.name}
+                    key={category.id || category.name}
                     initial={{ opacity: 0, x: 50 }}
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
@@ -682,7 +679,6 @@ function AppContent() {
                     className="flex-shrink-0 w-[calc(50vw-24px)] min-w-[140px] max-w-[180px] snap-start group"
                   >
                     <Card className="border-none shadow-lg rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-300 h-full">
-                      {/* Category Image */}
                       <div className="relative h-36 overflow-hidden">
                         <ImageWithFallback
                           src={category.image}
@@ -691,7 +687,6 @@ function AppContent() {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-[#1C2335]/70 via-[#1C2335]/20 to-transparent" />
 
-                        {/* Items Badge */}
                         <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-md">
                           <p className="text-[#FF6B00] text-xs">
                             {category.items}+ items
@@ -699,14 +694,12 @@ function AppContent() {
                         </div>
                       </div>
 
-                      {/* Category Info */}
                       <div className="p-4 bg-white">
                         <h4 className="text-[#1C2335] text-center text-base line-clamp-2">
                           {category.name}
                         </h4>
                       </div>
 
-                      {/* Hover Overlay */}
                       <div className="absolute inset-0 bg-gradient-to-br from-[#FF6B00]/0 to-[#FF8534]/0 group-hover:from-[#FF6B00]/10 group-hover:to-[#FF8534]/10 transition-all duration-300 pointer-events-none" />
                     </Card>
                   </motion.button>
@@ -714,12 +707,12 @@ function AppContent() {
               </div>
             </div>
 
-            {/* Desktop: Centered Grid */}
+            {/* Desktop */}
             <div className="hidden md:block">
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-                {newCategories.map((category, index) => (
+                {homeCategories.map((category, index) => (
                   <motion.button
-                    key={category.name}
+                    key={category.id || category.name}
                     initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
@@ -730,7 +723,6 @@ function AppContent() {
                     className="group"
                   >
                     <Card className="border-none shadow-lg rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-300 h-full">
-                      {/* Category Image */}
                       <div className="relative h-44 overflow-hidden">
                         <ImageWithFallback
                           src={category.image}
@@ -739,7 +731,6 @@ function AppContent() {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-[#1C2335]/70 via-[#1C2335]/20 to-transparent" />
 
-                        {/* Items Badge */}
                         <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-md">
                           <p className="text-[#FF6B00] text-xs">
                             {category.items}+ items
@@ -747,14 +738,12 @@ function AppContent() {
                         </div>
                       </div>
 
-                      {/* Category Info */}
                       <div className="p-5 bg-white">
                         <h4 className="text-[#1C2335] text-center text-lg">
                           {category.name}
                         </h4>
                       </div>
 
-                      {/* Hover Overlay */}
                       <div className="absolute inset-0 bg-gradient-to-br from-[#FF6B00]/0 to-[#FF8534]/0 group-hover:from-[#FF6B00]/10 group-hover:to-[#FF8534]/10 transition-all duration-300 pointer-events-none" />
                     </Card>
                   </motion.button>
@@ -811,9 +800,8 @@ function AppContent() {
         </div>
       </section>
 
-      {/* CTA Section - Final */}
+      {/* CTA */}
       <section className="relative py-20 md:py-32 bg-gradient-to-br from-[#FF6B00] via-[#FF7B1A] to-[#FF8534] overflow-hidden">
-        {/* Decorative Elements */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-10 right-10 w-72 h-72 bg-white rounded-full blur-3xl" />
           <div className="absolute bottom-10 left-10 w-96 h-96 bg-white rounded-full blur-3xl" />
@@ -860,8 +848,15 @@ function AppContent() {
         </div>
       </section>
 
-      {/* Footer */}
       <Footer onNavigate={handleNavigation} />
     </div>
   );
 }
+
+/**
+ * ✅ API requerido (backend):
+ * GET {VITE_API_URL}/api/categories
+ * Respuesta:
+ *  - array: [{ id, name, productCount?, status?, imageUrl? }]
+ *  - o { categories: [...] }
+ */
