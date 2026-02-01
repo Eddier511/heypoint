@@ -1,3 +1,4 @@
+// src/components/UnifiedHeader.tsx
 import {
   ShoppingCart,
   Menu,
@@ -11,13 +12,11 @@ import {
   Mail,
   Package,
   LogOut,
-  ShoppingBag,
   HelpCircle,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
-import { Input } from "./ui/input";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
@@ -29,6 +28,7 @@ import { useModal } from "../contexts/ModalContext";
 import { useCart } from "../contexts/CartContext";
 import { useHasPendingOrders } from "../hooks/useHasPendingOrders";
 import { toast } from "sonner";
+import { CategoriesAPI } from "../lib/api"; // ✅ usa tu api.ts
 
 interface UnifiedHeaderProps {
   onNavigate?: (page: string) => void;
@@ -39,6 +39,85 @@ interface UnifiedHeaderProps {
   onLogout?: () => void;
   userName?: string;
   isTransparent?: boolean;
+}
+
+type ApiCategory = {
+  id?: string;
+  name?: string;
+  image?: string;
+  imageUrl?: string;
+  items?: number;
+  productCount?: number;
+  status?: "active" | "inactive";
+};
+
+type HeaderCategory = {
+  id: string;
+  name: string;
+  items: number;
+  image: string;
+};
+
+const FALLBACK_CATEGORIES: HeaderCategory[] = [
+  {
+    id: "snacks",
+    name: "Snacks",
+    items: 120,
+    image:
+      "https://images.unsplash.com/photo-1762417582697-f17df0c69348?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzbmFja3MlMjBkaXNwbGF5JTIwc2hlbGZ8ZW58MXx8fHwxNzYzMDg4OTk0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+  },
+  {
+    id: "beverages",
+    name: "Beverages",
+    items: 90,
+    image:
+      "https://images.unsplash.com/photo-1672826979189-faae44e1b7a6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiZXZlcmFnZXMlMjBkcmlua3MlMjBjb29sZXJ8ZW58MXx8fHwxNzYzMDg4OTk0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+  },
+  {
+    id: "electronics",
+    name: "Electronics",
+    items: 45,
+    image:
+      "https://images.unsplash.com/photo-1707485122968-56916bd2c464?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlbGVjdHJvbmljcyUyMGdhZGdldHMlMjBkaXNwbGF5fGVufDF8fHx8MTc2MzA4ODk5NHww&ixlib=rb-4.1.0&q=80&w=1080",
+  },
+  {
+    id: "personal-care",
+    name: "Personal Care",
+    items: 110,
+    image:
+      "https://images.unsplash.com/photo-1629198688000-71f23e745b6e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwZXJzb25hbCUyMGNhcmUlMjBwcm9kdWN0c3xlbnwxfHx8fDE3NjMwODkwMTR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+  },
+  {
+    id: "frozen-foods",
+    name: "Frozen Foods",
+    items: 75,
+    image:
+      "https://images.unsplash.com/photo-1651383140368-9b3ee59c2981?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmcm96ZW4lMjBmb29kfGVufDF8fHx8MTc2MjIzNDM1OHww&ixlib=rb-4.1.0&q=80&w=1080",
+  },
+  {
+    id: "bakery",
+    name: "Bakery",
+    items: 65,
+    image:
+      "https://images.unsplash.com/photo-1674770067314-296af21ad811?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiYWtlcnklMjBicmVhZHxlbnwxfHx8fDE3NjIyMjM3OTN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+  },
+];
+
+function mapCategoryToHeader(c: ApiCategory): HeaderCategory | null {
+  const id = (c?.id ?? "").toString().trim();
+  const name = (c?.name ?? "").toString().trim();
+  if (!id || !name) return null;
+  if (c?.status && c.status !== "active") return null;
+
+  const image = (c?.imageUrl || c?.image || "").toString().trim();
+  const items = Number(c?.productCount ?? c?.items ?? 0);
+
+  return {
+    id,
+    name,
+    items: Number.isFinite(items) ? items : 0,
+    image,
+  };
 }
 
 export function UnifiedHeader({
@@ -53,7 +132,7 @@ export function UnifiedHeader({
 }: UnifiedHeaderProps) {
   // Use auth and modal contexts
   const { isAuthenticated, user, logout } = useAuth();
-  const { openLoginModal, openSignupModal, closeAllModals } = useModal();
+  const { openLoginModal, openSignupModal } = useModal();
   const { cartCount } = useCart();
   const hasPendingOrders = useHasPendingOrders();
 
@@ -72,61 +151,47 @@ export function UnifiedHeader({
   const [showGlobalSearchModal, setShowGlobalSearchModal] = useState(false);
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
-  const [shopHoverIntent, setShopHoverIntent] = useState(false);
-  const [aboutHoverIntent, setAboutHoverIntent] = useState(false);
+
+  // ✅ categories desde API (con fallback)
+  const [categories, setCategories] =
+    useState<HeaderCategory[]>(FALLBACK_CATEGORIES);
 
   const shopDropdownRef = useRef<HTMLDivElement>(null);
   const shopButtonRef = useRef<HTMLButtonElement>(null);
   const aboutDropdownRef = useRef<HTMLDivElement>(null);
   const aboutButtonRef = useRef<HTMLButtonElement>(null);
-  const shopHoverOpenTimer = useRef<NodeJS.Timeout | null>(null);
   const shopHoverCloseTimer = useRef<NodeJS.Timeout | null>(null);
-  const aboutHoverOpenTimer = useRef<NodeJS.Timeout | null>(null);
   const aboutHoverCloseTimer = useRef<NodeJS.Timeout | null>(null);
 
-  const categories = [
-    {
-      name: "Snacks",
-      items: 120,
-      image:
-        "https://images.unsplash.com/photo-1762417582697-f17df0c69348?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzbmFja3MlMjBkaXNwbGF5JTIwc2hlbGZ8ZW58MXx8fHwxNzYzMDg4OTk0fDA&ixlib=rb-4.1.0&q=80&w=1080",
-    },
-    {
-      name: "Beverages",
-      items: 90,
-      image:
-        "https://images.unsplash.com/photo-1672826979189-faae44e1b7a6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiZXZlcmFnZXMlMjBkcmlua3MlMjBjb29sZXJ8ZW58MXx8fHwxNzYzMDg4OTk0fDA&ixlib=rb-4.1.0&q=80&w=1080",
-    },
-    {
-      name: "Electronics",
-      items: 45,
-      image:
-        "https://images.unsplash.com/photo-1707485122968-56916bd2c464?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlbGVjdHJvbmljcyUyMGdhZGdldHMlMjBkaXNwbGF5fGVufDF8fHx8MTc2MzA4ODk5NHww&ixlib=rb-4.1.0&q=80&w=1080",
-    },
-    {
-      name: "Personal Care",
-      items: 110,
-      image:
-        "https://images.unsplash.com/photo-1629198688000-71f23e745b6e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwZXJzb25hbCUyMGNhcmUlMjBwcm9kdWN0c3xlbnwxfHx8fDE3NjMwODkwMTR8MA&ixlib=rb-4.1.0&q=80&w=1080",
-    },
-    {
-      name: "Frozen Foods",
-      items: 75,
-      image:
-        "https://images.unsplash.com/photo-1651383140368-9b3ee59c2981?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmcm96ZW4lMjBmb29kfGVufDF8fHx8MTc2MjIzNDM1OHww&ixlib=rb-4.1.0&q=80&w=1080",
-    },
-    {
-      name: "Bakery",
-      items: 65,
-      image:
-        "https://images.unsplash.com/photo-1674770067314-296af21ad811?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiYWtlcnklMjBicmVhZHxlbnwxfHx8fDE3NjIyMjM3OTN8MA&ixlib=rb-4.1.0&q=80&w=1080",
-    },
-  ];
-
   const aboutLinks = [
-    { id: "about", label: "Nosotros" },
+    { id: "business", label: "Nosotros" },
     { id: "ourcompany", label: "Nuestra Empresa" },
   ];
+
+  // ✅ Cargar categorías del backend una sola vez
+  useEffect(() => {
+    let mounted = true;
+
+    (async () => {
+      try {
+        const res = await CategoriesAPI.getAll();
+        const raw = Array.isArray(res.data) ? res.data : [];
+        const mapped = raw
+          .map(mapCategoryToHeader)
+          .filter(Boolean) as HeaderCategory[];
+
+        if (!mounted) return;
+        if (mapped.length > 0) setCategories(mapped);
+      } catch (e) {
+        console.warn("[UnifiedHeader] categories load failed:", e);
+        // se queda con fallback
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Handle scroll detection for sticky header
   useEffect(() => {
@@ -153,7 +218,7 @@ export function UnifiedHeader({
   useEffect(() => {
     const checkTouchDevice = () => {
       setIsTouchDevice(
-        "ontouchstart" in window || navigator.maxTouchPoints > 0
+        "ontouchstart" in window || navigator.maxTouchPoints > 0,
       );
     };
 
@@ -162,19 +227,6 @@ export function UnifiedHeader({
 
     return () => {
       window.removeEventListener("touchstart", checkTouchDevice);
-    };
-  }, []);
-
-  // Cleanup timers on unmount
-  useEffect(() => {
-    return () => {
-      if (shopHoverOpenTimer.current) clearTimeout(shopHoverOpenTimer.current);
-      if (shopHoverCloseTimer.current)
-        clearTimeout(shopHoverCloseTimer.current);
-      if (aboutHoverOpenTimer.current)
-        clearTimeout(aboutHoverOpenTimer.current);
-      if (aboutHoverCloseTimer.current)
-        clearTimeout(aboutHoverCloseTimer.current);
     };
   }, []);
 
@@ -201,7 +253,6 @@ export function UnifiedHeader({
 
     const handleEscapeKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        console.log("[UnifiedHeader] Escape pressed - closing dropdowns");
         setIsShopDropdownOpen(false);
         setIsAboutDropdownOpen(false);
       }
@@ -220,32 +271,21 @@ export function UnifiedHeader({
     setIsMobileMenuOpen(false);
     setIsShopDropdownOpen(false);
     setIsAboutDropdownOpen(false);
-    if (onNavigate) {
-      onNavigate(page);
-    }
+    if (onNavigate) onNavigate(page);
   };
 
   const handleCategoryClick = (categoryName: string) => {
     setIsShopDropdownOpen(false);
     setIsMobileMenuOpen(false);
     handleNavigation("shop");
-    if (onCategorySelect) {
-      onCategorySelect(categoryName);
-    }
+    onCategorySelect?.(categoryName);
   };
 
   const handleLogoutClick = () => {
     setIsMobileMenuOpen(false);
-
-    // Call context logout
     logout();
+    onLogout?.();
 
-    // Call prop logout for backward compatibility
-    if (onLogout) {
-      onLogout();
-    }
-
-    // Show success toast
     toast.success("Cerraste sesión correctamente", {
       description: "¡Hasta la próxima!",
       duration: 2000,
@@ -253,47 +293,25 @@ export function UnifiedHeader({
   };
 
   const handleCartClick = () => {
-    if (!effectiveIsLoggedIn) {
-      // Show empty cart modal for non-logged-in users
-      setShowEmptyCartModal(true);
-    } else {
-      // Navigate to cart for logged-in users
-      handleNavigation("cart");
-    }
+    if (!effectiveIsLoggedIn) setShowEmptyCartModal(true);
+    else handleNavigation("cart");
   };
 
-  const handleSearchClick = () => {
-    setShowGlobalSearchModal(true);
-  };
+  const handleSearchClick = () => setShowGlobalSearchModal(true);
+  const handleSupportClick = () => setShowSupportModal(true);
 
-  const handleSupportClick = () => {
-    setShowSupportModal(true);
-  };
-
-  // Shop dropdown handlers with delayed hover and click-to-toggle
+  // Shop dropdown handlers
   const handleShopClick = () => {
-    // Clear any pending hover timers
-    if (shopHoverOpenTimer.current) {
-      clearTimeout(shopHoverOpenTimer.current);
-      shopHoverOpenTimer.current = null;
-    }
     if (shopHoverCloseTimer.current) {
       clearTimeout(shopHoverCloseTimer.current);
       shopHoverCloseTimer.current = null;
     }
-
-    // Toggle dropdown
-    setIsShopDropdownOpen(!isShopDropdownOpen);
+    setIsShopDropdownOpen((v) => !v);
     setIsAboutDropdownOpen(false);
-    setShopHoverIntent(false);
   };
 
   const handleShopMouseEnter = () => {
-    // Don't use hover behavior on touch devices
     if (isTouchDevice) return;
-
-    // Only cancel close timer if dropdown is already open
-    // DON'T open dropdown on hover - only on click
     if (isShopDropdownOpen && shopHoverCloseTimer.current) {
       clearTimeout(shopHoverCloseTimer.current);
       shopHoverCloseTimer.current = null;
@@ -301,12 +319,8 @@ export function UnifiedHeader({
   };
 
   const handleShopMouseLeave = () => {
-    // Don't use hover behavior on touch devices
     if (isTouchDevice) return;
-
-    // Only close if dropdown is open
     if (isShopDropdownOpen) {
-      // Delayed close (300ms)
       shopHoverCloseTimer.current = setTimeout(() => {
         setIsShopDropdownOpen(false);
       }, 300);
@@ -314,10 +328,7 @@ export function UnifiedHeader({
   };
 
   const handleShopDropdownMouseEnter = () => {
-    // Don't use hover behavior on touch devices
     if (isTouchDevice) return;
-
-    // Clear any pending close timer when mouse enters dropdown
     if (shopHoverCloseTimer.current) {
       clearTimeout(shopHoverCloseTimer.current);
       shopHoverCloseTimer.current = null;
@@ -325,39 +336,24 @@ export function UnifiedHeader({
   };
 
   const handleShopDropdownMouseLeave = () => {
-    // Don't use hover behavior on touch devices
     if (isTouchDevice) return;
-
-    // Delayed close when mouse leaves dropdown (300ms)
     shopHoverCloseTimer.current = setTimeout(() => {
       setIsShopDropdownOpen(false);
     }, 300);
   };
 
-  // About dropdown handlers with delayed hover and click-to-toggle
+  // About dropdown handlers
   const handleAboutClick = () => {
-    // Clear any pending hover timers
-    if (aboutHoverOpenTimer.current) {
-      clearTimeout(aboutHoverOpenTimer.current);
-      aboutHoverOpenTimer.current = null;
-    }
     if (aboutHoverCloseTimer.current) {
       clearTimeout(aboutHoverCloseTimer.current);
       aboutHoverCloseTimer.current = null;
     }
-
-    // Toggle dropdown
-    setIsAboutDropdownOpen(!isAboutDropdownOpen);
+    setIsAboutDropdownOpen((v) => !v);
     setIsShopDropdownOpen(false);
-    setAboutHoverIntent(false);
   };
 
   const handleAboutMouseEnter = () => {
-    // Don't use hover behavior on touch devices
     if (isTouchDevice) return;
-
-    // Only cancel close timer if dropdown is already open
-    // DON'T open dropdown on hover - only on click
     if (isAboutDropdownOpen && aboutHoverCloseTimer.current) {
       clearTimeout(aboutHoverCloseTimer.current);
       aboutHoverCloseTimer.current = null;
@@ -365,12 +361,8 @@ export function UnifiedHeader({
   };
 
   const handleAboutMouseLeave = () => {
-    // Don't use hover behavior on touch devices
     if (isTouchDevice) return;
-
-    // Only close if dropdown is open
     if (isAboutDropdownOpen) {
-      // Delayed close (300ms)
       aboutHoverCloseTimer.current = setTimeout(() => {
         setIsAboutDropdownOpen(false);
       }, 300);
@@ -378,10 +370,7 @@ export function UnifiedHeader({
   };
 
   const handleAboutDropdownMouseEnter = () => {
-    // Don't use hover behavior on touch devices
     if (isTouchDevice) return;
-
-    // Clear any pending close timer when mouse enters dropdown
     if (aboutHoverCloseTimer.current) {
       clearTimeout(aboutHoverCloseTimer.current);
       aboutHoverCloseTimer.current = null;
@@ -389,10 +378,7 @@ export function UnifiedHeader({
   };
 
   const handleAboutDropdownMouseLeave = () => {
-    // Don't use hover behavior on touch devices
     if (isTouchDevice) return;
-
-    // Delayed close when mouse leaves dropdown (300ms)
     aboutHoverCloseTimer.current = setTimeout(() => {
       setIsAboutDropdownOpen(false);
     }, 300);
@@ -400,12 +386,10 @@ export function UnifiedHeader({
 
   // Dynamic classes based on scroll state
   const textColor = scrolled ? "text-[#0D0D0D]" : "text-white";
-  const logoFilter = scrolled ? "" : "brightness-0 invert";
   const borderColor = scrolled ? "border-gray-200/50" : "border-white/10";
 
   return (
     <>
-      {/* Desktop & Mobile Header */}
       <motion.header
         initial={false}
         animate={{
@@ -420,7 +404,7 @@ export function UnifiedHeader({
       >
         <div className="container mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16 lg:h-20">
-            {/* Logo - TEMPORAL: Reemplazar con logo real de HeyPoint! */}
+            {/* Logo */}
             <button
               onClick={() => handleNavigation("home")}
               className="cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#FF6B00] rounded-lg transition-transform hover:scale-105 active:scale-95"
@@ -436,12 +420,12 @@ export function UnifiedHeader({
                 className="w-[80px] sm:w-[100px] h-auto transition-all duration-300"
               />
             </button>
-            {/* Desktop Navigation - Hidden below lg */}
+
+            {/* Desktop Navigation */}
             <nav
               className="hidden lg:flex items-center gap-2"
               aria-label="Navegación principal"
             >
-              {/* Home Link */}
               <button
                 onClick={() => handleNavigation("home")}
                 className={`px-5 py-2 rounded-full transition-all ${
@@ -478,7 +462,6 @@ export function UnifiedHeader({
                   />
                 </button>
 
-                {/* Shop Dropdown Megamenu */}
                 <AnimatePresence>
                   {isShopDropdownOpen && (
                     <motion.div
@@ -492,7 +475,6 @@ export function UnifiedHeader({
                       className="absolute left-1/2 transform -translate-x-1/2 mt-2 w-[700px] max-w-[90vw]"
                     >
                       <Card className="bg-white border-none shadow-2xl rounded-2xl overflow-hidden">
-                        {/* Header */}
                         <div className="bg-gradient-to-r from-[#FF6B00] to-[#FF8534] px-6 py-4">
                           <h3
                             className="text-white"
@@ -502,11 +484,10 @@ export function UnifiedHeader({
                           </h3>
                         </div>
 
-                        {/* Categories Grid */}
                         <div className="p-6 grid grid-cols-3 gap-4">
-                          {categories.map((category) => (
+                          {categories.slice(0, 6).map((category) => (
                             <button
-                              key={category.name}
+                              key={category.id}
                               onClick={() => handleCategoryClick(category.name)}
                               className="group text-left"
                             >
@@ -539,7 +520,6 @@ export function UnifiedHeader({
                           ))}
                         </div>
 
-                        {/* Footer CTA */}
                         <div className="border-t border-gray-100 px-6 py-4 bg-gray-50">
                           <Button
                             onClick={() => {
@@ -584,7 +564,6 @@ export function UnifiedHeader({
                   />
                 </button>
 
-                {/* About Dropdown */}
                 <AnimatePresence>
                   {isAboutDropdownOpen && (
                     <motion.div
@@ -614,7 +593,6 @@ export function UnifiedHeader({
                 </AnimatePresence>
               </div>
 
-              {/* Contact Link */}
               <button
                 onClick={() => handleNavigation("contact")}
                 className={`px-5 py-2 rounded-full transition-all ${
@@ -630,7 +608,6 @@ export function UnifiedHeader({
 
             {/* Right Actions */}
             <div className="flex items-center gap-3 sm:gap-4">
-              {/* Search Icon - Desktop and Mobile */}
               <motion.button
                 className={`p-2 ${textColor} hover:text-[#FF6B00] transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[#FF6B00] rounded-lg`}
                 whileHover={{ scale: 1.05 }}
@@ -641,7 +618,6 @@ export function UnifiedHeader({
                 <Search className="w-5 h-5 sm:w-6 sm:h-6" aria-hidden="true" />
               </motion.button>
 
-              {/* Cart Button */}
               <motion.button
                 onClick={handleCartClick}
                 className={`relative p-2 ${textColor} hover:text-[#FF6B00] transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[#FF6B00] rounded-lg`}
@@ -663,9 +639,7 @@ export function UnifiedHeader({
                 )}
               </motion.button>
 
-              {/* Account Button - Desktop only */}
               <div className="hidden lg:flex items-center gap-3">
-                {/* Support Button - Desktop */}
                 <Button
                   onClick={handleSupportClick}
                   className={`px-4 py-2 rounded-full transition-all flex items-center gap-2 ${
@@ -698,7 +672,6 @@ export function UnifiedHeader({
                       <ChevronDown className="w-4 h-4" />
                     </motion.button>
 
-                    {/* Dropdown Menu */}
                     <div className="absolute right-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                       <Card className="bg-white border-none shadow-xl rounded-2xl overflow-hidden p-2">
                         <button
@@ -749,9 +722,6 @@ export function UnifiedHeader({
                 )}
               </div>
 
-              {/* Account Button Mobile is handled in hamburger menu - remove duplicate */}
-
-              {/* Mobile Menu Button */}
               <motion.button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className={`lg:hidden p-2 ${textColor} hover:text-[#FF6B00] transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[#FF6B00] rounded-lg`}
@@ -771,11 +741,10 @@ export function UnifiedHeader({
         </div>
       </motion.header>
 
-      {/* Mobile Diagonal Drawer Menu */}
+      {/* Mobile Menu */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -785,7 +754,6 @@ export function UnifiedHeader({
               onClick={() => setIsMobileMenuOpen(false)}
             />
 
-            {/* Mobile Menu Panel - Straight Slide, No Diagonal */}
             <motion.div
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
@@ -794,7 +762,6 @@ export function UnifiedHeader({
               className="fixed top-0 right-0 bottom-0 w-[85vw] max-w-sm bg-white z-[5000] lg:hidden overflow-y-auto shadow-2xl"
             >
               <div className="p-6 space-y-6">
-                {/* User Section */}
                 <div className="border-b border-gray-200 pb-6">
                   {effectiveIsLoggedIn ? (
                     <div className="flex items-center gap-3">
@@ -803,13 +770,13 @@ export function UnifiedHeader({
                       </div>
                       <div>
                         <p
-                          className="text-[#1C2335]\"
+                          className="text-[#1C2335]"
                           style={{ fontSize: "1rem", fontWeight: 600 }}
                         >
                           Hey! {effectiveUserName}
                         </p>
                         <p
-                          className="text-[#2E2E2E]\"
+                          className="text-[#2E2E2E]"
                           style={{ fontSize: "0.875rem" }}
                         >
                           Bienvenido de nuevo
@@ -820,17 +787,7 @@ export function UnifiedHeader({
                     <Button
                       onClick={() => {
                         setIsMobileMenuOpen(false);
-                        // Try context first, fallback to event
-                        if (openLoginModal) {
-                          openLoginModal();
-                        } else {
-                          console.warn(
-                            "[UnifiedHeader] Modal context unavailable for mobile Sign In, dispatching event"
-                          );
-                          window.dispatchEvent(
-                            new CustomEvent("heypoint:open-login")
-                          );
-                        }
+                        openLoginModal();
                       }}
                       className="w-full bg-[#FF6B00] hover:bg-[#e56000] text-white rounded-xl h-12"
                       style={{ fontSize: "1rem", fontWeight: 600 }}
@@ -840,9 +797,7 @@ export function UnifiedHeader({
                   )}
                 </div>
 
-                {/* Navigation Links */}
                 <nav className="space-y-2" aria-label="Navegación móvil">
-                  {/* Home */}
                   <button
                     onClick={() => handleNavigation("home")}
                     className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#FFF4E6] text-[#2E2E2E] hover:text-[#FF6B00] transition-colors"
@@ -883,7 +838,7 @@ export function UnifiedHeader({
                           <div className="ml-8 mt-2 space-y-1">
                             {categories.slice(0, 6).map((category) => (
                               <button
-                                key={category.name}
+                                key={category.id}
                                 onClick={() =>
                                   handleCategoryClick(category.name)
                                 }
@@ -959,7 +914,6 @@ export function UnifiedHeader({
                     </AnimatePresence>
                   </div>
 
-                  {/* Contact */}
                   <button
                     onClick={() => handleNavigation("contact")}
                     className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#FFF4E6] text-[#2E2E2E] hover:text-[#FF6B00] transition-colors"
@@ -969,7 +923,6 @@ export function UnifiedHeader({
                     Contacto
                   </button>
 
-                  {/* Cart */}
                   <button
                     onClick={handleCartClick}
                     className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl hover:bg-[#FFF4E6] text-[#2E2E2E] hover:text-[#FF6B00] transition-colors"
@@ -986,10 +939,8 @@ export function UnifiedHeader({
                     )}
                   </button>
 
-                  {/* Divider before Support */}
                   <div className="border-t border-gray-200 my-4"></div>
 
-                  {/* Support Button */}
                   <button
                     onClick={() => {
                       setIsMobileMenuOpen(false);
@@ -1002,7 +953,6 @@ export function UnifiedHeader({
                     ¿Necesitás ayuda con tu pedido?
                   </button>
 
-                  {/* Logged In User Options */}
                   {effectiveIsLoggedIn && (
                     <>
                       <div className="border-t border-gray-200 my-4"></div>
@@ -1025,10 +975,7 @@ export function UnifiedHeader({
                         <span className="flex items-center gap-2">
                           Mis pedidos
                           {hasPendingOrders && (
-                            <span
-                              className="inline-block w-2 h-2 bg-[#FF6B00] rounded-full"
-                              aria-label="You have pending orders"
-                            />
+                            <span className="inline-block w-2 h-2 bg-[#FF6B00] rounded-full" />
                           )}
                         </span>
                       </button>
@@ -1050,7 +997,6 @@ export function UnifiedHeader({
         )}
       </AnimatePresence>
 
-      {/* Empty Cart Modal */}
       <EmptyCartModal
         isOpen={showEmptyCartModal}
         onClose={() => setShowEmptyCartModal(false)}
@@ -1064,7 +1010,6 @@ export function UnifiedHeader({
         }}
       />
 
-      {/* Global Search Modal */}
       <GlobalSearchModal
         isOpen={showGlobalSearchModal}
         onClose={() => setShowGlobalSearchModal(false)}
@@ -1072,7 +1017,6 @@ export function UnifiedHeader({
         onCategorySelect={onCategorySelect}
       />
 
-      {/* Support Modal */}
       <SupportModal
         isOpen={showSupportModal}
         onClose={() => setShowSupportModal(false)}
