@@ -28,7 +28,7 @@ import { Footer } from "./components/Footer";
 import { ShopPage } from "./pages/ShopPage";
 import { ProductDetailsPage } from "./pages/ProductDetailsPage";
 import { ContactPage } from "./pages/ContactPage";
-import { AboutPage } from "./pages/AboutPage";
+import { BusinessPage } from "./pages/BusinessPage";
 import { OurCompanyPage } from "./pages/OurCompanyPage";
 import { UserProfilePage } from "./pages/UserProfilePage";
 import { ShoppingCartPage } from "./pages/ShoppingCartPage";
@@ -43,7 +43,7 @@ type Page =
   | "shop"
   | "productDetails"
   | "contact"
-  | "about"
+  | "business"
   | "ourcompany"
   | "profile"
   | "cart"
@@ -451,8 +451,8 @@ function AppContent() {
 
   if (currentPage === "contact")
     return <ContactPage onNavigate={handleNavigation} />;
-  if (currentPage === "about")
-    return <AboutPage onNavigate={handleNavigation} />;
+  if (currentPage === "business")
+    return <BusinessPage onNavigate={handleNavigation} />;
   if (currentPage === "ourcompany")
     return <OurCompanyPage onNavigate={handleNavigation} />;
   if (currentPage === "profile")
