@@ -823,54 +823,14 @@ export function UnifiedHeader({
                   </div>
 
                   {/* About Accordion */}
-                  <div>
-                    <button
-                      onClick={() =>
-                        setExpandedMobileAbout(!expandedMobileAbout)
-                      }
-                      className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl hover:bg-[#FFF4E6] text-[#2E2E2E] hover:text-[#FF6B00] transition-colors"
-                      style={{ fontSize: "1rem", fontWeight: 500 }}
-                      aria-expanded={expandedMobileAbout}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Info className="w-5 h-5" />
-                        Nosotros
-                      </div>
-                      <ChevronDown
-                        className={`w-4 h-4 transition-transform ${
-                          expandedMobileAbout ? "rotate-180" : ""
-                        }`}
-                      />
-                    </button>
-
-                    <AnimatePresence>
-                      {expandedMobileAbout && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="ml-8 mt-2 space-y-1">
-                            {aboutLinks.map((link) => (
-                              <button
-                                key={link.id}
-                                onClick={() => handleNavigation(link.id)}
-                                className="w-full text-left px-4 py-2 rounded-lg hover:bg-[#FFF4E6] text-[#2E2E2E] hover:text-[#FF6B00] transition-colors"
-                                style={{
-                                  fontSize: "0.938rem",
-                                  fontWeight: 400,
-                                }}
-                              >
-                                {link.label}
-                              </button>
-                            ))}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
+                  <button
+                    onClick={() => handleNavigation("business")}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#FFF4E6] text-[#2E2E2E] hover:text-[#FF6B00] transition-colors"
+                    style={{ fontSize: "1rem", fontWeight: 500 }}
+                  >
+                    <Info className="w-5 h-5" />
+                    Nosotros
+                  </button>
 
                   <button
                     onClick={() => handleNavigation("contact")}
