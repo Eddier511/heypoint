@@ -6,9 +6,10 @@ import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
 import { Button } from "../components/ui/button";
-import { MapPin, Phone, Mail, Clock, Send } from "lucide-react";
+import { Phone, Mail, Send } from "lucide-react";
 import { motion } from "motion/react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
 
 interface ContactPageProps {
   onNavigate?: (page: string) => void;
@@ -53,6 +54,72 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
     message: "",
   });
 
+  // ✅ NUEVO: estados UX
+  const [isSending, setIsSending] = useState(false);
+  const [sentOk, setSentOk] = useState(false);
+
+  // ✅ NUEVO: base de API (misma que usás en App.tsx/CartContext)
+  const API_ORIGIN = useMemo(
+    () => (import.meta as any).env?.VITE_API_URL || "http://localhost:4000",
+    [],
+  );
+
+  // ✅ NUEVO: submit real end-to-end
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSending) return;
+
+    setSentOk(false);
+
+    const payload = {
+      name: formData.name.trim(),
+      email: formData.email.trim(),
+      subject: formData.subject.trim(),
+      message: formData.message.trim(),
+    };
+
+    // validación mínima (rápida)
+    if (!payload.name || !payload.email || !payload.message) {
+      toast.error("Faltan datos", {
+        description: "Completá nombre, email y mensaje.",
+        duration: 2500,
+      });
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      const res = await fetch(`${API_ORIGIN}/api/contact`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json().catch(() => ({}) as any);
+
+      if (!res.ok || data?.ok === false) {
+        throw new Error(data?.error || `Error HTTP ${res.status}`);
+      }
+
+      setSentOk(true);
+      toast.success("Mensaje enviado", {
+        description: "¡Gracias! Te respondemos lo antes posible.",
+        duration: 2500,
+      });
+
+      // limpiar form
+      setFormData({ name: "", email: "", subject: "", message: "" });
+    } catch (err: any) {
+      console.error("[contact] submit failed:", err);
+      toast.error("No se pudo enviar", {
+        description: err?.message || "Intentá nuevamente en unos segundos.",
+        duration: 3500,
+      });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#FFF4E6]">
       <UnifiedHeader
@@ -61,7 +128,6 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
         isTransparent={false}
       />
 
-      {/* Add padding-top to account for fixed header */}
       <div className="pt-20 lg:pt-24">
         {/* Hero Section */}
         <section className="bg-gradient-to-br from-white to-[#FFF4E6] py-16">
@@ -98,13 +164,21 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
               <div className="lg:col-span-2">
                 <Card className="bg-white border-none shadow-lg rounded-2xl p-8">
                   <h2
-                    className="text-[#1C2335] mb-8"
+                    className="text-[#1C2335] mb-2"
                     style={{ fontSize: "1.75rem", fontWeight: 600 }}
                   >
                     Envianos un mensaje
                   </h2>
 
-                  <form className="space-y-6">
+                  {/* ✅ NUEVO: mini feedback visual (opcional) */}
+                  {sentOk && (
+                    <div className="mb-6 mt-4 rounded-2xl bg-green-50 border border-green-100 p-4 text-green-700">
+                      Tu mensaje fue enviado correctamente. ¡Gracias!
+                    </div>
+                  )}
+
+                  {/* ✅ CAMBIO: agregar onSubmit */}
+                  <form className="space-y-6" onSubmit={handleSubmit}>
                     <div className="grid md:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <Label
@@ -124,6 +198,7 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
                           }
                           aria-label="Nombre completo"
                           required
+                          disabled={isSending}
                         />
                       </div>
                       <div className="space-y-2">
@@ -145,6 +220,7 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
                           }
                           aria-label="Correo electrónico"
                           required
+                          disabled={isSending}
                         />
                       </div>
                     </div>
@@ -167,6 +243,7 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
                         }
                         aria-label="Asunto del mensaje"
                         required
+                        disabled={isSending}
                       />
                     </div>
 
@@ -188,17 +265,19 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
                         }
                         aria-label="Mensaje"
                         required
+                        disabled={isSending}
                       />
                     </div>
 
                     <Button
                       type="submit"
-                      className="w-full bg-[#FF6B00] hover:bg-[#e56000] text-white rounded-full py-6"
+                      disabled={isSending}
+                      className="w-full bg-[#FF6B00] hover:bg-[#e56000] text-white rounded-full py-6 disabled:opacity-60"
                       style={{ fontSize: "1.125rem", fontWeight: 600 }}
                       aria-label="Enviar mensaje"
                     >
                       <Send className="w-5 h-5 mr-2" />
-                      Enviar mensaje
+                      {isSending ? "Enviando..." : "Enviar mensaje"}
                     </Button>
                   </form>
                 </Card>
@@ -206,7 +285,6 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
 
               {/* Right: Contact Info Cards */}
               <div className="space-y-6">
-                {/* Call Us */}
                 <Card className="bg-white border-none shadow-md rounded-2xl p-6 hover:shadow-lg transition-shadow">
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-xl bg-[#FF6B00]/10 flex items-center justify-center flex-shrink-0">
@@ -231,7 +309,6 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
                   </div>
                 </Card>
 
-                {/* Email Us */}
                 <Card className="bg-white border-none shadow-md rounded-2xl p-6 hover:shadow-lg transition-shadow">
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-xl bg-[#FF6B00]/10 flex items-center justify-center flex-shrink-0">
@@ -305,8 +382,6 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
         </section>
 
         <Footer onNavigate={onNavigate} />
-
-        {/* Back to Top Button */}
         <BackToTopButton />
       </div>
     </div>
