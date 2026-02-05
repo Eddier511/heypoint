@@ -198,7 +198,9 @@ function AppContent() {
   useEffect(() => {
     const handleLogout = () => {
       if (loadingAuth) return;
-      setCurrentPage("home");
+
+      // ✅ si el usuario está en carrito, no lo saqués de ahí
+      setCurrentPage((prev) => (prev === "cart" ? "cart" : "home"));
     };
 
     window.addEventListener("heypoint:logout", handleLogout);

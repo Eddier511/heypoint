@@ -29,6 +29,38 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 // -----------------------------
+// ✅ LocalStorage (MVP persist)
+// -----------------------------
+const CART_STORAGE_KEY = "heypoint_cart_v1";
+
+function readCartFromStorage(): CartItem[] {
+  try {
+    const raw = localStorage.getItem(CART_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as CartItem[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeCartToStorage(items: CartItem[]) {
+  try {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+  } catch {
+    // ignore
+  }
+}
+
+function clearCartStorage() {
+  try {
+    localStorage.removeItem(CART_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+// -----------------------------
 // Helpers API + Auth token
 // -----------------------------
 function apiBase() {
@@ -99,7 +131,10 @@ async function fetchProductSafe(productId: string) {
 // Provider
 // -----------------------------
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  // ✅ rehidrata en F5
+  const [cartItems, setCartItems] = useState<CartItem[]>(() =>
+    readCartFromStorage(),
+  );
   const [isProcessing, setIsProcessing] = useState(false);
 
   const cartCount = useMemo(
@@ -107,17 +142,28 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [cartItems],
   );
 
-  // ✅ Cargar carrito al montar (si hay sesión)
+  // ✅ Persistir carrito local (MVP)
+  useEffect(() => {
+    writeCartToStorage(cartItems);
+  }, [cartItems]);
+
+  // ✅ Cargar carrito al montar (si hay sesión) (BLINDADO)
   useEffect(() => {
     let alive = true;
 
     async function loadCart() {
       try {
+        // ✅ si no hay token, nos quedamos con lo rehidratado
+        const token = await getIdTokenSafe();
+        if (!token) return;
+
         const data = await apiFetch<{
           items: Array<{ productId: string; qty: number }>;
         }>("/cart", { method: "GET" });
 
         const rawItems = data.items || [];
+
+        // ✅ si server viene vacío, es verdad => vaciamos local
         if (rawItems.length === 0) {
           if (alive) setCartItems([]);
           return;
@@ -149,7 +195,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
         if (alive) setCartItems(hydrated);
       } catch {
-        // si no hay token, ok: carrito vacío hasta login
+        // ✅ si falla backend, NO vaciamos: seguimos con lo local
       }
     }
 
@@ -164,6 +210,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const handleLogout = () => {
       console.log("[CartContext] Logout detected - clearing cart");
       setCartItems([]);
+      clearCartStorage();
     };
 
     window.addEventListener("heypoint:logout", handleLogout);
@@ -311,6 +358,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       // si falla server, igual limpiamos local para UX
     }
     setCartItems([]);
+    clearCartStorage();
   };
 
   return (
