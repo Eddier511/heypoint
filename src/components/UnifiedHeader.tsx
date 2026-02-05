@@ -256,7 +256,19 @@ export function UnifiedHeader({
     else handleNavigation("cart");
   };
 
-  const handleSupportClick = () => setShowSupportModal(true);
+  const handleSupportClick = () => {
+    // 1) cerrar menú mobile si está abierto
+    if (isMobileMenuOpen) setIsMobileMenuOpen(false);
+
+    // 2) cerrar dropdowns por las dudas
+    setIsShopDropdownOpen(false);
+    setIsAboutDropdownOpen(false);
+
+    // 3) abrir el modal en el siguiente frame (ya con el menú cerrado)
+    requestAnimationFrame(() => {
+      setShowSupportModal(true);
+    });
+  };
 
   // Shop dropdown handlers
   const handleShopClick = () => {
@@ -670,7 +682,7 @@ export function UnifiedHeader({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[4900] lg:hidden"
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[7000] lg:hidden"
               onClick={() => setIsMobileMenuOpen(false)}
             />
 
@@ -679,7 +691,7 @@ export function UnifiedHeader({
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="fixed top-0 right-0 bottom-0 w-[88vw] max-w-sm bg-white z-[5000] lg:hidden overflow-y-auto shadow-2xl"
+              className="fixed top-0 right-0 bottom-0 w-[88vw] max-w-sm bg-white z-[8000] lg:hidden overflow-y-auto shadow-2xl"
               role="dialog"
               aria-modal="true"
               aria-label="Menú móvil"
