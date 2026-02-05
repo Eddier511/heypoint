@@ -170,13 +170,6 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
                     Envianos un mensaje
                   </h2>
 
-                  {/* ✅ NUEVO: mini feedback visual (opcional) */}
-                  {sentOk && (
-                    <div className="mb-6 mt-4 rounded-2xl bg-green-50 border border-green-100 p-4 text-green-700">
-                      Tu mensaje fue enviado correctamente. ¡Gracias!
-                    </div>
-                  )}
-
                   {/* ✅ CAMBIO: agregar onSubmit */}
                   <form className="space-y-6" onSubmit={handleSubmit}>
                     <div className="grid md:grid-cols-2 gap-6">
