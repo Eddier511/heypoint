@@ -103,6 +103,54 @@ type UiCategory = {
   image: string;
 };
 
+/** =========================
+ * ✅ URL <-> Page (SPA routing simple)
+ * ========================= */
+function pageToPath(page: Page) {
+  switch (page) {
+    case "home":
+      return "/";
+    case "shop":
+      return "/tienda";
+    case "business":
+      return "/modelo";
+    case "contact":
+      return "/contacto";
+    case "cart":
+      return "/carrito";
+    case "checkout":
+      return "/checkout";
+    case "orders":
+      return "/orders";
+    case "profile":
+      return "/account";
+    case "terms":
+      return "/terminos";
+    case "privacy":
+      return "/privacidad";
+    // productDetails y success no tienen ruta estable en este MVP
+    default:
+      return "/";
+  }
+}
+
+function pathToPage(pathname: string): Page {
+  const p = (pathname || "/").toLowerCase();
+
+  if (p === "/" || p === "/home") return "home";
+  if (p.startsWith("/tienda")) return "shop";
+  if (p.startsWith("/modelo")) return "business";
+  if (p.startsWith("/contacto")) return "contact";
+  if (p.startsWith("/carrito") || p.startsWith("/cart")) return "cart";
+  if (p.startsWith("/checkout")) return "checkout";
+  if (p.startsWith("/orders")) return "orders";
+  if (p.startsWith("/account") || p.startsWith("/profile")) return "profile";
+  if (p.startsWith("/terminos")) return "terms";
+  if (p.startsWith("/privacidad")) return "privacy";
+
+  return "home";
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -128,8 +176,6 @@ function AppContent() {
 
   // ✅ categorías API
   const [dbCategories, setDbCategories] = useState<UiCategory[]>([]);
-  // 🔥 ya no usamos loader visual para home categorías
-  // (seguimos guardando el estado por si lo ocupás en otro lado)
   const [loadingCategories, setLoadingCategories] = useState(false);
 
   // Use contexts
@@ -148,6 +194,20 @@ function AppContent() {
       code += chars[Math.floor(Math.random() * chars.length)];
     }
     return code;
+  }, []);
+
+  // ✅ (1) Al iniciar: leer URL actual + soportar back/forward
+  useEffect(() => {
+    const applyFromUrl = () => {
+      const page = pathToPage(window.location.pathname);
+      setCurrentPage(page);
+    };
+
+    applyFromUrl();
+
+    const onPopState = () => applyFromUrl();
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
   useEffect(() => {
@@ -175,10 +235,14 @@ function AppContent() {
       const path = event.detail?.path;
 
       if (path === "/account" || path === "profile") {
+        // ✅ también sincroniza URL
+        window.history.pushState({}, "", "/account");
         setCurrentPage("profile");
       } else if (path === "/orders") {
+        window.history.pushState({}, "", "/orders");
         setCurrentPage("orders");
       } else if (path === "/cart") {
+        window.history.pushState({}, "", "/carrito");
         setCurrentPage("cart");
       }
     };
@@ -198,9 +262,12 @@ function AppContent() {
   useEffect(() => {
     const handleLogout = () => {
       if (loadingAuth) return;
-
       // ✅ si el usuario está en carrito, no lo saqués de ahí
       setCurrentPage((prev) => (prev === "cart" ? "cart" : "home"));
+
+      // ✅ opcional: si querés que el logout te lleve siempre a "/"
+      // pero respetando carrito (lo dejamos suave)
+      // if (window.location.pathname !== "/") window.history.pushState({}, "", "/");
     };
 
     window.addEventListener("heypoint:logout", handleLogout);
@@ -296,12 +363,10 @@ function AppContent() {
           image: c.imageUrl || FALLBACK_IMAGES[c.name] || PLACEHOLDER_IMG,
         }));
 
-        // ✅ si API viene vacío, no rompas el fallback
         if (!alive) return;
         if (mapped.length > 0) setDbCategories(mapped);
       } catch (e) {
         console.warn("[Home] Failed to load categories", e);
-        // ✅ no seteamos [] para no “borrar” fallback
       } finally {
         if (alive) setLoadingCategories(false);
       }
@@ -359,21 +424,38 @@ function AppContent() {
   const handleProductClick = (product: Product) => {
     setSelectedProduct(product);
     setCurrentPage("productDetails");
+    // (MVP) no cambiamos URL aquí para no romper
   };
 
-  const handleBackToShop = () => setCurrentPage("shop");
+  const handleBackToShop = () => {
+    setCurrentPage("shop");
+    if (window.location.pathname !== "/tienda") {
+      window.history.pushState({}, "", "/tienda");
+    }
+  };
 
+  // ✅ (2) navegación interna = setState + pushState
   const handleNavigation = (page: string) => {
-    setCurrentPage(page as Page);
-    if (page !== "shop") {
+    const next = page as Page;
+    setCurrentPage(next);
+
+    if (next !== "shop") {
       setSelectedCategory(null);
       setSearchQuery("");
+    }
+
+    const nextPath = pageToPath(next);
+    if (window.location.pathname !== nextPath) {
+      window.history.pushState({}, "", nextPath);
     }
   };
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
     setCurrentPage("shop");
+    if (window.location.pathname !== "/tienda") {
+      window.history.pushState({}, "", "/tienda");
+    }
   };
 
   const handleLoginSuccess = (userData?: any) => {
@@ -392,6 +474,7 @@ function AppContent() {
   const handleSignUpSuccess = (email: string, fullName: string) => {
     login({ email, fullName });
     setCurrentPage("success");
+    // (MVP) success sin URL
   };
 
   const handleGoogleSignUpSuccess = (fullName: string) => {
@@ -524,11 +607,15 @@ function AppContent() {
                   onProductClick={(product) => {
                     setSelectedProduct(product);
                     setCurrentPage("productDetails");
+                    // (MVP) sin URL en details
                   }}
                   onViewAllResults={(q) => {
                     setSearchQuery(q);
                     setSelectedCategory(null);
                     setCurrentPage("shop");
+                    if (window.location.pathname !== "/tienda") {
+                      window.history.pushState({}, "", "/tienda");
+                    }
                   }}
                 />
               </motion.div>
@@ -835,6 +922,15 @@ function AppContent() {
 }
 
 /**
- * ✅ API requerido (backend):
- * GET {VITE_API_URL}/api/categories
+ * ✅ IMPORTANTE (servidor):
+ * Necesitás rewrites SPA para que /tienda, /carrito, etc. sirvan index.html.
+ * En Apache/Hostinger: agregá .htaccess (en la carpeta del index.html):
+ *
+ * <IfModule mod_rewrite.c>
+ *   RewriteEngine On
+ *   RewriteCond %{REQUEST_FILENAME} -f [OR]
+ *   RewriteCond %{REQUEST_FILENAME} -d
+ *   RewriteRule ^ - [L]
+ *   RewriteRule ^ index.html [L]
+ * </IfModule>
  */
