@@ -579,7 +579,6 @@ function AppContent() {
       <BackToTopButton />
 
       {/* Hero Section */}
-      {/* Hero Section */}
       <section className="relative min-h-[100vh] flex items-center justify-center overflow-hidden bg-[#FFF4E6]">
         <div className="absolute inset-0 z-0">
           {/* 1) Placeholder consistente */}
