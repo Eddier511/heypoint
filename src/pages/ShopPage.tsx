@@ -28,28 +28,28 @@ import {
   CollapsibleTrigger,
 } from "../components/ui/collapsible";
 import { formatPrecioARS, getPrecioFinalConIVA } from "../utils/priceUtils";
+import { api } from "../lib/api";
 
 /** =========================
  * API Helper (self-contained)
  * ========================= */
-const RAW = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
-const API_BASE = RAW.endsWith("/api") ? RAW : `${RAW}/api`;
+const [catRaw, prodRaw] = await Promise.allSettled([
+  api.get<ApiCategoriesResponse>("/categories"),
+  api.get<ApiProductsResponse>("/products", { params: { status: "active" } }),
+]);
 
-async function apiGet<T>(path: string, opts?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...opts,
-    headers: {
-      "Content-Type": "application/json",
-      ...(opts?.headers || {}),
-    },
-  });
+const apiCats =
+  catRaw.status === "fulfilled"
+    ? normalizeCategories(catRaw.value.data).filter(
+        (c) => c.status !== "inactive",
+      )
+    : [];
 
-  if (!res.ok) {
-    const msg = await res.text().catch(() => "");
-    throw new Error(msg || `HTTP ${res.status} ${res.statusText}`);
-  }
-  return res.json() as Promise<T>;
-}
+if (prodRaw.status !== "fulfilled") throw prodRaw.reason;
+
+const apiProds = normalizeProducts(prodRaw.value.data).filter((p) =>
+  p.status ? p.status === "active" : true,
+);
 
 /** =========================
  * UI Types
@@ -215,13 +215,15 @@ export function ShopPage({
         setError(null);
 
         const [catRaw, prodRaw] = await Promise.allSettled([
-          apiGet<ApiCategoriesResponse>("/categories"),
-          apiGet<ApiProductsResponse>("/products"),
+          api.get<ApiCategoriesResponse>("/categories"),
+          api.get<ApiProductsResponse>("/products", {
+            params: { status: "active" },
+          }),
         ]);
 
         const apiCats =
           catRaw.status === "fulfilled"
-            ? normalizeCategories(catRaw.value).filter(
+            ? normalizeCategories(catRaw.value.data).filter(
                 (c) => c.status !== "inactive",
               )
             : [];
@@ -230,7 +232,7 @@ export function ShopPage({
           throw prodRaw.reason;
         }
 
-        const apiProds = normalizeProducts(prodRaw.value).filter(
+        const apiProds = normalizeProducts(prodRaw.value.data).filter(
           (p) => (p.status ?? "active") === "active",
         );
 
