@@ -827,8 +827,14 @@ export function ShopPage({
             <main className="flex-1 min-w-0">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 bg-white p-4 rounded-2xl shadow-sm">
                 <p className="text-[#2E2E2E]" style={{ fontSize: "0.938rem" }}>
-                  Mostrando {filteredProducts.length} de {products.length}{" "}
-                  productos
+                  {loading ? (
+                    "Cargando productos..."
+                  ) : (
+                    <>
+                      Mostrando {filteredProducts.length} de {products.length}{" "}
+                      productos
+                    </>
+                  )}
                 </p>
 
                 <Select defaultValue="name">
