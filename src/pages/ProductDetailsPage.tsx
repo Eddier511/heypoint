@@ -36,10 +36,17 @@ interface UiProduct {
   id: string;
   name: string;
   image: string;
-  price: number; // base (sin IVA) ya con descuento aplicado
-  originalPrice?: number; // base (sin IVA) antes de descuento
+  price: number;
+  originalPrice?: number;
   rating: number;
-  category: string; // (si no hay nombre real, usamos categoryId)
+
+  // ✅ separar id vs label
+  categoryId?: string | null;
+  categoryName?: string;
+
+  // (mantengo category por compatibilidad si ya lo usás en UI)
+  category: string;
+
   badges?: string[];
   stock: number;
 }
@@ -82,6 +89,8 @@ function mapApiToUi(p: ApiProduct): UiProduct {
 
   const image = (p.images?.[0] || "").trim() || PLACEHOLDER_IMG;
 
+  const categoryId = p.categoryId ?? null;
+
   return {
     id: String(p.id),
     name: String(p.name ?? "Producto"),
@@ -89,7 +98,16 @@ function mapApiToUi(p: ApiProduct): UiProduct {
     price: finalBase,
     originalPrice: discountPct > 0 ? base : undefined,
     rating: 0,
-    category: String(p.categoryId ?? "Otros"),
+
+    // ✅ clave real
+    categoryId,
+
+    // ✅ label de UI (si no tenés nombre real todavía, caé al id)
+    categoryName: String(categoryId ?? "Otros"),
+
+    // compat (tu breadcrumb usa product.category)
+    category: String(categoryId ?? "Otros"),
+
     badges: discountPct > 0 ? ["Sale"] : [],
     stock: Number(p.stock ?? 0) || 0,
   };
@@ -121,93 +139,115 @@ export function ProductDetailsPage({
   }, [product.id]);
 
   // ✅ útil para filtrar por categoría con lo que tengas disponible
-  const currentCategoryKey = useMemo(() => {
-    // En tu UI, product.category puede venir como nombre o como categoryId.
-    // Para relacionados, lo mejor es usar categoryId si lo tenés.
-    // Si tu UI ya tiene categoryId aparte, lo ideal es pasarla también.
-    return (product.category || "").toString().trim();
-  }, [product.category]);
+  const currentCategoryId = useMemo(() => {
+    const id = (product as any)?.categoryId ?? null;
+    const fallback = (product.category || "").toString().trim();
+    return (id ?? fallback ?? "").toString().trim();
+  }, [product]);
 
   // 🔥 cargar relacionados desde backend, pero SIEMPRE limit 3 en front
   useEffect(() => {
     let alive = true;
 
+    const uniqById = (arr: UiProduct[]) => {
+      const seen = new Set<string>();
+      return arr.filter((x) => {
+        if (!x?.id) return false;
+        if (seen.has(String(x.id))) return false;
+        seen.add(String(x.id));
+        return true;
+      });
+    };
+
+    const isActive = (p: ApiProduct) => (p.status ?? "active") !== "inactive";
+
+    const toUiSafe = (list: ApiProduct[]) =>
+      list
+        .filter(Boolean)
+        .filter(isActive)
+        .filter((p) => String(p.id) !== String(product.id))
+        .map(mapApiToUi)
+        .filter((p) => p.price > 0);
+
+    const pickTop3 = (list: UiProduct[]) => uniqById(list).slice(0, 3);
+
     async function loadRelated() {
       try {
         setLoadingRelated(true);
 
-        // Intentamos pedir filtrado al backend (si no lo soporta, igual filtramos acá)
-        const res = await api.get<any>("/products", {
-          params: {
-            // IMPORTANTE: tu estructura real maneja categoryId,
-            // así que mandamos categoryId (y también category por compatibilidad)
-            categoryId: currentCategoryKey,
-            category: currentCategoryKey,
-            exclude: product.id,
-            limit: 3,
-            status: "active",
-          },
-        });
+        // 1️⃣ misma categoría
+        let primary: UiProduct[] = [];
 
-        const raw = res?.data;
-        const list = normalizeArray(raw) as ApiProduct[];
+        if (currentCategoryId) {
+          const res = await api.get<any>("/products", {
+            params: {
+              status: "active",
+              categoryId: currentCategoryId,
+              exclude: product.id,
+              limit: 12,
+            },
+          });
 
-        // ✅ mapea a UI, filtra, excluye actual, status active, misma categoría, limita 3
-        const mapped = list
-          .filter(Boolean)
-          .filter((p) => String(p.id) !== String(product.id))
-          .filter((p) => (p.status ?? "active") !== "inactive")
-          .filter(
-            (p) => String(p.categoryId ?? "") === String(currentCategoryKey),
-          )
-          .map(mapApiToUi)
-          .filter((p) => p.price > 0) // evita $0 si viene basura
-          .slice(0, 3);
+          const list = normalizeArray(res?.data) as ApiProduct[];
 
-        // Si el backend NO filtró por categoría y vino vacío,
-        // hacemos fallback: traemos todos y filtramos acá.
-        if (mapped.length === 0) {
-          const allRes = await api.get<any>("/products");
-          const allRaw = allRes?.data;
-          const allList = normalizeArray(allRaw) as ApiProduct[];
+          primary = toUiSafe(list).filter(
+            (p) =>
+              String((p as any).categoryId ?? currentCategoryId) ===
+              String(currentCategoryId),
+          );
+        }
 
-          const fallback = allList
-            .filter(Boolean)
-            .filter((p) => String(p.id) !== String(product.id))
-            .filter((p) => (p.status ?? "active") !== "inactive")
-            .filter(
-              (p) => String(p.categoryId ?? "") === String(currentCategoryKey),
-            )
-            .map(mapApiToUi)
-            .filter((p) => p.price > 0)
-            .slice(0, 3);
-
-          if (!alive) return;
-          setRelatedProducts(fallback);
+        const primaryTop = pickTop3(primary);
+        if (primaryTop.length >= 3) {
+          if (alive) setRelatedProducts(primaryTop);
           return;
         }
 
-        if (!alive) return;
-        setRelatedProducts(mapped);
+        // 2️⃣ fallback (más vendidos / destacados / recientes)
+        const fallbackRes = await api.get<any>("/products", {
+          params: {
+            status: "active",
+            limit: 24,
+          },
+        });
+
+        const fallbackList = normalizeArray(fallbackRes?.data) as ApiProduct[];
+
+        const ranked = toUiSafe(fallbackList)
+          .map((u) => ({
+            u,
+            raw: fallbackList.find((x) => String(x.id) === String(u.id)),
+          }))
+          .sort((a, b) => {
+            const aRaw: any = a.raw || {};
+            const bRaw: any = b.raw || {};
+
+            const aSold = Number(aRaw.soldCount ?? 0);
+            const bSold = Number(bRaw.soldCount ?? 0);
+            if (bSold !== aSold) return bSold - aSold;
+
+            const aDate = Date.parse(aRaw.createdAt ?? "") || 0;
+            const bDate = Date.parse(bRaw.createdAt ?? "") || 0;
+            return bDate - aDate;
+          })
+          .map((x) => x.u);
+
+        const combined = pickTop3([...primaryTop, ...ranked]);
+
+        if (alive) setRelatedProducts(combined);
       } catch (e) {
-        console.error("[ProductDetails] Error loading related products", e);
+        console.error("[ProductDetails] related error", e);
         if (alive) setRelatedProducts([]);
       } finally {
         if (alive) setLoadingRelated(false);
       }
     }
 
-    // si no hay categoría, no buscamos relacionados
-    if (!currentCategoryKey) {
-      setRelatedProducts([]);
-      return;
-    }
-
     loadRelated();
     return () => {
       alive = false;
     };
-  }, [product.id, currentCategoryKey]);
+  }, [product.id, currentCategoryId]);
 
   const getRelatedQty = (id: string) => relatedQuantities[id] || 1;
   const setRelatedQty = (id: string, q: number) =>
