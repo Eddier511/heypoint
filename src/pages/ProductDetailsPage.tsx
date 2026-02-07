@@ -75,6 +75,17 @@ function toDiscountPct(p: ApiProduct): number {
   return Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : 0;
 }
 
+async function fetchProductById(id: string): Promise<ApiProduct | null> {
+  const res = await api.get<any>(`/products/${id}`);
+  const data = res?.data;
+
+  // soporta {product:{}} o directo
+  const p = data?.product ?? data?.data ?? data;
+  if (!p) return null;
+
+  return p as ApiProduct;
+}
+
 /**
  * ✅ Mapea el Product real del backend a tu UI ProductDetails
  * - basePrice: precio base (sin IVA) "lista"
@@ -95,10 +106,10 @@ function mapApiToUi(p: ApiProduct, categoryName?: string): UiProduct {
     originalPrice: discountPct > 0 ? base : undefined,
     rating: 0,
 
-    // 🔥 ESTE ES EL IMPORTANTE
+    // 🔥 LÓGICA (NO TOCAR)
     categoryId: p.categoryId ?? null,
 
-    // 🎨 SOLO VISUAL
+    // 🎨 UI
     categoryName,
     category: categoryName ?? "Otros",
 
@@ -150,43 +161,73 @@ export function ProductDetailsPage({
       try {
         setLoadingRelated(true);
 
-        const res = await api.get("/products", {
+        // ✅ 1) Traer el producto real desde backend para obtener categoryId real
+        const full = await fetchProductById(product.id);
+
+        const categoryId = String(full?.categoryId ?? "");
+        if (!categoryId) {
+          if (alive) setRelatedProducts([]);
+          return;
+        }
+
+        // ✅ 2) Pedir relacionados por categoryId
+        const res = await api.get<any>("/products", {
           params: {
-            categoryId: currentCategoryId,
+            categoryId,
             status: "active",
-            limit: 10,
+            limit: 12,
           },
         });
 
-        const list = normalizeArray(res.data) as ApiProduct[];
+        const list = normalizeArray(res?.data) as ApiProduct[];
 
-        const related = list
-          .filter((p) => String(p.id) !== product.id)
-          .filter((p) => p.status !== "inactive")
-          .filter((p) => String(p.categoryId) === currentCategoryId)
-          .map((p) => mapApiToUi(p, product.category))
+        let related = list
+          .filter(Boolean)
+          .filter((p) => String(p.id) !== String(product.id))
+          .filter((p) => (p.status ?? "active") !== "inactive")
+          .filter((p) => String(p.categoryId ?? "") === categoryId)
+          .map(mapApiToUi)
+          .filter((p) => p.price > 0)
           .slice(0, 3);
+
+        // ✅ 3) Fallback si hay pocos (completa con activos recientes)
+        if (related.length < 3) {
+          const allRes = await api.get<any>("/products", {
+            params: { status: "active", limit: 30 },
+          });
+
+          const allList = normalizeArray(allRes?.data) as ApiProduct[];
+          const fill = allList
+            .filter(Boolean)
+            .filter((p) => String(p.id) !== String(product.id))
+            .filter((p) => (p.status ?? "active") !== "inactive")
+            .map(mapApiToUi)
+            .filter((p) => p.price > 0);
+
+          const used = new Set(related.map((x) => x.id));
+          for (const p of fill) {
+            if (related.length >= 3) break;
+            if (used.has(p.id)) continue;
+            related.push(p);
+            used.add(p.id);
+          }
+        }
 
         if (!alive) return;
         setRelatedProducts(related);
       } catch (e) {
-        console.error("Related products error", e);
+        console.error("[ProductDetails] Error loading related products", e);
         if (alive) setRelatedProducts([]);
       } finally {
         if (alive) setLoadingRelated(false);
       }
     }
 
-    if (!currentCategoryId) {
-      setRelatedProducts([]);
-      return;
-    }
-
     loadRelated();
     return () => {
       alive = false;
     };
-  }, [product.id, currentCategoryId]);
+  }, [product.id]);
 
   const getRelatedQty = (id: string) => relatedQuantities[id] || 1;
   const setRelatedQty = (id: string, q: number) =>
