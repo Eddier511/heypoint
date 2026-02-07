@@ -80,36 +80,30 @@ function toDiscountPct(p: ApiProduct): number {
  * - basePrice: precio base (sin IVA) "lista"
  * - discount: % => price final = basePrice * (1 - discount/100)
  */
-function mapApiToUi(p: ApiProduct): UiProduct {
-  const discountPct = toDiscountPct(p);
-  const base = Number(p.basePrice ?? 0) || 0;
+function mapApiToUi(p: ApiProduct, categoryName?: string): UiProduct {
+  const discountPct = Number(p.discountPct ?? p.discount ?? 0);
+  const base = Number(p.basePrice ?? 0);
 
   const finalBase =
     discountPct > 0 ? Math.round(base * (1 - discountPct / 100)) : base;
 
-  const image = (p.images?.[0] || "").trim() || PLACEHOLDER_IMG;
-
-  const categoryId = p.categoryId ?? null;
-
   return {
     id: String(p.id),
     name: String(p.name ?? "Producto"),
-    image,
+    image: p.images?.[0] || PLACEHOLDER_IMG,
     price: finalBase,
     originalPrice: discountPct > 0 ? base : undefined,
     rating: 0,
 
-    // ✅ clave real
-    categoryId,
+    // 🔥 ESTE ES EL IMPORTANTE
+    categoryId: p.categoryId ?? null,
 
-    // ✅ label de UI (si no tenés nombre real todavía, caé al id)
-    categoryName: String(categoryId ?? "Otros"),
-
-    // compat (tu breadcrumb usa product.category)
-    category: String(categoryId ?? "Otros"),
+    // 🎨 SOLO VISUAL
+    categoryName,
+    category: categoryName ?? "Otros",
 
     badges: discountPct > 0 ? ["Sale"] : [],
-    stock: Number(p.stock ?? 0) || 0,
+    stock: Number(p.stock ?? 0),
   };
 }
 
@@ -149,98 +143,40 @@ export function ProductDetailsPage({
   useEffect(() => {
     let alive = true;
 
-    const uniqById = (arr: UiProduct[]) => {
-      const seen = new Set<string>();
-      return arr.filter((x) => {
-        if (!x?.id) return false;
-        if (seen.has(String(x.id))) return false;
-        seen.add(String(x.id));
-        return true;
-      });
-    };
-
-    const isActive = (p: ApiProduct) => (p.status ?? "active") !== "inactive";
-
-    const toUiSafe = (list: ApiProduct[]) =>
-      list
-        .filter(Boolean)
-        .filter(isActive)
-        .filter((p) => String(p.id) !== String(product.id))
-        .map(mapApiToUi)
-        .filter((p) => p.price > 0);
-
-    const pickTop3 = (list: UiProduct[]) => uniqById(list).slice(0, 3);
-
     async function loadRelated() {
       try {
         setLoadingRelated(true);
 
-        // 1️⃣ misma categoría
-        let primary: UiProduct[] = [];
-
-        if (currentCategoryId) {
-          const res = await api.get<any>("/products", {
-            params: {
-              status: "active",
-              categoryId: currentCategoryId,
-              exclude: product.id,
-              limit: 12,
-            },
-          });
-
-          const list = normalizeArray(res?.data) as ApiProduct[];
-
-          primary = toUiSafe(list).filter(
-            (p) =>
-              String((p as any).categoryId ?? currentCategoryId) ===
-              String(currentCategoryId),
-          );
-        }
-
-        const primaryTop = pickTop3(primary);
-        if (primaryTop.length >= 3) {
-          if (alive) setRelatedProducts(primaryTop);
-          return;
-        }
-
-        // 2️⃣ fallback (más vendidos / destacados / recientes)
-        const fallbackRes = await api.get<any>("/products", {
+        const res = await api.get("/products", {
           params: {
+            categoryId: currentCategoryId,
             status: "active",
-            limit: 24,
+            limit: 10,
           },
         });
 
-        const fallbackList = normalizeArray(fallbackRes?.data) as ApiProduct[];
+        const list = normalizeArray(res.data) as ApiProduct[];
 
-        const ranked = toUiSafe(fallbackList)
-          .map((u) => ({
-            u,
-            raw: fallbackList.find((x) => String(x.id) === String(u.id)),
-          }))
-          .sort((a, b) => {
-            const aRaw: any = a.raw || {};
-            const bRaw: any = b.raw || {};
+        const related = list
+          .filter((p) => String(p.id) !== product.id)
+          .filter((p) => p.status !== "inactive")
+          .filter((p) => String(p.categoryId) === currentCategoryId)
+          .map((p) => mapApiToUi(p, product.category))
+          .slice(0, 3);
 
-            const aSold = Number(aRaw.soldCount ?? 0);
-            const bSold = Number(bRaw.soldCount ?? 0);
-            if (bSold !== aSold) return bSold - aSold;
-
-            const aDate = Date.parse(aRaw.createdAt ?? "") || 0;
-            const bDate = Date.parse(bRaw.createdAt ?? "") || 0;
-            return bDate - aDate;
-          })
-          .map((x) => x.u);
-
-        const combined = pickTop3([...primaryTop, ...ranked]);
-
-        if (alive) setRelatedProducts(combined);
+        if (!alive) return;
+        setRelatedProducts(related);
       } catch (e) {
-        console.error("[ProductDetails] related error", e);
+        console.error("Related products error", e);
         if (alive) setRelatedProducts([]);
       } finally {
         if (alive) setLoadingRelated(false);
       }
+    }
+
+    if (!currentCategoryId) {
+      setRelatedProducts([]);
+      return;
     }
 
     loadRelated();
