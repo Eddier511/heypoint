@@ -64,7 +64,13 @@ export function UserProfilePage({
   isLoggedIn = true,
   onLogout,
 }: UserProfilePageProps) {
-  const { getIdToken, currentUser, changePassword } = useAuth();
+  const {
+    getIdToken,
+    currentUser,
+    changePassword,
+    refreshEmailVerification,
+    sendVerifyEmailPro,
+  } = useAuth();
 
   function resolveApiBase() {
     const raw =
@@ -119,6 +125,30 @@ export function UserProfilePage({
 
   // Change email modal
   const [showChangeEmailModal, setShowChangeEmailModal] = useState(false);
+
+  const [checkingEmail, setCheckingEmail] = useState(false);
+
+  const refreshVerifiedState = async () => {
+    try {
+      setCheckingEmail(true);
+      const verified = await refreshEmailVerification();
+      setProfileData((prev) => ({ ...prev, emailVerified: verified }));
+      setOriginalData((prev) => ({ ...prev, emailVerified: verified }));
+    } finally {
+      setCheckingEmail(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    try {
+      setPageError("");
+      await sendVerifyEmailPro(); // reenvía verificación
+    } catch (e: any) {
+      setPageError(
+        e?.message || "No se pudo reenviar el correo de verificación.",
+      );
+    }
+  };
 
   // Password requirements
   const passwordRequirements = useMemo(() => {
@@ -176,10 +206,14 @@ export function UserProfilePage({
 
         const api = data.profile || {};
 
+        const verified = await refreshEmailVerification().catch(
+          () => !!currentUser?.emailVerified,
+        );
+
         const next = {
           fullName: api.fullName || currentUser?.displayName || "",
           email: api.email || currentUser?.email || "",
-          emailVerified: !!currentUser?.emailVerified,
+          emailVerified: verified,
           phone: api.phone || "",
           birthDate: api.birthDate || "",
           dni: api.dni || "",
@@ -369,18 +403,21 @@ export function UserProfilePage({
     setSaveSuccess(false);
   };
 
-  const handleEmailChanged = (newEmail: string) => {
+  const handleEmailChanged = async (newEmail: string) => {
     setProfileData((prev) => ({
       ...prev,
       email: newEmail,
-      emailVerified: true,
+      emailVerified: false, // ✅ al cambiar email, queda NO verificado
     }));
     setOriginalData((prev) => ({
       ...prev,
       email: newEmail,
-      emailVerified: true,
+      emailVerified: false,
     }));
     setShowChangeEmailModal(false);
+
+    // opcional: disparar verificación automáticamente
+    await handleResendVerification();
   };
 
   return (
@@ -534,7 +571,66 @@ export function UserProfilePage({
                               disabled={true}
                               className="pl-12 pr-10 py-6 rounded-2xl border-2 border-gray-300 bg-gray-50 cursor-not-allowed opacity-80"
                             />
-                            <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
+                            {profileData.emailVerified ? (
+                              <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
+                            ) : (
+                              <XCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-red-500" />
+                            )}
+
+                            <div className="mt-2 flex items-center justify-between gap-3">
+                              <p className="text-[#2E2E2E]/60 text-xs">
+                                {profileData.emailVerified
+                                  ? "Email verificado ✓"
+                                  : "Email NO verificado"}
+                              </p>
+
+                              <div className="flex items-center gap-3">
+                                <button
+                                  type="button"
+                                  onClick={refreshVerifiedState}
+                                  className="text-[#2E2E2E]/70 hover:text-[#1C2335] transition-colors inline-flex items-center gap-1"
+                                  style={{
+                                    fontSize: "0.813rem",
+                                    fontWeight: 600,
+                                  }}
+                                  disabled={checkingEmail}
+                                  title="Revisar verificación"
+                                >
+                                  <RefreshCw
+                                    className={`w-3.5 h-3.5 ${checkingEmail ? "animate-spin" : ""}`}
+                                  />
+                                  {checkingEmail ? "Revisando..." : "Revisar"}
+                                </button>
+
+                                {!profileData.emailVerified && (
+                                  <button
+                                    type="button"
+                                    onClick={handleResendVerification}
+                                    className="text-[#FF6B00] hover:text-[#e56000] transition-colors inline-flex items-center gap-1"
+                                    style={{
+                                      fontSize: "0.813rem",
+                                      fontWeight: 600,
+                                    }}
+                                  >
+                                    <Mail className="w-3.5 h-3.5" />
+                                    Reenviar verificación
+                                  </button>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={() => setShowChangeEmailModal(true)}
+                                  className="text-[#FF6B00] hover:text-[#e56000] transition-colors inline-flex items-center gap-1"
+                                  style={{
+                                    fontSize: "0.813rem",
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  <RefreshCw className="w-3.5 h-3.5" />
+                                  Cambiar correo
+                                </button>
+                              </div>
+                            </div>
                           </div>
 
                           <div className="mt-2 flex items-center justify-between gap-3">
