@@ -330,7 +330,6 @@ export function ShopPage({
     };
 
     load();
-
     return () => {
       mounted = false;
     };
