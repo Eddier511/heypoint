@@ -24,11 +24,13 @@ import {
   updatePassword,
 } from "firebase/auth";
 import { auth } from "../config/firebaseClient";
+import { reload } from "firebase/auth";
 
 interface User {
   email: string;
   fullName: string;
   uid?: string;
+  emailVerified?: boolean;
 }
 
 type GoogleOAuthResult = {
@@ -53,6 +55,7 @@ interface AuthContextType {
   user: User | null;
   currentUser: FirebaseUser | null;
   loadingAuth: boolean;
+  refreshEmailVerification: () => Promise<boolean>;
 
   // legacy
   login: (userData: User) => void;
@@ -91,6 +94,7 @@ function mapFirebaseUser(u: FirebaseUser): User {
     uid: u.uid,
     email: u.email || "",
     fullName: u.displayName || "User",
+    emailVerified: !!u.emailVerified, // ✅ NUEVO
   };
 }
 
@@ -258,6 +262,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   };
 
+  const refreshEmailVerification = async (): Promise<boolean> => {
+    const u = auth.currentUser;
+    if (!u) return false;
+
+    await reload(u); // ✅ trae emailVerified actualizado
+    setFbUser(auth.currentUser); // refresca estado para UI
+    return !!auth.currentUser?.emailVerified;
+  };
+
   // ✅ Backend: POST /api/customers/profile (alias)
   const saveProfile = async (payload: CustomerProfile) => {
     const tok = await getAuthToken(false);
@@ -346,6 +359,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signupWithEmail,
         startGoogleOAuth,
         logout,
+        refreshEmailVerification,
         getAuthToken,
         getIdToken: getIdTokenFn,
         fetchMe,

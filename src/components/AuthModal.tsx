@@ -26,6 +26,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
+import { getAuth, sendEmailVerification } from "firebase/auth";
 
 import { useAuth } from "../contexts/AuthContext";
 
@@ -100,6 +101,29 @@ function resolveApiBase() {
   const base = String(raw).trim().replace(/\/+$/, "");
   if (base.endsWith("/api")) return base;
   return `${base}/api`;
+}
+
+function buildVerifyContinueUrl() {
+  // Podés cambiar /?verified=1 si querés otra ruta
+  return `${window.location.origin}/?verified=1`;
+}
+
+async function sendVerificationEmailNow() {
+  const auth = getAuth();
+  const user = auth.currentUser;
+  if (!user?.email)
+    throw new Error("No hay usuario autenticado para verificar.");
+
+  // En la mayoría de casos Google ya viene verificado.
+  // Igual hacemos el check para mantener flujo consistente.
+  if (user.emailVerified) return { alreadyVerified: true };
+
+  await sendEmailVerification(user, {
+    url: buildVerifyContinueUrl(),
+    handleCodeInApp: false,
+  });
+
+  return { alreadyVerified: false };
 }
 
 async function saveProfileToBackend(payload: any, idToken: string) {
@@ -309,7 +333,6 @@ export default function AuthModal({
 
   const openGmail = () => window.open("https://mail.google.com", "_blank");
 
-  // ✅ Google login/signup (FIX: si es nuevo, NO cerrar modal aunque esté en login tab)
   const handleGoogle = async () => {
     try {
       setGlobalError("");
@@ -317,15 +340,30 @@ export default function AuthModal({
 
       const { user, isNewUser } = await startGoogleOAuth();
 
-      // ✅ Si es NUEVO => Paso 2 siempre (aunque el tab esté en login)
+      // ✅ Si por alguna razón Google NO viene verificado, forzamos verify step
+      // (normalmente emailVerified=true en Google, pero lo validamos igual)
+      if (!user?.email)
+        throw new Error("No se pudo obtener el email de Google.");
+
+      localStorage.setItem(PENDING_EMAIL_KEY, user.email);
+      localStorage.setItem(PENDING_NAME_KEY, user.fullName || "");
+
+      setActiveTab("signup");
+      setPendingEmail(user.email);
+      setPendingFullName(user.fullName || "");
+
+      // ✅ Si no está verificado => verifyEmail
+      if (!user.emailVerified) {
+        await sendVerificationEmailNow().catch(() => {});
+        setSignUpStep("verifyEmail");
+        setVerificationCountdown(45);
+        setIsResendEnabled(false);
+        return;
+      }
+
+      // ✅ Si es NUEVO y ya está verificado => Paso 2
       if (isNewUser) {
         localStorage.setItem(PENDING_PROFILE_KEY, "1");
-        localStorage.setItem(PENDING_EMAIL_KEY, user.email);
-        localStorage.setItem(PENDING_NAME_KEY, user.fullName || "");
-
-        setActiveTab("signup");
-        setPendingEmail(user.email);
-        setPendingFullName(user.fullName);
         setSignUpStep("completeProfile");
         setStep2Dirty(false);
         return;
@@ -353,6 +391,28 @@ export default function AuthModal({
       }
 
       const u = await loginWithEmail(loginEmail, loginPassword);
+
+      // ✅ BLOQUEO: si no verificó, lo mandamos a verifyEmail
+      if ((u as any)?.email && (u as any)?.emailVerified === false) {
+        localStorage.setItem(PENDING_EMAIL_KEY, (u as any).email);
+        localStorage.setItem(PENDING_NAME_KEY, (u as any).fullName || "");
+
+        setActiveTab("signup");
+        setPendingEmail((u as any).email);
+        setPendingFullName((u as any).fullName || "");
+
+        // Intentamos enviar de nuevo por si nunca llegó
+        await sendVerificationEmailNow().catch(() => {});
+
+        setSignUpStep("verifyEmail");
+        setVerificationCountdown(45);
+        setIsResendEnabled(false);
+        setGlobalError(
+          "Tu cuenta aún no está verificada. Revisá tu correo y Spam.",
+        );
+        return;
+      }
+
       onLoginSuccess(u);
       onClose();
     } catch (e: any) {
@@ -393,11 +453,16 @@ export default function AuthModal({
         signUpPassword,
       );
 
+      // ✅ guardar pendientes
       localStorage.setItem(PENDING_EMAIL_KEY, user.email);
       localStorage.setItem(PENDING_NAME_KEY, signUpFullName);
 
       setPendingEmail(user.email);
       setPendingFullName(signUpFullName);
+
+      // ✅ ENVIAR VERIFICACIÓN (real)
+      await sendVerificationEmailNow();
+
       setSignUpStep("verifyEmail");
       setVerificationCountdown(45);
       setIsResendEnabled(false);
@@ -434,11 +499,20 @@ export default function AuthModal({
     try {
       setGlobalError("");
       setLoading(true);
+
+      const r = await sendVerificationEmailNow();
+
       setVerificationCountdown(45);
       setIsResendEnabled(false);
+
+      // Abrimos Gmail igual, pero ahora sí se reenvió
       openGmail();
+
+      if (r.alreadyVerified) {
+        setGlobalError("Tu email ya estaba verificado ✅. Podés continuar.");
+      }
     } catch (e: any) {
-      setGlobalError(e?.message || "No se pudo reenviar.");
+      setGlobalError(e?.message || "No se pudo reenviar. Intentá nuevamente.");
     } finally {
       setLoading(false);
     }
