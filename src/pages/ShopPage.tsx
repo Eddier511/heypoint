@@ -31,27 +31,6 @@ import { formatPrecioARS, getPrecioFinalConIVA } from "../utils/priceUtils";
 import { api } from "../lib/api";
 
 /** =========================
- * API Helper (self-contained)
- * ========================= */
-const [catRaw, prodRaw] = await Promise.allSettled([
-  api.get<ApiCategoriesResponse>("/categories"),
-  api.get<ApiProductsResponse>("/products", { params: { status: "active" } }),
-]);
-
-const apiCats =
-  catRaw.status === "fulfilled"
-    ? normalizeCategories(catRaw.value.data).filter(
-        (c) => c.status !== "inactive",
-      )
-    : [];
-
-if (prodRaw.status !== "fulfilled") throw prodRaw.reason;
-
-const apiProds = normalizeProducts(prodRaw.value.data).filter((p) =>
-  p.status ? p.status === "active" : true,
-);
-
-/** =========================
  * UI Types
  * ========================= */
 interface Product {
