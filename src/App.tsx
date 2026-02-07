@@ -579,15 +579,13 @@ function AppContent() {
       <BackToTopButton />
 
       {/* Hero Section */}
+      {/* Hero Section */}
       <section className="relative min-h-[100vh] flex items-center justify-center overflow-hidden bg-[#FFF4E6]">
         <div className="absolute inset-0 z-0">
-          {/* Placeholder consistente (evita “gris + salto”) */}
+          {/* 1) Placeholder consistente */}
           <div className="absolute inset-0 bg-gradient-to-br from-[#1C2335] via-[#2E2E2E] to-black" />
 
-          {/* Overlay fijo (no cambia cuando carga la imagen) */}
-          <div className="absolute inset-0 bg-black/40" />
-
-          {/* Imagen con fade-in suave al cargar */}
+          {/* 2) Imagen (fade-in) */}
           <div
             className={`absolute inset-0 transition-opacity duration-500 ease-out ${
               heroLoaded ? "opacity-100" : "opacity-0"
@@ -601,8 +599,12 @@ function AppContent() {
               decoding="async"
               fetchPriority="high"
               onLoad={() => setHeroLoaded(true)}
+              onError={() => setHeroLoaded(true)} // ✅ si falla, no te deja “negro”
             />
           </div>
+
+          {/* 3) Overlay arriba de todo (siempre igual) */}
+          <div className="absolute inset-0 bg-black/40" />
         </div>
 
         <div className="container mx-auto px-6 relative z-10 text-center max-w-5xl py-20">
