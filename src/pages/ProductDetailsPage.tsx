@@ -139,6 +139,9 @@ export function ProductDetailsPage({
     return (id ?? fallback ?? "").toString().trim();
   }, [product]);
 
+  console.log("🧪 Product en detalle:", product);
+  console.log("🧪 categoryId:", product.categoryId);
+
   // 🔥 cargar relacionados desde backend, pero SIEMPRE limit 3 en front
   useEffect(() => {
     let alive = true;
