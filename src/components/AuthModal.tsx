@@ -26,7 +26,6 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
-import { getAuth, sendEmailVerification } from "firebase/auth";
 
 import { useAuth } from "../contexts/AuthContext";
 
@@ -103,29 +102,6 @@ function resolveApiBase() {
   return `${base}/api`;
 }
 
-function buildVerifyContinueUrl() {
-  // Podés cambiar /?verified=1 si querés otra ruta
-  return `${window.location.origin}/?verified=1`;
-}
-
-async function sendVerificationEmailNow() {
-  const auth = getAuth();
-  const user = auth.currentUser;
-  if (!user?.email)
-    throw new Error("No hay usuario autenticado para verificar.");
-
-  // En la mayoría de casos Google ya viene verificado.
-  // Igual hacemos el check para mantener flujo consistente.
-  if (user.emailVerified) return { alreadyVerified: true };
-
-  await sendEmailVerification(user, {
-    url: buildVerifyContinueUrl(),
-    handleCodeInApp: false,
-  });
-
-  return { alreadyVerified: false };
-}
-
 async function saveProfileToBackend(payload: any, idToken: string) {
   const apiBase = resolveApiBase();
   const url = joinUrl(apiBase, "/customers/profile");
@@ -156,12 +132,13 @@ export default function AuthModal({
   defaultMode = "login",
 }: AuthModalProps) {
   const {
-    user: sessionUser, // ✅ para recuperar email/nombre si el padre cierra el modal
+    user: sessionUser,
     loginWithEmail,
     signupWithEmail,
     startGoogleOAuth,
     sendResetPassword,
     refreshEmailVerification,
+    sendVerifyEmailPro,
     getIdToken,
   } = useAuth();
 
@@ -402,7 +379,7 @@ export default function AuthModal({
         setPendingFullName((u as any).fullName || "");
 
         // Intentamos enviar de nuevo por si nunca llegó
-        await sendVerificationEmailNow().catch(() => {});
+        await sendVerifyEmailPro().catch(() => {});
 
         setSignUpStep("verifyEmail");
         setVerificationCountdown(45);
@@ -447,24 +424,21 @@ export default function AuthModal({
     try {
       setLoading(true);
 
-      // 1️⃣ CREA USUARIO EN FIREBASE
+      // 1) Crear usuario (esto YA envía verificación desde AuthContext)
       const user = await signupWithEmail(
         signUpFullName,
         signUpEmail,
         signUpPassword,
       );
 
-      // 2️⃣ 🔥 ENVÍA EMAIL DE VERIFICACIÓN PRO (TU BACKEND)
-      await sendVerifyEmailPro();
-
-      // 3️⃣ GUARDAMOS ESTADO PENDIENTE
+      // 2) Guardar estado pendiente
       localStorage.setItem(PENDING_EMAIL_KEY, user.email);
       localStorage.setItem(PENDING_NAME_KEY, signUpFullName);
 
       setPendingEmail(user.email);
       setPendingFullName(signUpFullName);
 
-      // 4️⃣ PASAMOS A PASO "VERIFICAR EMAIL"
+      // 3) Ir a verificación
       setSignUpStep("verifyEmail");
       setVerificationCountdown(45);
       setIsResendEnabled(false);
@@ -486,8 +460,20 @@ export default function AuthModal({
         return;
       }
 
-      setSignUpStep("completeProfile");
-      setStep2Dirty(false);
+      const pendingProfile = localStorage.getItem(PENDING_PROFILE_KEY) === "1";
+
+      if (pendingProfile) {
+        setSignUpStep("completeProfile");
+        setStep2Dirty(false);
+        return;
+      }
+
+      // Si no hay perfil pendiente, es un usuario existente: lo dejamos loguear
+      onLoginSuccess({
+        email: pendingEmail,
+        fullName: pendingFullName || "User",
+      });
+      onClose();
     } catch (e: any) {
       setGlobalError(
         e?.message || "No se pudo comprobar la verificación. Intentá de nuevo.",
@@ -502,10 +488,10 @@ export default function AuthModal({
       setGlobalError("");
       setLoading(true);
 
-      await sendVerifyEmailPro(); // ✅ reenviar real
+      await sendVerifyEmailPro();
+
       setVerificationCountdown(45);
       setIsResendEnabled(false);
-
       openGmail();
     } catch (e: any) {
       setGlobalError(e?.message || "No se pudo reenviar.");

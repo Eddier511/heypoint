@@ -22,9 +22,10 @@ import {
   EmailAuthProvider,
   reauthenticateWithCredential,
   updatePassword,
+  sendEmailVerification,
+  reload,
 } from "firebase/auth";
 import { auth } from "../config/firebaseClient";
-import { reload } from "firebase/auth";
 
 interface User {
   email: string;
@@ -55,6 +56,8 @@ interface AuthContextType {
   user: User | null;
   currentUser: FirebaseUser | null;
   loadingAuth: boolean;
+
+  // ✅ email verification
   isEmailVerified: () => Promise<boolean>;
   sendVerifyEmailPro: () => Promise<void>;
   refreshEmailVerification: () => Promise<boolean>;
@@ -96,7 +99,7 @@ function mapFirebaseUser(u: FirebaseUser): User {
     uid: u.uid,
     email: u.email || "",
     fullName: u.displayName || "User",
-    emailVerified: !!u.emailVerified, // ✅ NUEVO
+    emailVerified: !!u.emailVerified,
   };
 }
 
@@ -176,6 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return mapFirebaseUser(cred.user);
   };
 
+  // ✅ registro con verificación
   const signupWithEmail = async (
     fullName: string,
     email: string,
@@ -185,10 +189,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await updateProfile(cred.user, { displayName: fullName });
     await persistToken(false);
 
+    // ✅ enviar verificación (link vuelve a tu web)
+    const continueUrl = `${window.location.origin}/?verified=1`;
+    await sendEmailVerification(cred.user, {
+      url: continueUrl,
+      handleCodeInApp: false,
+    });
+
     return {
       uid: cred.user.uid,
       email: cred.user.email || email,
       fullName,
+      emailVerified: !!cred.user.emailVerified,
     };
   };
 
@@ -233,7 +245,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       headers: { Authorization: `Bearer ${tok}` },
     });
 
-    // si el token expiró raro, intentá 1 vez forzando refresh
+    // retry 401 con refresh
     if (res.status === 401) {
       const tok2 = await getAuthToken(true);
       if (!tok2) return { exists: false, profile: null };
@@ -264,34 +276,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   };
 
-  const refreshEmailVerification = async () => {
+  // ✅ Email verification helpers
+  const refreshEmailVerification = useCallback(async () => {
     const u = auth.currentUser;
     if (!u) return false;
     await reload(u);
     return !!auth.currentUser?.emailVerified;
-  };
+  }, []);
 
-  const isEmailVerified = async () => {
+  const isEmailVerified = useCallback(async () => {
     const u = auth.currentUser;
     if (!u) return false;
     await reload(u);
     return !!auth.currentUser?.emailVerified;
-  };
+  }, []);
 
-  const sendVerifyEmailPro = async () => {
-    const tok = await getAuthToken(false);
-    if (!tok) throw new Error("No hay sesión activa.");
+  // ✅ Reenviar email verificación (Firebase directo)
+  const sendVerifyEmailPro = useCallback(async () => {
+    const u = auth.currentUser;
+    if (!u) throw new Error("No hay sesión activa.");
 
-    const res = await fetch(apiUrl("/auth/send-verify-email"), {
-      method: "POST",
-      headers: { Authorization: `Bearer ${tok}` },
+    const continueUrl = `${window.location.origin}/?verified=1`;
+    await sendEmailVerification(u, {
+      url: continueUrl,
+      handleCodeInApp: false,
     });
 
-    const data = await res.json().catch(() => ({}) as any);
-    if (!res.ok || data?.ok === false) {
-      throw new Error(data?.error || `HTTP ${res.status}`);
-    }
-  };
+    await persistToken(false);
+  }, [persistToken]);
 
   // ✅ Backend: POST /api/customers/profile (alias)
   const saveProfile = async (payload: CustomerProfile) => {
@@ -376,18 +388,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         currentUser: fbUser,
         loadingAuth,
+
+        // ✅ email verification
+        refreshEmailVerification,
+        isEmailVerified,
+        sendVerifyEmailPro,
+
         login,
         loginWithEmail,
         signupWithEmail,
         startGoogleOAuth,
         logout,
-        refreshEmailVerification,
-        isEmailVerified,
-        sendVerifyEmailPro,
+
         getAuthToken,
         getIdToken: getIdTokenFn,
+
         fetchMe,
         saveProfile,
+
         changePassword,
         updateDisplayName,
       }}
