@@ -55,13 +55,13 @@ async function apiGet<T>(path: string, opts?: RequestInit): Promise<T> {
  * UI Types
  * ========================= */
 interface Product {
-  id: number; // hash (para UI)
-  backendId: string; // ✅ ID REAL del backend (string)
+  id: number; // UI id stable (hash)
+  backendId: string; // ✅ ID real del backend (string)
   categoryId?: string | null; // ✅ para relacionados
   name: string;
   image: string;
-  price: number;
-  originalPrice?: number;
+  price: number; // final SIN IVA (con descuento aplicado)
+  originalPrice?: number; // base SIN IVA (si hay descuento)
   rating: number;
   category: string;
   badges?: string[];
@@ -259,7 +259,7 @@ export function ShopPage({
 
           return {
             id: hashId(p.id),
-            backendId: p.id, // ✅ REAL
+            backendId: String(p.id), // ✅ REAL
             categoryId: p.categoryId ?? null, // ✅ REAL
             name: p.name,
             image: img,
@@ -772,7 +772,7 @@ export function ShopPage({
                                 max={product.stock}
                               />
                               <AddToCartButton
-                                productId={product.id}
+                                productId={product.backendId}
                                 productName={product.name}
                                 productImage={product.image}
                                 productPrice={product.price}
@@ -987,7 +987,7 @@ export function ShopPage({
                                   max={product.stock}
                                 />
                                 <AddToCartButton
-                                  productId={product.id}
+                                  productId={product.backendId}
                                   productName={product.name}
                                   productImage={product.image}
                                   productPrice={product.price}
