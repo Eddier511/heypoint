@@ -1,3 +1,3 @@
 // src/api.ts
+export { api } from "./lib/api";
 export * from "./lib/api";
-export { default } from "./lib/api";

@@ -11,7 +11,7 @@ const raw =
 const normalizedBase = raw.split(",")[0].trim().replace(/\/+$/, "");
 
 // Si viene solo dominio, le agregamos /api
-const API_URL =
+export const API_URL =
   normalizedBase.length > 0
     ? normalizedBase.endsWith("/api")
       ? normalizedBase
@@ -49,29 +49,18 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// --------------------
-// PUBLIC / CUSTOMER
-// --------------------
+// --------------------------------
+// Wrappers (opcionales)
+// --------------------------------
 export const CategoriesAPI = {
   getAll: () => api.get("/categories"),
 };
 
 export const ProductsAPI = {
-  getAll: () => api.get("/products"),
+  getAll: (params?: any) => api.get("/products", { params }),
   getById: (id: string) => api.get(`/products/${id}`),
 };
 
-// (si tu backend los tiene públicos)
-export const CartAPI = {
-  getUserCart: (userId: string) => api.get(`/cart/${userId}`),
-  addToCart: (data: any) => api.post("/cart", data),
-  removeFromCart: (id: string) => api.delete(`/cart/${id}`),
-  clearCart: (userId: string) => api.delete(`/cart/clear/${userId}`),
-};
-
-// --------------------
-// PROFILE (Firestore customers/{uid})
-// --------------------
 export type CustomerProfile = {
   phone: string;
   dni: string;
@@ -84,16 +73,3 @@ export const CustomersAPI = {
   me: () => api.get("/customers/me"),
   upsertMe: (data: CustomerProfile) => api.put("/customers/me", data),
 };
-
-// --------------------
-// (Opcional) AUTH backend propio
-// --------------------
-export const AuthAPI = {
-  register: (data: { email: string; password: string }) =>
-    api.post("/auth/register", data),
-  login: (data: { email: string; password: string }) =>
-    api.post("/auth/login", data),
-  logout: () => api.post("/auth/logout"),
-};
-
-export default api;
