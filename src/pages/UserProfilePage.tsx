@@ -560,92 +560,76 @@ export function UserProfilePage({
                             Correo electrónico{" "}
                             <span className="text-red-500">*</span>
                           </Label>
+
                           <div className="relative">
                             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#2E2E2E]/50 pointer-events-none z-10" />
                             <Input
                               type="email"
                               value={profileData.email}
-                              onChange={(e) =>
-                                handleInputChange("email", e.target.value)
-                              }
-                              disabled={true}
+                              disabled
                               className="pl-12 pr-10 py-6 rounded-2xl border-2 border-gray-300 bg-gray-50 cursor-not-allowed opacity-80"
                             />
+
                             {profileData.emailVerified ? (
                               <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
                             ) : (
                               <XCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-red-500" />
                             )}
+                          </div>
 
-                            <div className="mt-2 flex items-center justify-between gap-3">
-                              <p className="text-[#2E2E2E]/60 text-xs">
-                                {profileData.emailVerified
-                                  ? "Email verificado ✓"
-                                  : "Email NO verificado"}
-                              </p>
+                          <div className="mt-2 flex items-center justify-between gap-3">
+                            <p className="text-[#2E2E2E]/60 text-xs">
+                              {profileData.emailVerified
+                                ? "Email verificado ✓"
+                                : "Email NO verificado"}
+                            </p>
 
-                              <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3">
+                              <button
+                                type="button"
+                                onClick={refreshVerifiedState}
+                                className="text-[#2E2E2E]/70 hover:text-[#1C2335] transition-colors inline-flex items-center gap-1"
+                                style={{
+                                  fontSize: "0.813rem",
+                                  fontWeight: 600,
+                                }}
+                                disabled={checkingEmail}
+                                title="Revisar verificación"
+                              >
+                                <RefreshCw
+                                  className={`w-3.5 h-3.5 ${checkingEmail ? "animate-spin" : ""}`}
+                                />
+                                {checkingEmail ? "Revisando..." : "Revisar"}
+                              </button>
+
+                              {!profileData.emailVerified && (
                                 <button
                                   type="button"
-                                  onClick={refreshVerifiedState}
-                                  className="text-[#2E2E2E]/70 hover:text-[#1C2335] transition-colors inline-flex items-center gap-1"
-                                  style={{
-                                    fontSize: "0.813rem",
-                                    fontWeight: 600,
-                                  }}
-                                  disabled={checkingEmail}
-                                  title="Revisar verificación"
-                                >
-                                  <RefreshCw
-                                    className={`w-3.5 h-3.5 ${checkingEmail ? "animate-spin" : ""}`}
-                                  />
-                                  {checkingEmail ? "Revisando..." : "Revisar"}
-                                </button>
-
-                                {!profileData.emailVerified && (
-                                  <button
-                                    type="button"
-                                    onClick={handleResendVerification}
-                                    className="text-[#FF6B00] hover:text-[#e56000] transition-colors inline-flex items-center gap-1"
-                                    style={{
-                                      fontSize: "0.813rem",
-                                      fontWeight: 600,
-                                    }}
-                                  >
-                                    <Mail className="w-3.5 h-3.5" />
-                                    Reenviar verificación
-                                  </button>
-                                )}
-
-                                <button
-                                  type="button"
-                                  onClick={() => setShowChangeEmailModal(true)}
+                                  onClick={handleResendVerification}
                                   className="text-[#FF6B00] hover:text-[#e56000] transition-colors inline-flex items-center gap-1"
                                   style={{
                                     fontSize: "0.813rem",
                                     fontWeight: 600,
                                   }}
                                 >
-                                  <RefreshCw className="w-3.5 h-3.5" />
-                                  Cambiar correo
+                                  <Mail className="w-3.5 h-3.5" />
+                                  Reenviar verificación
                                 </button>
-                              </div>
-                            </div>
-                          </div>
+                              )}
 
-                          <div className="mt-2 flex items-center justify-between gap-3">
-                            <p className="text-[#2E2E2E]/60 text-xs">
-                              Email verificado ✓
-                            </p>
-                            <button
-                              type="button"
-                              onClick={() => setShowChangeEmailModal(true)}
-                              className="text-[#FF6B00] hover:text-[#e56000] transition-colors inline-flex items-center gap-1"
-                              style={{ fontSize: "0.813rem", fontWeight: 600 }}
-                            >
-                              <RefreshCw className="w-3.5 h-3.5" />
-                              Cambiar correo
-                            </button>
+                              <button
+                                type="button"
+                                onClick={() => setShowChangeEmailModal(true)}
+                                className="text-[#FF6B00] hover:text-[#e56000] transition-colors inline-flex items-center gap-1"
+                                style={{
+                                  fontSize: "0.813rem",
+                                  fontWeight: 600,
+                                }}
+                              >
+                                <RefreshCw className="w-3.5 h-3.5" />
+                                Cambiar correo
+                              </button>
+                            </div>
                           </div>
                         </div>
 
