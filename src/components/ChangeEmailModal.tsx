@@ -17,6 +17,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
+import { getAuth, verifyBeforeUpdateEmail, reload } from "firebase/auth";
 
 interface ChangeEmailModalProps {
   isOpen: boolean;
@@ -68,24 +69,52 @@ export function ChangeEmailModal({
 
   // Simulate email verification (in real app, this would be detected via polling or websocket)
   useEffect(() => {
-    if (step === "waitingVerification") {
-      // Simulate user clicking the verification link after 8 seconds
-      const verificationTimer = setTimeout(() => {
-        setStep("success");
+    if (step !== "waitingVerification") return;
 
-        // Update email after showing success message
-        setTimeout(() => {
-          onEmailChanged(newEmail);
-          toast.success("¡Correo electrónico actualizado!", {
-            description: "Tu correo electrónico fue actualizado exitosamente",
-            duration: 3000,
-          });
-          onClose();
-        }, 2000);
-      }, 8000); // 8 seconds to simulate user checking email and clicking link
+    let cancelled = false;
+    const auth = getAuth();
 
-      return () => clearTimeout(verificationTimer);
-    }
+    const tick = async () => {
+      try {
+        const u = auth.currentUser;
+        if (!u) return;
+
+        // reload para traer cambios después del click del email
+        await reload(u);
+
+        // ✅ si el email ya cambió al nuevo, consideramos verificado y listo
+        const current = (auth.currentUser?.email || "").toLowerCase();
+        const target = (newEmail || "").toLowerCase();
+
+        if (current && target && current === target) {
+          if (cancelled) return;
+
+          setStep("success");
+
+          setTimeout(() => {
+            if (cancelled) return;
+
+            onEmailChanged(newEmail);
+            toast.success("¡Correo electrónico actualizado!", {
+              description: "Tu correo electrónico fue actualizado exitosamente",
+              duration: 3000,
+            });
+            onClose();
+          }, 1200);
+        }
+      } catch {
+        // si falla reload, no rompemos el flujo; seguirá intentando
+      }
+    };
+
+    // primer check rápido y luego polling
+    tick();
+    const interval = setInterval(tick, 2500);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, [step, newEmail, onEmailChanged, onClose]);
 
   const validateEmail = (email: string): boolean => {
@@ -93,11 +122,10 @@ export function ChangeEmailModal({
     return emailRegex.test(email);
   };
 
-  const handleSubmitNewEmail = (e: React.FormEvent) => {
+  const handleSubmitNewEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: Record<string, string> = {};
 
-    // Validations
     if (!newEmail) {
       newErrors.newEmail = "Ingresá tu nuevo correo electrónico";
     } else if (!validateEmail(newEmail)) {
@@ -117,32 +145,77 @@ export function ChangeEmailModal({
       return;
     }
 
-    // Simulate sending verification email
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      setIsLoading(true);
+
+      const auth = getAuth();
+      const u = auth.currentUser;
+      if (!u) throw new Error("No hay sesión activa.");
+
+      const actionCodeSettings = {
+        url: `${window.location.origin}/?emailChanged=1`,
+        handleCodeInApp: false,
+      };
+
+      // ✅ FLUJO CORRECTO: manda link al nuevo correo y SOLO se aplica al dar click
+      await verifyBeforeUpdateEmail(u, newEmail.trim(), actionCodeSettings);
+
       setStep("waitingVerification");
-      setCountdown(30); // 30 seconds countdown for resend
+      setCountdown(30);
       setIsResendEnabled(false);
+
       toast.success("Email de verificación enviado", {
-        description: `Revisá tu casilla ${newEmail} y hacé clic en el enlace`,
+        description: `Revisá ${newEmail} y hacé clic en el enlace para confirmar el cambio`,
         duration: 5000,
       });
-    }, 1500);
+    } catch (err: any) {
+      const code = err?.code || "";
+      if (code === "auth/requires-recent-login") {
+        toast.error("Necesitás re-iniciar sesión", {
+          description:
+            "Por seguridad, Firebase requiere que vuelvas a iniciar sesión para cambiar el correo.",
+          duration: 6000,
+        });
+      } else {
+        toast.error("No se pudo enviar la verificación", {
+          description: err?.message || "Intentá de nuevo.",
+          duration: 5000,
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleResendEmail = () => {
-    setIsResendEnabled(false);
-    setCountdown(30);
-    setIsLoading(true);
+  const handleResendEmail = async () => {
+    try {
+      setIsResendEnabled(false);
+      setCountdown(30);
+      setIsLoading(true);
 
-    setTimeout(() => {
-      setIsLoading(false);
+      const auth = getAuth();
+      const u = auth.currentUser;
+      if (!u) throw new Error("No hay sesión activa.");
+
+      const actionCodeSettings = {
+        url: `${window.location.origin}/?emailChanged=1`,
+        handleCodeInApp: false,
+      };
+
+      await verifyBeforeUpdateEmail(u, newEmail.trim(), actionCodeSettings);
+
       toast.success("Email reenviado", {
         description: `Te enviamos un nuevo enlace a ${newEmail}`,
         duration: 3000,
       });
-    }, 1000);
+    } catch (e: any) {
+      toast.error("No se pudo reenviar", {
+        description: e?.message || "Intentá de nuevo.",
+        duration: 4000,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGoBack = () => {
