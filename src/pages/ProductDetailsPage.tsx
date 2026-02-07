@@ -40,19 +40,16 @@ interface UiProduct {
   originalPrice?: number;
   rating: number;
 
-  // ✅ separar id vs label
   categoryId?: string | null;
   categoryName?: string;
 
-  // (mantengo category por compatibilidad si ya lo usás en UI)
-  category: string;
-
+  category: string; // label visual
   badges?: string[];
   stock: number;
 }
 
 interface ProductDetailsPageProps {
-  product: UiProduct;
+  product: UiProduct; // viene “incompleto” desde la tienda, lo usamos como fallback visual
   onBack: () => void;
   onNavigate?: (page: string) => void;
   onProductClick?: (product: UiProduct) => void;
@@ -69,31 +66,21 @@ function normalizeArray(raw: any): any[] {
   return [];
 }
 
-function toDiscountPct(p: ApiProduct): number {
-  const d = p.discount ?? p.discountPct ?? 0;
-  const n = Number(d);
-  return Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : 0;
-}
-
 async function fetchProductById(id: string): Promise<ApiProduct | null> {
+  // baseURL ya incluye /api, así que esto pega a: /api/products/:id
   const res = await api.get<any>(`/products/${id}`);
   const data = res?.data;
-
-  // soporta {product:{}} o directo
   const p = data?.product ?? data?.data ?? data;
-  if (!p) return null;
-
-  return p as ApiProduct;
+  return p ? (p as ApiProduct) : null;
 }
 
 /**
- * ✅ Mapea el Product real del backend a tu UI ProductDetails
- * - basePrice: precio base (sin IVA) "lista"
- * - discount: % => price final = basePrice * (1 - discount/100)
+ * ✅ Mapea Product backend -> UI
+ * - price = basePrice con descuento aplicado (sin IVA)
  */
 function mapApiToUi(p: ApiProduct, categoryName?: string): UiProduct {
-  const discountPct = Number(p.discountPct ?? p.discount ?? 0);
-  const base = Number(p.basePrice ?? 0);
+  const discountPct = Number(p.discountPct ?? p.discount ?? 0) || 0;
+  const base = Number(p.basePrice ?? 0) || 0;
 
   const finalBase =
     discountPct > 0 ? Math.round(base * (1 - discountPct / 100)) : base;
@@ -101,20 +88,17 @@ function mapApiToUi(p: ApiProduct, categoryName?: string): UiProduct {
   return {
     id: String(p.id),
     name: String(p.name ?? "Producto"),
-    image: p.images?.[0] || PLACEHOLDER_IMG,
+    image: (p.images?.[0] || "").trim() || PLACEHOLDER_IMG,
     price: finalBase,
     originalPrice: discountPct > 0 ? base : undefined,
     rating: 0,
 
-    // 🔥 LÓGICA (NO TOCAR)
     categoryId: p.categoryId ?? null,
-
-    // 🎨 UI
     categoryName,
     category: categoryName ?? "Otros",
 
     badges: discountPct > 0 ? ["Sale"] : [],
-    stock: Number(p.stock ?? 0),
+    stock: Number(p.stock ?? 0) || 0,
   };
 }
 
@@ -124,6 +108,14 @@ export function ProductDetailsPage({
   onNavigate,
   onProductClick,
 }: ProductDetailsPageProps) {
+  // ✅ estado local: el prop puede venir sin categoryId, acá lo “hidratamos” desde backend
+  const [currentProduct, setCurrentProduct] = useState<UiProduct>(product);
+
+  // cuando cambia el product por props (ej. click a otro), actualizamos fallback visual
+  useEffect(() => {
+    setCurrentProduct(product);
+  }, [product.id]);
+
   const [quantity, setQuantity] = useState(1);
 
   // ✅ IVA dinámico
@@ -141,19 +133,39 @@ export function ProductDetailsPage({
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
-  }, [product.id]);
+  }, [currentProduct.id]);
 
-  // ✅ útil para filtrar por categoría con lo que tengas disponible
-  const currentCategoryId = useMemo(() => {
-    const id = (product as any)?.categoryId ?? null;
-    const fallback = (product.category || "").toString().trim();
-    return (id ?? fallback ?? "").toString().trim();
-  }, [product]);
+  // ✅ 1) Hidratar producto real (traer categoryId real, stock real, etc.)
+  useEffect(() => {
+    let alive = true;
 
-  console.log("🧪 Product en detalle:", product);
-  console.log("🧪 categoryId:", product.categoryId);
+    async function hydrate() {
+      try {
+        const full = await fetchProductById(currentProduct.id);
+        if (!alive) return;
 
-  // 🔥 cargar relacionados desde backend, pero SIEMPRE limit 3 en front
+        if (!full) return;
+
+        // mantenemos el label visual que ya traía (Ej: "Kiosco") como categoryName
+        const label =
+          currentProduct.categoryName ?? currentProduct.category ?? "Otros";
+        const mapped = mapApiToUi(full, label);
+
+        setCurrentProduct(mapped);
+      } catch (e) {
+        console.error("[ProductDetails] Error hydrating product", e);
+      }
+    }
+
+    hydrate();
+
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentProduct.id]);
+
+  // ✅ 2) Cargar relacionados por categoryId real
   useEffect(() => {
     let alive = true;
 
@@ -161,21 +173,18 @@ export function ProductDetailsPage({
       try {
         setLoadingRelated(true);
 
-        // ✅ 1) Traer el producto real desde backend para obtener categoryId real
-        const full = await fetchProductById(product.id);
-
-        const categoryId = String(full?.categoryId ?? "");
+        const categoryId = String(currentProduct.categoryId ?? "");
         if (!categoryId) {
           if (alive) setRelatedProducts([]);
           return;
         }
 
-        // ✅ 2) Pedir relacionados por categoryId
+        // Intento 1: pedir filtrado al backend
         const res = await api.get<any>("/products", {
           params: {
             categoryId,
             status: "active",
-            limit: 12,
+            limit: 20,
           },
         });
 
@@ -183,33 +192,53 @@ export function ProductDetailsPage({
 
         let related = list
           .filter(Boolean)
-          .filter((p) => String(p.id) !== String(product.id))
+          .filter((p) => String(p.id) !== String(currentProduct.id))
           .filter((p) => (p.status ?? "active") !== "inactive")
           .filter((p) => String(p.categoryId ?? "") === categoryId)
-          .map(mapApiToUi)
+          .map((p) => mapApiToUi(p, currentProduct.category))
           .filter((p) => p.price > 0)
           .slice(0, 3);
 
-        // ✅ 3) Fallback si hay pocos (completa con activos recientes)
+        // Fallback: si backend no filtra o vienen pocos, traemos activos y completamos
         if (related.length < 3) {
           const allRes = await api.get<any>("/products", {
-            params: { status: "active", limit: 30 },
+            params: { status: "active", limit: 60 },
           });
 
           const allList = normalizeArray(allRes?.data) as ApiProduct[];
-          const fill = allList
+
+          // primero intentamos completar con misma categoría
+          const sameCatFill = allList
             .filter(Boolean)
-            .filter((p) => String(p.id) !== String(product.id))
+            .filter((p) => String(p.id) !== String(currentProduct.id))
             .filter((p) => (p.status ?? "active") !== "inactive")
-            .map(mapApiToUi)
+            .filter((p) => String(p.categoryId ?? "") === categoryId)
+            .map((p) => mapApiToUi(p, currentProduct.category))
             .filter((p) => p.price > 0);
 
           const used = new Set(related.map((x) => x.id));
-          for (const p of fill) {
+          for (const p of sameCatFill) {
             if (related.length >= 3) break;
             if (used.has(p.id)) continue;
             related.push(p);
             used.add(p.id);
+          }
+
+          // si aún faltan, rellenamos con “activos recientes” (cualquier categoría)
+          if (related.length < 3) {
+            const anyFill = allList
+              .filter(Boolean)
+              .filter((p) => String(p.id) !== String(currentProduct.id))
+              .filter((p) => (p.status ?? "active") !== "inactive")
+              .map((p) => mapApiToUi(p, currentProduct.category))
+              .filter((p) => p.price > 0);
+
+            for (const p of anyFill) {
+              if (related.length >= 3) break;
+              if (used.has(p.id)) continue;
+              related.push(p);
+              used.add(p.id);
+            }
           }
         }
 
@@ -224,10 +253,11 @@ export function ProductDetailsPage({
     }
 
     loadRelated();
+
     return () => {
       alive = false;
     };
-  }, [product.id]);
+  }, [currentProduct.id, currentProduct.categoryId, currentProduct.category]);
 
   const getRelatedQty = (id: string) => relatedQuantities[id] || 1;
   const setRelatedQty = (id: string, q: number) =>
@@ -239,9 +269,9 @@ export function ProductDetailsPage({
 
   const handleShare = async () => {
     const shareData = {
-      title: product.name,
-      text: `Mirá este producto en HeyPoint!: ${product.name} - ${formatPrecioARS(
-        getPrecioFinalConIVA(product.price, ivaPct),
+      title: currentProduct.name,
+      text: `Mirá este producto en HeyPoint!: ${currentProduct.name} - ${formatPrecioARS(
+        getPrecioFinalConIVA(currentProduct.price, ivaPct),
       )}`,
       url: window.location.href,
     };
@@ -262,7 +292,7 @@ export function ProductDetailsPage({
   };
 
   const totalPrice = formatPrecioARS(
-    getPrecioFinalConIVA(product.price, ivaPct) * quantity,
+    getPrecioFinalConIVA(currentProduct.price, ivaPct) * quantity,
   );
 
   return (
@@ -287,9 +317,9 @@ export function ProductDetailsPage({
               Volver a la tienda
             </button>
             <span>/</span>
-            <span>{product.category}</span>
+            <span>{currentProduct.category}</span>
             <span>/</span>
-            <span className="text-[#1C2335]">{product.name}</span>
+            <span className="text-[#1C2335]">{currentProduct.name}</span>
           </div>
 
           {/* Producto */}
@@ -298,16 +328,16 @@ export function ProductDetailsPage({
             <Card className="bg-white border-none shadow-lg rounded-2xl p-6">
               <div className="relative aspect-square bg-gray-50 rounded-xl overflow-hidden">
                 <ImageWithFallback
-                  src={product.image}
-                  alt={product.name}
+                  src={currentProduct.image}
+                  alt={currentProduct.name}
                   className="w-full h-full object-cover"
                 />
-                {product.originalPrice &&
-                  product.originalPrice > product.price && (
+                {currentProduct.originalPrice &&
+                  currentProduct.originalPrice > currentProduct.price && (
                     <div className="absolute top-4 right-4">
                       <DiscountBadge
-                        originalPrice={product.originalPrice}
-                        currentPrice={product.price}
+                        originalPrice={currentProduct.originalPrice}
+                        currentPrice={currentProduct.price}
                         size="lg"
                       />
                     </div>
@@ -318,23 +348,28 @@ export function ProductDetailsPage({
             {/* Info */}
             <div className="flex flex-col">
               <span className="text-[#2E2E2E] text-sm mb-2">
-                {product.category}
+                {currentProduct.category}
               </span>
 
               <h1 className="text-[#1C2335] text-4xl font-bold mb-6">
-                {product.name}
+                {currentProduct.name}
               </h1>
 
               <div className="mb-6">
                 <span className="text-[#FF6B00] text-4xl font-bold">
-                  {formatPrecioARS(getPrecioFinalConIVA(product.price, ivaPct))}
+                  {formatPrecioARS(
+                    getPrecioFinalConIVA(currentProduct.price, ivaPct),
+                  )}
                 </span>
 
-                {product.originalPrice && (
+                {currentProduct.originalPrice && (
                   <>
                     <span className="ml-3 line-through text-xl text-[#2E2E2E]">
                       {formatPrecioARS(
-                        getPrecioFinalConIVA(product.originalPrice, ivaPct),
+                        getPrecioFinalConIVA(
+                          currentProduct.originalPrice,
+                          ivaPct,
+                        ),
                       )}
                     </span>
                     <Badge className="ml-2 bg-[#FF6B00] text-white border-none">
@@ -344,18 +379,18 @@ export function ProductDetailsPage({
                 )}
 
                 <p className="text-sm mt-2 text-[#2E2E2E]">
-                  Precio sin impuestos: {formatPrecioARS(product.price)}
+                  Precio sin impuestos: {formatPrecioARS(currentProduct.price)}
                 </p>
               </div>
 
-              <StockIndicator stock={product.stock} variant="detail" />
+              <StockIndicator stock={currentProduct.stock} variant="detail" />
 
               <Card className="bg-white border-none shadow-md rounded-2xl p-6 mt-6">
                 <div className="flex justify-between items-center mb-4 gap-4">
                   <QuantitySelector
                     quantity={quantity}
                     onQuantityChange={setQuantity}
-                    max={product.stock}
+                    max={currentProduct.stock}
                     size="large"
                   />
                   <div className="text-right">
@@ -368,13 +403,13 @@ export function ProductDetailsPage({
 
                 <div className="flex gap-3">
                   <AddToCartButton
-                    productId={product.id}
-                    productName={product.name}
-                    productImage={product.image}
-                    productPrice={product.price}
+                    productId={currentProduct.id}
+                    productName={currentProduct.name}
+                    productImage={currentProduct.image}
+                    productPrice={currentProduct.price}
                     quantity={quantity}
                     className="flex-1"
-                    stock={product.stock}
+                    stock={currentProduct.stock}
                   />
                   <Button
                     size="icon"
@@ -416,7 +451,7 @@ export function ProductDetailsPage({
             </div>
           </div>
 
-          {/* 🔥 RELACIONADOS REAL (solo 3) */}
+          {/* RELACIONADOS */}
           <h2 className="text-2xl font-bold mb-6 text-[#1C2335]">
             Productos relacionados
           </h2>

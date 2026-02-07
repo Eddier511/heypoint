@@ -32,10 +32,11 @@ import { formatPrecioARS, getPrecioFinalConIVA } from "../utils/priceUtils";
 /** =========================
  * API Helper (self-contained)
  * ========================= */
-const API_ORIGIN = import.meta.env.VITE_API_URL || "http://localhost:4000";
+const RAW = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
+const API_BASE = RAW.endsWith("/api") ? RAW : `${RAW}/api`;
 
 async function apiGet<T>(path: string, opts?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_ORIGIN}/api${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     ...opts,
     headers: {
       "Content-Type": "application/json",
@@ -47,7 +48,6 @@ async function apiGet<T>(path: string, opts?: RequestInit): Promise<T> {
     const msg = await res.text().catch(() => "");
     throw new Error(msg || `HTTP ${res.status} ${res.statusText}`);
   }
-
   return res.json() as Promise<T>;
 }
 
@@ -55,11 +55,13 @@ async function apiGet<T>(path: string, opts?: RequestInit): Promise<T> {
  * UI Types
  * ========================= */
 interface Product {
-  id: number; // UI id stable (hash from backend string id)
+  id: number; // hash (para UI)
+  backendId: string; // ✅ ID REAL del backend (string)
+  categoryId?: string | null; // ✅ para relacionados
   name: string;
   image: string;
-  price: number; // ✅ final price SIN IVA (con descuento aplicado)
-  originalPrice?: number; // ✅ basePrice SIN IVA (si hay descuento)
+  price: number;
+  originalPrice?: number;
   rating: number;
   category: string;
   badges?: string[];
@@ -228,10 +230,8 @@ export function ShopPage({
           throw prodRaw.reason;
         }
 
-        const apiProds = normalizeProducts(prodRaw.value).filter((p) =>
-          p.status !== "inactive" && p.status !== undefined
-            ? p.status === "active"
-            : true,
+        const apiProds = normalizeProducts(prodRaw.value).filter(
+          (p) => (p.status ?? "active") === "active",
         );
 
         const catIdToName = new Map<string, string>();
@@ -259,6 +259,8 @@ export function ShopPage({
 
           return {
             id: hashId(p.id),
+            backendId: p.id, // ✅ REAL
+            categoryId: p.categoryId ?? null, // ✅ REAL
             name: p.name,
             image: img,
             price: Number(finalPrice.toFixed(2)),
@@ -679,7 +681,7 @@ export function ShopPage({
                                   />
                                 </div>
                                 <AddToCartButton
-                                  productId={product.id}
+                                  productId={product.backendId}
                                   productName={product.name}
                                   productImage={product.image}
                                   productPrice={product.price}

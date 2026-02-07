@@ -73,6 +73,10 @@ interface Product {
  * ========================= */
 const API_ORIGIN = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
+// ✅ HERO banner (Home) - para evitar flash/CLS
+const HERO_SRC =
+  "https://firebasestorage.googleapis.com/v0/b/heymarket-35d03.firebasestorage.app/o/images%2Fbg-banner-hey-point.png?alt=media&token=4c622e18-92de-4b26-85db-b293da0030e6";
+
 async function apiGet<T>(path: string): Promise<T> {
   const res = await fetch(`${API_ORIGIN}/api${path}`, {
     headers: { "Content-Type": "application/json" },
@@ -173,6 +177,21 @@ function AppContent() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [scrollY, setScrollY] = useState(0);
+
+  // ✅ Hero image loading (evita salto/flash al entrar por primera vez)
+  const [heroLoaded, setHeroLoaded] = useState(false);
+
+  // ✅ Preload banner para primera visita
+  useEffect(() => {
+    let alive = true;
+    const img = new Image();
+    img.src = HERO_SRC;
+    img.decoding = "async";
+    img.onload = () => alive && setHeroLoaded(true);
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   // ✅ categorías API
   const [dbCategories, setDbCategories] = useState<UiCategory[]>([]);
@@ -562,12 +581,28 @@ function AppContent() {
       {/* Hero Section */}
       <section className="relative min-h-[100vh] flex items-center justify-center overflow-hidden bg-[#FFF4E6]">
         <div className="absolute inset-0 z-0">
-          <ImageWithFallback
-            src="https://firebasestorage.googleapis.com/v0/b/heymarket-35d03.firebasestorage.app/o/images%2Fbg-banner-hey-point.png?alt=media&token=4c622e18-92de-4b26-85db-b293da0030e6"
-            alt="HeyPoint! Estación inteligente automatizada"
-            className="w-full h-full object-cover"
-          />
+          {/* Placeholder consistente (evita “gris + salto”) */}
+          <div className="absolute inset-0 bg-gradient-to-br from-[#1C2335] via-[#2E2E2E] to-black" />
+
+          {/* Overlay fijo (no cambia cuando carga la imagen) */}
           <div className="absolute inset-0 bg-black/40" />
+
+          {/* Imagen con fade-in suave al cargar */}
+          <div
+            className={`absolute inset-0 transition-opacity duration-500 ease-out ${
+              heroLoaded ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            <ImageWithFallback
+              src={HERO_SRC}
+              alt="HeyPoint! Estación inteligente automatizada"
+              className="w-full h-full object-cover"
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
+              onLoad={() => setHeroLoaded(true)}
+            />
+          </div>
         </div>
 
         <div className="container mx-auto px-6 relative z-10 text-center max-w-5xl py-20">
