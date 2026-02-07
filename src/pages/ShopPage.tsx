@@ -209,7 +209,7 @@ export function ShopPage({
   useEffect(() => {
     let mounted = true;
 
-    (async () => {
+    const load = async () => {
       try {
         setLoading(true);
         setError(null);
@@ -327,7 +327,9 @@ export function ShopPage({
         if (!mounted) return;
         setLoading(false);
       }
-    })();
+    };
+
+    load();
 
     return () => {
       mounted = false;
