@@ -184,10 +184,22 @@ function AppContent() {
   // ✅ Preload banner para primera visita
   useEffect(() => {
     let alive = true;
+
     const img = new Image();
-    img.src = HERO_SRC;
     img.decoding = "async";
-    img.onload = () => alive && setHeroLoaded(true);
+    img.src = HERO_SRC;
+
+    img.onload = () => {
+      if (!alive) return;
+      setHeroLoaded(true);
+    };
+
+    img.onerror = () => {
+      if (!alive) return;
+      // ✅ si falla, no te deja el hero “negro”
+      setHeroLoaded(true);
+    };
+
     return () => {
       alive = false;
     };
