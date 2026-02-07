@@ -447,22 +447,24 @@ export default function AuthModal({
     try {
       setLoading(true);
 
+      // 1️⃣ CREA USUARIO EN FIREBASE
       const user = await signupWithEmail(
         signUpFullName,
         signUpEmail,
         signUpPassword,
       );
 
-      // ✅ guardar pendientes
+      // 2️⃣ 🔥 ENVÍA EMAIL DE VERIFICACIÓN PRO (TU BACKEND)
+      await sendVerifyEmailPro();
+
+      // 3️⃣ GUARDAMOS ESTADO PENDIENTE
       localStorage.setItem(PENDING_EMAIL_KEY, user.email);
       localStorage.setItem(PENDING_NAME_KEY, signUpFullName);
 
       setPendingEmail(user.email);
       setPendingFullName(signUpFullName);
 
-      // ✅ ENVIAR VERIFICACIÓN (real)
-      await sendVerificationEmailNow();
-
+      // 4️⃣ PASAMOS A PASO "VERIFICAR EMAIL"
       setSignUpStep("verifyEmail");
       setVerificationCountdown(45);
       setIsResendEnabled(false);
@@ -500,19 +502,13 @@ export default function AuthModal({
       setGlobalError("");
       setLoading(true);
 
-      const r = await sendVerificationEmailNow();
-
+      await sendVerifyEmailPro(); // ✅ reenviar real
       setVerificationCountdown(45);
       setIsResendEnabled(false);
 
-      // Abrimos Gmail igual, pero ahora sí se reenvió
       openGmail();
-
-      if (r.alreadyVerified) {
-        setGlobalError("Tu email ya estaba verificado ✅. Podés continuar.");
-      }
     } catch (e: any) {
-      setGlobalError(e?.message || "No se pudo reenviar. Intentá nuevamente.");
+      setGlobalError(e?.message || "No se pudo reenviar.");
     } finally {
       setLoading(false);
     }

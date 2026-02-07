@@ -55,6 +55,8 @@ interface AuthContextType {
   user: User | null;
   currentUser: FirebaseUser | null;
   loadingAuth: boolean;
+  isEmailVerified: () => Promise<boolean>;
+  sendVerifyEmailPro: () => Promise<void>;
   refreshEmailVerification: () => Promise<boolean>;
 
   // legacy
@@ -262,13 +264,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   };
 
-  const refreshEmailVerification = async (): Promise<boolean> => {
+  const refreshEmailVerification = async () => {
     const u = auth.currentUser;
     if (!u) return false;
-
-    await reload(u); // ✅ trae emailVerified actualizado
-    setFbUser(auth.currentUser); // refresca estado para UI
+    await reload(u);
     return !!auth.currentUser?.emailVerified;
+  };
+
+  const isEmailVerified = async () => {
+    const u = auth.currentUser;
+    if (!u) return false;
+    await reload(u);
+    return !!auth.currentUser?.emailVerified;
+  };
+
+  const sendVerifyEmailPro = async () => {
+    const tok = await getAuthToken(false);
+    if (!tok) throw new Error("No hay sesión activa.");
+
+    const res = await fetch(apiUrl("/auth/send-verify-email"), {
+      method: "POST",
+      headers: { Authorization: `Bearer ${tok}` },
+    });
+
+    const data = await res.json().catch(() => ({}) as any);
+    if (!res.ok || data?.ok === false) {
+      throw new Error(data?.error || `HTTP ${res.status}`);
+    }
   };
 
   // ✅ Backend: POST /api/customers/profile (alias)
@@ -360,6 +382,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         startGoogleOAuth,
         logout,
         refreshEmailVerification,
+        isEmailVerified,
+        sendVerifyEmailPro,
         getAuthToken,
         getIdToken: getIdTokenFn,
         fetchMe,
