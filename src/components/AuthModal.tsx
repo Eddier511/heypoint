@@ -138,7 +138,7 @@ export default function AuthModal({
     startGoogleOAuth,
     sendResetPassword,
     refreshEmailVerification,
-    sendVerifyEmailPro, // ✅
+    sendVerifyEmailPro, // ✅ ESTA ES LA CLAVE
     getIdToken,
   } = useAuth();
 
@@ -317,11 +317,10 @@ export default function AuthModal({
 
       const { user, isNewUser } = await startGoogleOAuth();
 
-      // ✅ Si por alguna razón Google NO viene verificado, forzamos verify step
-      // (normalmente emailVerified=true en Google, pero lo validamos igual)
       if (!user?.email)
         throw new Error("No se pudo obtener el email de Google.");
 
+      // Guardamos básicos para el flujo (por si se cierra el modal)
       localStorage.setItem(PENDING_EMAIL_KEY, user.email);
       localStorage.setItem(PENDING_NAME_KEY, user.fullName || "");
 
@@ -329,16 +328,24 @@ export default function AuthModal({
       setPendingEmail(user.email);
       setPendingFullName(user.fullName || "");
 
-      // ✅ Si no está verificado => verifyEmail
-      if (!user.emailVerified) {
-        await sendVerificationEmailNow().catch(() => {});
+      // ✅ REFRESH REAL de verificación desde Firebase (por si el context estaba stale)
+      const verifiedNow = await refreshEmailVerification().catch(() => {
+        // si falla el reload, usamos lo que venía del user
+        return !!user.emailVerified;
+      });
+
+      // ✅ Si NO está verificado (caso raro en Google), entramos a verifyEmail y enviamos correo
+      if (!verifiedNow) {
+        // Reenvío vía Firebase (tu función del context)
+        // Nota: sendVerifyEmailPro usa sendEmailVerification(auth.currentUser)
+        await sendVerifyEmailPro().catch(() => {});
         setSignUpStep("verifyEmail");
         setVerificationCountdown(45);
         setIsResendEnabled(false);
         return;
       }
 
-      // ✅ Si es NUEVO y ya está verificado => Paso 2
+      // ✅ Si ES nuevo y ya está verificado: completar perfil
       if (isNewUser) {
         localStorage.setItem(PENDING_PROFILE_KEY, "1");
         setSignUpStep("completeProfile");
@@ -346,7 +353,7 @@ export default function AuthModal({
         return;
       }
 
-      // ✅ Si NO es nuevo => login normal y cerrar
+      // ✅ Si NO es nuevo: login normal y cerrar
       onLoginSuccess(user);
       onClose();
     } catch (e: any) {
