@@ -24,6 +24,7 @@ import {
   updatePassword,
   sendEmailVerification,
   reload,
+  sendPasswordResetEmail, // ✅ AÑADIR
 } from "firebase/auth";
 import { auth } from "../config/firebaseClient";
 
@@ -74,7 +75,7 @@ interface AuthContextType {
   ) => Promise<User>;
   startGoogleOAuth: () => Promise<GoogleOAuthResult>;
   logout: () => Promise<void>;
-
+  sendResetPassword: (email: string) => Promise<void>;
   // token
   getAuthToken: (forceRefresh?: boolean) => Promise<string | null>;
   getIdToken: () => Promise<string | null>;
@@ -178,6 +179,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await persistToken(false);
     return mapFirebaseUser(cred.user);
   };
+
+  const sendResetPassword = useCallback(async (email: string) => {
+    const e = (email || "").trim();
+    if (!e) throw new Error("Email requerido.");
+    await sendPasswordResetEmail(auth, e);
+  }, []);
 
   // ✅ registro con verificación
   const signupWithEmail = async (
@@ -389,7 +396,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         currentUser: fbUser,
         loadingAuth,
 
-        // ✅ email verification
         refreshEmailVerification,
         isEmailVerified,
         sendVerifyEmailPro,
@@ -399,6 +405,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signupWithEmail,
         startGoogleOAuth,
         logout,
+
+        sendResetPassword, // ✅ AÑADIR
 
         getAuthToken,
         getIdToken: getIdTokenFn,

@@ -138,7 +138,7 @@ export default function AuthModal({
     startGoogleOAuth,
     sendResetPassword,
     refreshEmailVerification,
-    sendVerifyEmailPro,
+    sendVerifyEmailPro, // ✅
     getIdToken,
   } = useAuth();
 
@@ -424,21 +424,19 @@ export default function AuthModal({
     try {
       setLoading(true);
 
-      // 1) Crear usuario (esto YA envía verificación desde AuthContext)
+      // ✅ crea usuario + envía verificación (lo hace AuthContext)
       const user = await signupWithEmail(
         signUpFullName,
         signUpEmail,
         signUpPassword,
       );
 
-      // 2) Guardar estado pendiente
       localStorage.setItem(PENDING_EMAIL_KEY, user.email);
       localStorage.setItem(PENDING_NAME_KEY, signUpFullName);
 
       setPendingEmail(user.email);
       setPendingFullName(signUpFullName);
 
-      // 3) Ir a verificación
       setSignUpStep("verifyEmail");
       setVerificationCountdown(45);
       setIsResendEnabled(false);
@@ -492,6 +490,7 @@ export default function AuthModal({
 
       setVerificationCountdown(45);
       setIsResendEnabled(false);
+
       openGmail();
     } catch (e: any) {
       setGlobalError(e?.message || "No se pudo reenviar.");
