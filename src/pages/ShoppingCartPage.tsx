@@ -417,7 +417,7 @@ export function ShoppingCartPage({
                             <Key className="w-5 h-5 text-[#FF6B00] flex-shrink-0 mt-1" />
 
                             <div>
-                              <p className="font-semibold text-sm text-[#2E2E2E] mb-1">
+                              <p className="font-bold text-base sm:text-lg text-[#2E2E2E] mb-1">
                                 Tu código para retirar
                               </p>
 
