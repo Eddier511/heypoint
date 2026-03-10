@@ -414,18 +414,21 @@ function AppContent() {
   const howItWorksSteps = [
     {
       icon: <ShoppingBag className="w-10 h-10 sm:w-12 sm:h-12" />,
-      title: "Elegí",
-      description: "Explorá la tienda y seleccioná tus productos.",
+      title: "Selecciona tus productos",
+      description:
+        "Sub. Explorá la tienda y elegí los productos para tu compra. ¡Están separados por módulos!",
     },
     {
       icon: <CreditCard className="w-10 h-10 sm:w-12 sm:h-12" />,
-      title: "Pagá",
-      description: "Pagá de forma rápida y segura desde tu celular.",
+      title: "Paga de forma rápida y segura",
+      description:
+        "Tus datos están protegidos y encriptados. Paga y recibí en tu correo el código único que te permitirá retirar tus productos.",
     },
     {
       icon: <QrCode className="w-10 h-10 sm:w-12 sm:h-12" />,
-      title: "Retirá",
-      description: "Ingresá tu código alfanumérico y retiralo en tu HeyPoint.",
+      title: "Retira tu compra!",
+      description:
+        "Ingresá tu código token en la pantalla que se encuentra en el stand. Se desbloqueará tu compra según el módulo que corresponda.",
     },
   ];
 
@@ -725,10 +728,10 @@ function AppContent() {
             className="text-center mb-12 md:mb-16"
           >
             <h2 className="text-[#1C2335] text-3xl md:text-5xl mb-4">
-              Cómo funciona
+              ¿Cómo funciona?
             </h2>
             <p className="text-[#2E2E2E] max-w-2xl mx-auto text-lg md:text-xl">
-              3 pasos simples para comprar y retirar
+              3 pasos simples para comprar, pagar y retirar tu pedido.
             </p>
           </motion.div>
 
