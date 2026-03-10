@@ -414,19 +414,19 @@ function AppContent() {
   const howItWorksSteps = [
     {
       icon: <ShoppingBag className="w-10 h-10 sm:w-12 sm:h-12" />,
-      title: "Selecciona tus productos",
+      title: "Seleccioná tus productos",
       description:
-        "Sub. Explorá la tienda y elegí los productos para tu compra. ¡Están separados por módulos!",
+        "Explorá la tienda y elegí los productos para tu compra. ¡Están separados por módulos!",
     },
     {
       icon: <CreditCard className="w-10 h-10 sm:w-12 sm:h-12" />,
-      title: "Paga de forma rápida y segura",
+      title: "Pagá de forma rápida y segura",
       description:
-        "Tus datos están protegidos y encriptados. Paga y recibí en tu correo el código único que te permitirá retirar tus productos.",
+        "Tus datos están protegidos y encriptados. Pagá y recibí en tu correo el código único que te permitirá retirar tus productos.",
     },
     {
       icon: <QrCode className="w-10 h-10 sm:w-12 sm:h-12" />,
-      title: "Retira tu compra!",
+      title: "Retirá tu compra!",
       description:
         "Ingresá tu código token en la pantalla que se encuentra en el stand. Se desbloqueará tu compra según el módulo que corresponda.",
     },
@@ -731,7 +731,7 @@ function AppContent() {
               ¿Cómo funciona?
             </h2>
             <p className="text-[#2E2E2E] max-w-2xl mx-auto text-lg md:text-xl">
-              3 pasos simples para comprar, pagar y retirar tu pedido.
+              Comprá, pagá y retiralo en minutos. Solo 3 pasos.
             </p>
           </motion.div>
 
@@ -739,6 +739,7 @@ function AppContent() {
             {howItWorksSteps.map((step, index) => (
               <motion.div
                 key={index}
+                className="h-full"
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -746,7 +747,7 @@ function AppContent() {
                 whileHover={{ y: -8, scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <Card className="p-6 text-center border-none shadow-lg rounded-3xl bg-gradient-to-br from-[#FFF8F0] via-[#FFF4E6] to-white hover:shadow-xl transition-all duration-300">
+                <Card className="p-6 text-center border-none shadow-lg rounded-3xl bg-gradient-to-br from-[#FFF8F0] via-[#FFF4E6] to-white hover:shadow-xl transition-all duration-300 h-full flex flex-col items-center">
                   <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-[#FF6B00] to-[#FF8534] text-white rounded-2xl md:rounded-3xl mb-6 shadow-md">
                     {step.icon}
                   </div>
