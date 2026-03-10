@@ -75,7 +75,7 @@ const API_ORIGIN = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 // ✅ HERO banner (Home) - para evitar flash/CLS
 const HERO_SRC =
-  "https://firebasestorage.googleapis.com/v0/b/heymarket-35d03.firebasestorage.app/o/images%2Fbg-banner-hey-point.png?alt=media&token=4c622e18-92de-4b26-85db-b293da0030e6";
+  "https://firebasestorage.googleapis.com/v0/b/heymarket-35d03.firebasestorage.app/o/images%2Fbg-banner-hey-point-II.png?alt=media&token=0bb49f6d-c2a8-466e-bae3-27247abd7058";
 
 async function apiGet<T>(path: string): Promise<T> {
   const res = await fetch(`${API_ORIGIN}/api${path}`, {
