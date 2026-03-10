@@ -413,18 +413,45 @@ export function ShoppingCartPage({
 
                         <div className="mt-6 p-4 bg-[#FFF4E6] rounded-2xl">
                           <div className="flex gap-3">
-                            <Package className="w-5 h-5 text-[#FF6B00] flex-shrink-0 mt-0.5" />
-                            <p className="text-[#2E2E2E] text-xs sm:text-sm">
-                              Vas a recibir un{" "}
-                              <span style={{ fontWeight: 600 }}>
-                                token de retiro alfanumérico
-                              </span>{" "}
-                              y tu{" "}
-                              <span style={{ fontWeight: 600 }}>
-                                ID de pedido
-                              </span>{" "}
-                              una vez completado el pago.
-                            </p>
+                            {/* Icon */}
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="24"
+                              height="24"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="lucide lucide-key w-5 h-5 text-[#FF6B00] flex-shrink-0 mt-1"
+                            ></svg>
+
+                            <div>
+                              {/* Título */}
+                              <p className="font-semibold text-sm text-[#2E2E2E] mb-1">
+                                Tu código para retirar
+                              </p>
+
+                              {/* Texto explicativo */}
+                              <p className="text-xs sm:text-sm text-[#2E2E2E] leading-relaxed">
+                                Después de completar el pago vas a recibir un{" "}
+                                <span className="font-semibold text-[#FF6B00]">
+                                  código de retiro en tu correo electrónico
+                                </span>
+                                .
+                                <br />
+                                Ese{" "}
+                                <span className="font-semibold">
+                                  código (token)
+                                </span>{" "}
+                                te permitirá{" "}
+                                <span className="font-semibold">
+                                  desbloquear tu pedido en el stand de HeyPoint
+                                </span>{" "}
+                                y retirar tus productos.
+                              </p>
+                            </div>
                           </div>
                         </div>
                       </>
