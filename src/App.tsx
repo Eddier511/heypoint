@@ -777,7 +777,7 @@ function AppContent() {
               Categorías
             </h2>
             <p className="text-[#2E2E2E] max-w-2xl mx-auto text-lg md:text-xl">
-              Explorá nuestros productos
+              Explorá nuestras categorias
             </p>
           </motion.div>
 

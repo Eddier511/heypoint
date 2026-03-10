@@ -182,7 +182,7 @@ export default function AuthModal({
   const [birthDateError, setBirthDateError] = useState("");
   const [apartmentNumber, setApartmentNumber] = useState("");
 
-  const pickupPoint = "Urb. Valle Arriba";
+  const pickupPoint = "Aún no hay un Hey Point disponible en esta ubicación.";
 
   // ✅ FIX: token retry (Google puede tardar en estar listo)
   async function getIdTokenWithRetry(retries = 6, delayMs = 250) {
@@ -1397,7 +1397,7 @@ export default function AuthModal({
                         {/* Apartamento */}
                         <div>
                           <Label className="text-[#1C2335] mb-2 block font-semibold">
-                            Número de apartamento (opcional)
+                            Unidad Funcional (UF)
                           </Label>
                           <div className="relative">
                             <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -1407,7 +1407,7 @@ export default function AuthModal({
                                 setApartmentNumber(e.target.value);
                                 setStep2Dirty(true);
                               }}
-                              placeholder="Ej: Torre A - 1204"
+                              placeholder="Ej: 12, 3B, 5A"
                               className="pl-12 pr-4 py-6 rounded-2xl border-2 border-gray-200 focus:border-[#FF6B00] focus:ring-2 focus:ring-[#FF6B00]/20"
                             />
                           </div>
