@@ -432,23 +432,26 @@ function AppContent() {
   const benefits = [
     {
       icon: <Zap className="w-7 h-7 sm:w-8 sm:h-8" />,
-      title: "Sin filas",
-      description: "Comprá cuando quieras, sin esperas",
+      title: "Sin filas ni intermediarios.",
+      description: "Compra cuando quieras, sin esperas y sin intermediarios.",
     },
     {
       icon: <Clock className="w-7 h-7 sm:w-8 sm:h-8" />,
       title: "Disponible 24/7",
-      description: "Siempre abierto, siempre listo",
+      description:
+        "Hey Point! Se encuentra funcionando las 24 hs con productos personalizados para tu comunidad.",
     },
     {
       icon: <CreditCard className="w-7 h-7 sm:w-8 sm:h-8" />,
-      title: "Pagos digitales",
-      description: "Todos los métodos de pago aceptados",
+      title: "Pagos Seguros",
+      description:
+        "Tus datos están protegidos y encriptados. Trabajamos con billetera virtual de Mercado Pago.",
     },
     {
       icon: <Shield className="w-7 h-7 sm:w-8 sm:h-8" />,
       title: "Retiro seguro",
-      description: "Tu pedido protegido y listo",
+      description:
+        "Una vez realizado el pago, recibirás un código token en tu correo registrado. Este te servirá para retirar tu pedido en el stand.",
     },
   ];
 
@@ -628,11 +631,11 @@ function AppContent() {
             <h1 className="text-white text-5xl md:text-7xl mb-6 font-[Inter] font-bold text-[48px]">
               Comprá online.
               <br />
-              Retirá en minutos.
+              Retirá sin intermediarios.
             </h1>
 
             <p className="text-white/95 max-w-2xl mx-auto text-lg md:text-xl">
-              Elegí tus productos, pagá online y retirá en tu HeyPoint.
+              Elegí tus productos, pagá online y retirá tu compra.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-center max-w-3xl mx-auto mt-10">
@@ -884,7 +887,10 @@ function AppContent() {
               ¿Por qué HeyPoint?
             </h2>
             <p className="text-[#2E2E2E] max-w-2xl mx-auto text-lg md:text-xl">
-              Comprá inteligente, retirá rápido
+              Hey Point es una plataforma que permite al cliente comprar
+              productos online y retirarlos en un stand físico usando un token
+              digital, sin intermediarios. Es una solución pensada para pequeñas
+              comunidades y resuelve olvidos de último momento.
             </p>
           </motion.div>
 
