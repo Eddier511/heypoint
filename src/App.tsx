@@ -898,6 +898,7 @@ function AppContent() {
             {benefits.map((benefit, index) => (
               <motion.div
                 key={index}
+                className="h-full"
                 initial={{ opacity: 0, scale: 0.9 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
@@ -905,13 +906,15 @@ function AppContent() {
                 whileHover={{ scale: 1.05, y: -4 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <Card className="p-6 border-none shadow-lg rounded-3xl bg-gradient-to-br from-white to-[#FFF8F0] hover:shadow-xl transition-all duration-300">
+                <Card className="p-6 border-none shadow-lg rounded-3xl bg-gradient-to-br from-white to-[#FFF8F0] hover:shadow-xl transition-all duration-300 h-full flex flex-col">
                   <div className="inline-flex items-center justify-center w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-[#FF6B00]/10 to-[#FF8534]/10 text-[#FF6B00] rounded-2xl mb-4">
                     {benefit.icon}
                   </div>
+
                   <h3 className="text-[#1C2335] text-lg md:text-xl mb-2">
                     {benefit.title}
                   </h3>
+
                   <p className="text-[#2E2E2E] text-sm md:text-base">
                     {benefit.description}
                   </p>
