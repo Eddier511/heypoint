@@ -384,7 +384,7 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                 >
-                  <Card className="overflow-hidden border-none shadow-lg rounded-2xl bg-white hover:shadow-xl transition-all">
+                  <Card className="overflow-hidden border-none shadow-lg rounded-2xl bg-white hover:shadow-xl transition-all h-full flex flex-col">
                     <div className="relative h-48 overflow-hidden">
                       <ImageWithFallback
                         src={location.image}
