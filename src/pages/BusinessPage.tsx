@@ -375,7 +375,7 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
               </p>
             </motion.div>
 
-            <div className="grid lg:grid-cols-3 gap-8">
+            <div className="grid lg:grid-cols-3 gap-8 h-full">
               {locations.map((location, index) => (
                 <motion.div
                   key={index}
