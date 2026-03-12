@@ -28,37 +28,42 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
   const problems = [
     {
       icon: <Clock className="w-6 h-6" />,
-      title: "Pérdida de tiempo productivo",
-      description: "Los empleados interrumpen su jornada para compras básicas",
+      title: "Ahorro de tiempo y practicidad",
+      description:
+        "Ofrecemos productos básicos disponibles las 24hs, personalizados para tu comunidad y pensados para resolver olvidos de último momento o compras en horarios nocturnos. Siempre disponible, sin depender de comercios externos a tu complejo o edificio, ni aplicaciones de delivery.",
     },
     {
       icon: <Shield className="w-6 h-6" />,
-      title: "Seguridad y confianza",
-      description: "Preocupación por entregas no seguras o sin supervisión",
+      title: "Seguridad y Confianza",
+      description:
+        "Reduce la exposición a la calle y brinda tranquilidad al encontrarse dentro de tu complejo o edificio. Generando también un punto de encuentro e interacción para fortalecer la comunidad.",
     },
     {
       icon: <TrendingUp className="w-6 h-6" />,
-      title: "Necesidad de conveniencia",
+      title: "Necesidad de Conveniencia",
       description:
-        "Los usuarios buscan soluciones rápidas sin comprometer calidad",
+        "Las personas buscamos soluciones rápidas y seguras. Por ello, optimizamos los espacios comunes reconvirtiéndolos en puntos de valor agregado alineados con innovación y tecnología.",
     },
   ];
 
   const solutions = [
     {
       icon: <Package className="w-8 h-8" />,
-      title: "Lockers inteligentes",
-      description: "Módulos seguros con tecnología de acceso digital",
+      title: "Stand Inteligente",
+      description:
+        "Stand armado con módulos seguros y tecnología de acceso digital monitoreados 24/7 y con control de stock personalizado según demanda.",
     },
     {
       icon: <Smartphone className="w-8 h-8" />,
-      title: "Pagos digitales",
-      description: "Checkout 100% online, sin contacto, sin efectivo",
+      title: "Pagos Seguros",
+      description:
+        "Checkout 100% online, seguro y encriptado, sin contacto. Trabajamos con billeteras virtuales y evitamos el uso de efectivo.",
     },
     {
       icon: <Zap className="w-8 h-8" />,
-      title: "Retiro en segundos",
-      description: "Token de acceso único para retirar en menos de 30 segundos",
+      title: "Retiro en Segundos",
+      description:
+        "Token de acceso único para retirar rápidamente y de manera segura. ",
     },
   ];
 
@@ -66,21 +71,24 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
     {
       icon: <Home className="w-10 h-10" />,
       title: "Complejos residenciales",
-      description: "Conveniencia 24/7 para residentes con vidas ocupadas",
+      description:
+        "Conveniencia 24/7 para residentes de complejos o edificios de viviendas. Pensado para mejorar la calidad de vida de los habitantes.",
       image:
         "https://images.unsplash.com/photo-1615725475020-1f7625d5ac72?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjByZXNpZGVudGlhbCUyMHRvd2VyJTIwYnVpbGRpbmclMjBlbnRyYW5jZXxlbnwxfHx8fDE3Njk5MTc5Mzd8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
     },
     {
       icon: <Briefcase className="w-10 h-10" />,
-      title: "Oficinas corporativas",
-      description: "Beneficio que aumenta la productividad de tus equipos",
+      title: "Edificios de oficinas",
+      description:
+        "Beneficio que aumenta la productividad de las empresas otorgando disponibilidad rápida e inmediata de productos para los colaboradores.",
       image:
         "https://images.unsplash.com/photo-1749310726959-d8fccfef7ee4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBvZmZpY2UlMjBidWlsZGluZyUyMGxvYmJ5fGVufDF8fHx8MTc2OTkxNzA4NHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
     },
     {
       icon: <Dumbbell className="w-10 h-10" />,
       title: "Gimnasios y coworkings",
-      description: "Servicios adicionales que valorizan tu propuesta",
+      description:
+        "Servicios adicionales y adaptables que valorizan la propuesta de tu negocio.",
       image:
         "https://images.unsplash.com/photo-1761971975769-97e598bf526b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxneW0lMjBmaXRuZXNzJTIwY2VudGVyJTIwaW50ZXJpb3J8ZW58MXx8fHwxNzY5OTE3MDg1fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
     },
@@ -298,7 +306,7 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
                 className="text-[#1C2335] mb-4"
                 style={{ fontSize: "2.5rem", fontWeight: 700 }}
               >
-                La solución HeyPoint!
+                La solución HeyPoint
               </h2>
               <p
                 className="text-[#2E2E2E] max-w-3xl mx-auto"
@@ -424,7 +432,7 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
                 className="text-[#1C2335] mb-4"
                 style={{ fontSize: "2.5rem", fontWeight: 700 }}
               >
-                Beneficios clave del modelo
+                Beneficios clave de nuestro modelo de negocio
               </h2>
               <p
                 className="text-[#2E2E2E] max-w-3xl mx-auto"
