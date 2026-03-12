@@ -134,24 +134,25 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
       number: "01",
       title: "Explorás",
       description:
-        "El usuario navega el catálogo desde su celular, en cualquier momento",
+        "El cliente navega el catálogo desde cualquier dispositivo con acceso a internet en cualquier momento.",
     },
     {
       number: "02",
       title: "Comprás",
       description:
-        "Selecciona productos, paga online y elige su locker más cercano",
+        "Selecciona productos, paga online y se acerca a su Point a retirar su compra.",
     },
     {
       number: "03",
       title: "Recibís token",
-      description: "Al confirmar la orden, recibe un código único de retiro",
+      description:
+        "Al confirmar la orden recibe un código único para su retiro.",
     },
     {
       number: "04",
       title: "Retirás en segundos",
       description:
-        "Va al locker, ingresa el token y retira su pedido de forma segura",
+        "Ingresa el código token en la pantalla y retira de manera rápida y segura.",
     },
   ];
 
@@ -529,9 +530,6 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
                       {step.description}
                     </p>
                   </div>
-                  {index < steps.length - 1 && (
-                    <div className="hidden lg:block absolute top-8 left-full w-full h-0.5 bg-gradient-to-r from-[#FF6B00] to-transparent -translate-x-1/2"></div>
-                  )}
                 </motion.div>
               ))}
             </div>
