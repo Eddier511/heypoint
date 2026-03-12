@@ -174,7 +174,7 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
                     lineHeight: "1.1",
                   }}
                 >
-                  El futuro del retail está en tu edificio
+                  El futuro del retail, disponible para tu comunidad.
                 </h1>
                 <p
                   className="mb-8"
@@ -245,8 +245,10 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
                 className="text-[#2E2E2E] max-w-3xl mx-auto"
                 style={{ fontSize: "1.125rem", lineHeight: "1.7" }}
               >
-                En un mundo donde el tiempo es el recurso más valioso, las
-                personas necesitan soluciones inmediatas y confiables
+                Hoy las personas necesitan soluciones rápidas, seguras y
+                disponibles en cualquier momento. HeyPoint acerca productos
+                esenciales directamente a tu edificio, para resolver compras de
+                último momento sin salir de casa.
               </p>
             </motion.div>
 
