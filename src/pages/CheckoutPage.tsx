@@ -1,9 +1,20 @@
-import { useState } from "react";
-import { ArrowLeft, Package, ShoppingBag, CreditCard, CheckCircle, Shield, HelpCircle } from "lucide-react";
+import { useState, useMemo } from "react";
+import {
+  ArrowLeft,
+  Package,
+  ShoppingBag,
+  CreditCard,
+  Shield,
+  HelpCircle,
+} from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Separator } from "../components/ui/separator";
-import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "../components/ui/popover";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { UnifiedHeader } from "../components/UnifiedHeader";
 import { BackToTopButton } from "../components/BackToTopButton";
@@ -11,6 +22,7 @@ import { Footer } from "../components/Footer";
 import { ReservationTimer } from "../components/ReservationTimer";
 import { InactivityExpirationModal } from "../components/InactivityExpirationModal";
 import { useInactivityTimer } from "../hooks/useInactivityTimer";
+import { useStoreSettings } from "../hooks/useStoreSettings";
 import { formatPrecioARS, getPrecioFinalConIVA } from "../utils/priceUtils";
 import { motion } from "motion/react";
 import { useCart } from "../contexts/CartContext";
@@ -21,67 +33,91 @@ interface CheckoutPageProps {
   isLoggedIn?: boolean;
 }
 
-export function CheckoutPage({ onNavigate, isLoggedIn = true }: CheckoutPageProps) {
+export function CheckoutPage({
+  onNavigate,
+  isLoggedIn = true,
+}: CheckoutPageProps) {
   const { cartItems, clearCart } = useCart();
-  const [currentStep] = useState(2); // Step 2 = Checkout/Payment
+  const { settings: storeSettings } = useStoreSettings();
+
+  const [currentStep] = useState(2);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showExpirationModal, setShowExpirationModal] = useState(false);
 
-  // Inactivity timer - 15 minutos
   useInactivityTimer({
     onInactive: () => {
       setShowExpirationModal(true);
     },
     timeoutMinutes: 15,
-    isEnabled: cartItems.length > 0 && !isProcessing // Solo si hay items y no está procesando
+    isEnabled: cartItems.length > 0 && !isProcessing,
   });
 
   const handleExpirationConfirm = () => {
-    // Vaciar carrito
     clearCart();
-    // Cerrar modal
     setShowExpirationModal(false);
-    // Volver a la tienda
     onNavigate?.("shop");
   };
 
-  // Calcular totales - SIMPLIFICADO según requerimientos del cliente
-  // El subtotal es el precio final con IVA ya incluido
+  // Subtotal: precios finales con IVA ya incluido
   const subtotalProductos = cartItems.reduce((sum, item) => {
     const precioConIVA = getPrecioFinalConIVA(item.price);
-    return sum + (precioConIVA * item.quantity);
+    return sum + precioConIVA * item.quantity;
   }, 0);
-  
-  // Cargo por servicio del 1% sobre el subtotal
-  const cargoServicio = subtotalProductos * 0.01;
-  
-  // Total a pagar
+
+  // Buscar regla de cargo por servicio según subtotal
+  const reglaCargoAplicada = useMemo(() => {
+    const rules = storeSettings?.serviceChargeRules ?? [];
+
+    return (
+      rules.find(
+        (rule) =>
+          subtotalProductos >= Number(rule.min) &&
+          subtotalProductos <= Number(rule.max),
+      ) || null
+    );
+  }, [storeSettings?.serviceChargeRules, subtotalProductos]);
+
+  const cargoServicio = reglaCargoAplicada ? Number(reglaCargoAplicada.fee) : 0;
   const totalAPagar = subtotalProductos + cargoServicio;
+
+  const textoCargoServicio = useMemo(() => {
+    if (!reglaCargoAplicada) return "Cargo por servicio";
+
+    const min = Number(reglaCargoAplicada.min);
+    const max = Number(reglaCargoAplicada.max);
+
+    if (min === 0) {
+      return `Cargo por servicio (compras hasta ${formatPrecioARS(max)})`;
+    }
+
+    if (max >= 999000) {
+      return `Cargo por servicio (compras mayores a ${formatPrecioARS(min - 1)})`;
+    }
+
+    return `Cargo por servicio (${formatPrecioARS(min)} - ${formatPrecioARS(max)})`;
+  }, [reglaCargoAplicada]);
 
   const steps = [
     { number: 1, label: "Carrito", icon: ShoppingBag },
     { number: 2, label: "Pago", icon: CreditCard },
-    { number: 3, label: "Confirmación de retiro", icon: Package }
+    { number: 3, label: "Confirmación de retiro", icon: Package },
   ];
 
   const handleMercadoPagoPayment = async () => {
     setIsProcessing(true);
 
     try {
-      // Simulate redirecting to Mercado Pago
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
       toast.success("Redirigiendo a Mercado Pago...", {
         description: "Serás redirigido al sitio seguro de pago",
         duration: 2000,
       });
 
-      // Simulate payment completion and return
       setTimeout(() => {
         clearCart();
         onNavigate?.("success");
       }, 2000);
-
     } catch (error) {
       toast.error("Error al procesar el pago", {
         description: "Por favor intentá nuevamente",
@@ -91,25 +127,32 @@ export function CheckoutPage({ onNavigate, isLoggedIn = true }: CheckoutPageProp
     }
   };
 
-  // Redirect if cart is empty
   if (cartItems.length === 0) {
     return (
       <div className="min-h-screen bg-[#FFF4E6]">
-        <UnifiedHeader onNavigate={onNavigate} currentPage="checkout" isLoggedIn={isLoggedIn} isTransparent={false} />
+        <UnifiedHeader
+          onNavigate={onNavigate}
+          currentPage="checkout"
+          isLoggedIn={isLoggedIn}
+          isTransparent={false}
+        />
         <div className="pt-20 lg:pt-24">
           <div className="container mx-auto px-4 sm:px-6 py-12 max-w-2xl text-center">
             <Card className="p-12 border-none shadow-lg rounded-3xl bg-white">
               <ShoppingBag className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-              <h3 className="text-[#1C2335] mb-2" style={{ fontSize: '1.5rem', fontWeight: 600 }}>
+              <h3
+                className="text-[#1C2335] mb-2"
+                style={{ fontSize: "1.5rem", fontWeight: 600 }}
+              >
                 Tu carrito está vacío
               </h3>
-              <p className="text-[#2E2E2E] mb-6" style={{ fontSize: '1rem' }}>
+              <p className="text-[#2E2E2E] mb-6" style={{ fontSize: "1rem" }}>
                 No hay productos para procesar el pago
               </p>
               <Button
                 onClick={() => onNavigate?.("shop")}
                 className="bg-[#FF6B00] hover:bg-[#e56000] text-white px-8 py-6 rounded-full shadow-lg transition-all transform hover:scale-105"
-                style={{ fontSize: '1rem', fontWeight: 600 }}
+                style={{ fontSize: "1rem", fontWeight: 600 }}
               >
                 Ir a la tienda
               </Button>
@@ -123,25 +166,26 @@ export function CheckoutPage({ onNavigate, isLoggedIn = true }: CheckoutPageProp
 
   return (
     <div className="min-h-screen bg-[#FFF4E6]">
-      <UnifiedHeader onNavigate={onNavigate} currentPage="checkout" isLoggedIn={isLoggedIn} isTransparent={false} />
+      <UnifiedHeader
+        onNavigate={onNavigate}
+        currentPage="checkout"
+        isLoggedIn={isLoggedIn}
+        isTransparent={false}
+      />
 
-      {/* Back to Top Button */}
       <BackToTopButton />
 
-      {/* Add padding-top to account for fixed header */}
       <div className="pt-20 lg:pt-24">
         <div className="container mx-auto px-4 sm:px-6 py-8 max-w-7xl">
-          {/* Back Button */}
           <button
             onClick={() => onNavigate?.("cart")}
             className="flex items-center gap-2 text-[#2E2E2E] hover:text-[#FF6B00] transition-colors mb-6"
-            style={{ fontSize: '0.938rem', fontWeight: 500 }}
+            style={{ fontSize: "0.938rem", fontWeight: 500 }}
           >
             <ArrowLeft className="w-5 h-5" />
             Volver al carrito
           </button>
 
-          {/* Progress Indicator */}
           <div className="mb-8 md:mb-12">
             <div className="flex items-center justify-center gap-2 sm:gap-4 max-w-3xl mx-auto">
               {steps.map((step, index) => (
@@ -158,7 +202,9 @@ export function CheckoutPage({ onNavigate, isLoggedIn = true }: CheckoutPageProp
                     </div>
                     <span
                       className={`text-center text-xs sm:text-sm ${
-                        currentStep >= step.number ? "text-[#FF6B00]" : "text-gray-400"
+                        currentStep >= step.number
+                          ? "text-[#FF6B00]"
+                          : "text-gray-400"
                       }`}
                       style={{ fontWeight: 600 }}
                     >
@@ -168,9 +214,11 @@ export function CheckoutPage({ onNavigate, isLoggedIn = true }: CheckoutPageProp
                   {index < steps.length - 1 && (
                     <div
                       className={`h-0.5 flex-1 mx-1 sm:mx-2 transition-all ${
-                        currentStep > step.number ? "bg-[#FF6B00]" : "bg-gray-200"
+                        currentStep > step.number
+                          ? "bg-[#FF6B00]"
+                          : "bg-gray-200"
                       }`}
-                      style={{ marginTop: '-30px' }}
+                      style={{ marginTop: "-30px" }}
                     />
                   )}
                 </div>
@@ -178,21 +226,25 @@ export function CheckoutPage({ onNavigate, isLoggedIn = true }: CheckoutPageProp
             </div>
           </div>
 
-          {/* Page Title */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             className="text-center mb-8 md:mb-12"
           >
-            <h1 className="text-[#1C2335] mb-2" style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: 700 }}>
+            <h1
+              className="text-[#1C2335] mb-2"
+              style={{ fontSize: "clamp(2rem, 5vw, 3rem)", fontWeight: 700 }}
+            >
               Resumen de compra
             </h1>
-            <p className="text-[#2E2E2E] mb-6" style={{ fontSize: 'clamp(1rem, 2.5vw, 1.25rem)' }}>
+            <p
+              className="text-[#2E2E2E] mb-6"
+              style={{ fontSize: "clamp(1rem, 2.5vw, 1.25rem)" }}
+            >
               Revisá tu pedido antes de pagar
             </p>
 
-            {/* Reservation Timer - Web only */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -203,7 +255,6 @@ export function CheckoutPage({ onNavigate, isLoggedIn = true }: CheckoutPageProp
             </motion.div>
           </motion.div>
 
-          {/* Main Content - Centered Single Column */}
           <div className="max-w-2xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -211,14 +262,19 @@ export function CheckoutPage({ onNavigate, isLoggedIn = true }: CheckoutPageProp
               transition={{ duration: 0.6, delay: 0.1 }}
             >
               <Card className="p-6 md:p-8 border-none shadow-xl rounded-3xl bg-white">
-                {/* Products List */}
-                <h2 className="text-[#1C2335] mb-6" style={{ fontSize: '1.5rem', fontWeight: 700 }}>
+                <h2
+                  className="text-[#1C2335] mb-6"
+                  style={{ fontSize: "1.5rem", fontWeight: 700 }}
+                >
                   Productos ({cartItems.length})
                 </h2>
 
                 <div className="space-y-4 mb-8">
                   {cartItems.map((item) => (
-                    <div key={item.productId} className="flex gap-4 p-4 bg-[#FFF4E6] rounded-2xl">
+                    <div
+                      key={item.productId}
+                      className="flex gap-4 p-4 bg-[#FFF4E6] rounded-2xl"
+                    >
                       <div className="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
                         <ImageWithFallback
                           src={item.image}
@@ -227,15 +283,25 @@ export function CheckoutPage({ onNavigate, isLoggedIn = true }: CheckoutPageProp
                         />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-[#1C2335] line-clamp-2 mb-2" style={{ fontSize: '0.938rem', fontWeight: 600 }}>
+                        <h4
+                          className="text-[#1C2335] line-clamp-2 mb-2"
+                          style={{ fontSize: "0.938rem", fontWeight: 600 }}
+                        >
                           {item.name}
                         </h4>
                         <div className="flex items-center justify-between">
                           <span className="text-[#2E2E2E] text-sm">
-                            {item.quantity} {item.quantity === 1 ? 'unidad' : 'unidades'} × {formatPrecioARS(getPrecioFinalConIVA(item.price))}
+                            {item.quantity}{" "}
+                            {item.quantity === 1 ? "unidad" : "unidades"} ×{" "}
+                            {formatPrecioARS(getPrecioFinalConIVA(item.price))}
                           </span>
-                          <span className="text-[#FF6B00]" style={{ fontSize: '1rem', fontWeight: 700 }}>
-                            {formatPrecioARS(getPrecioFinalConIVA(item.price) * item.quantity)}
+                          <span
+                            className="text-[#FF6B00]"
+                            style={{ fontSize: "1rem", fontWeight: 700 }}
+                          >
+                            {formatPrecioARS(
+                              getPrecioFinalConIVA(item.price) * item.quantity,
+                            )}
                           </span>
                         </div>
                       </div>
@@ -245,59 +311,105 @@ export function CheckoutPage({ onNavigate, isLoggedIn = true }: CheckoutPageProp
 
                 <Separator className="my-8" />
 
-                {/* Price Summary - SIMPLIFICADO */}
                 <div className="space-y-4 mb-8">
-                  <h3 className="text-[#1C2335] mb-4" style={{ fontSize: '1.25rem', fontWeight: 700 }}>
+                  <h3
+                    className="text-[#1C2335] mb-4"
+                    style={{ fontSize: "1.25rem", fontWeight: 700 }}
+                  >
                     Detalle del pago
                   </h3>
 
-                  {/* Subtotal de productos (ya con IVA) */}
                   <div className="flex justify-between items-center">
-                    <span className="text-[#2E2E2E]" style={{ fontSize: '0.938rem' }}>
+                    <span
+                      className="text-[#2E2E2E]"
+                      style={{ fontSize: "0.938rem" }}
+                    >
                       Subtotal de productos
                     </span>
-                    <span className="text-[#1C2335]" style={{ fontSize: '0.938rem', fontWeight: 600 }}>
+                    <span
+                      className="text-[#1C2335]"
+                      style={{ fontSize: "0.938rem", fontWeight: 600 }}
+                    >
                       {formatPrecioARS(subtotalProductos)}
                     </span>
                   </div>
 
-                  {/* Cargo por servicio */}
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
-                      <span className="text-[#2E2E2E]" style={{ fontSize: '0.938rem' }}>
-                        Cargo por servicio (1%)
+                      <span
+                        className="text-[#2E2E2E]"
+                        style={{ fontSize: "0.938rem" }}
+                      >
+                        {textoCargoServicio}
                       </span>
+
                       <Popover>
                         <PopoverTrigger asChild>
                           <button className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-gray-200 hover:bg-[#FF6B00] hover:text-white transition-colors">
                             <HelpCircle className="w-3 h-3" />
                           </button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-72 p-4 bg-white border-2 border-[#FF6B00] rounded-2xl shadow-xl" sideOffset={8}>
+                        <PopoverContent
+                          className="w-72 p-4 bg-white border-2 border-[#FF6B00] rounded-2xl shadow-xl"
+                          sideOffset={8}
+                        >
                           <div className="space-y-2">
-                            <h4 className="text-[#1C2335] mb-2" style={{ fontSize: '0.938rem', fontWeight: 600 }}>
+                            <h4
+                              className="text-[#1C2335] mb-2"
+                              style={{ fontSize: "0.938rem", fontWeight: 600 }}
+                            >
                               ¿Qué incluye este cargo?
                             </h4>
                             <p className="text-[#2E2E2E] text-xs leading-relaxed">
-                              Este cargo cubre el uso de la plataforma digital HeyPoint!, incluyendo el sistema de pagos seguros, tecnología de casilleros inteligentes, y mantenimiento de la infraestructura que hace posible tu compra 24/7.
+                              Este cargo cubre el uso de la plataforma digital
+                              HeyPoint!, incluyendo el sistema de pagos seguros,
+                              tecnología de casilleros inteligentes y
+                              mantenimiento de la infraestructura.
                             </p>
+
+                            {reglaCargoAplicada && (
+                              <div className="pt-2 border-t border-gray-100">
+                                <p className="text-xs text-[#666666]">
+                                  Regla aplicada:
+                                </p>
+                                <p className="text-xs font-medium text-[#1C2335]">
+                                  Desde{" "}
+                                  {formatPrecioARS(reglaCargoAplicada.min)}{" "}
+                                  hasta{" "}
+                                  {formatPrecioARS(reglaCargoAplicada.max)}
+                                </p>
+                                <p className="text-xs font-medium text-[#FF6B00]">
+                                  Cargo fijo:{" "}
+                                  {formatPrecioARS(reglaCargoAplicada.fee)}
+                                </p>
+                              </div>
+                            )}
                           </div>
                         </PopoverContent>
                       </Popover>
                     </div>
-                    <span className="text-[#1C2335]" style={{ fontSize: '0.938rem', fontWeight: 600 }}>
+
+                    <span
+                      className="text-[#1C2335]"
+                      style={{ fontSize: "0.938rem", fontWeight: 600 }}
+                    >
                       {formatPrecioARS(cargoServicio)}
                     </span>
                   </div>
 
                   <Separator className="my-4" />
 
-                  {/* Total a pagar */}
                   <div className="flex justify-between items-center pt-2">
-                    <span className="text-[#1C2335]" style={{ fontSize: '1.5rem', fontWeight: 700 }}>
+                    <span
+                      className="text-[#1C2335]"
+                      style={{ fontSize: "1.5rem", fontWeight: 700 }}
+                    >
                       Total a pagar
                     </span>
-                    <span className="text-[#FF6B00]" style={{ fontSize: '2rem', fontWeight: 700 }}>
+                    <span
+                      className="text-[#FF6B00]"
+                      style={{ fontSize: "2rem", fontWeight: 700 }}
+                    >
                       {formatPrecioARS(totalAPagar)}
                     </span>
                   </div>
@@ -305,30 +417,31 @@ export function CheckoutPage({ onNavigate, isLoggedIn = true }: CheckoutPageProp
 
                 <Separator className="my-8" />
 
-                {/* Mercado Pago Payment Section */}
                 <div className="space-y-6">
-                  <h3 className="text-[#1C2335] text-center mb-4" style={{ fontSize: '1.25rem', fontWeight: 700 }}>
+                  <h3
+                    className="text-[#1C2335] text-center mb-4"
+                    style={{ fontSize: "1.25rem", fontWeight: 700 }}
+                  >
                     Método de pago
                   </h3>
 
-                  {/* Security Badge */}
                   <div className="flex items-center gap-3 p-4 bg-[#E8F5E9] rounded-2xl mb-6">
                     <Shield className="w-5 h-5 text-green-600 flex-shrink-0" />
                     <p className="text-[#2E2E2E] text-sm">
-                      <span style={{ fontWeight: 600 }}>Pago 100% seguro</span> - Procesado por Mercado Pago
+                      <span style={{ fontWeight: 600 }}>Pago 100% seguro</span>{" "}
+                      - Procesado por Mercado Pago
                     </p>
                   </div>
 
-                  {/* Mercado Pago Button - Main CTA */}
                   <Button
                     onClick={handleMercadoPagoPayment}
                     disabled={isProcessing}
                     className="w-full py-7 rounded-full shadow-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                    style={{ 
-                      fontSize: '1.125rem', 
+                    style={{
+                      fontSize: "1.125rem",
                       fontWeight: 600,
-                      backgroundColor: '#009EE3',
-                      color: 'white'
+                      backgroundColor: "#009EE3",
+                      color: "white",
                     }}
                   >
                     {isProcessing ? (
@@ -343,44 +456,65 @@ export function CheckoutPage({ onNavigate, isLoggedIn = true }: CheckoutPageProp
                           viewBox="0 0 24 24"
                           fill="currentColor"
                         >
-                          <path d="M15.5 2.5h-7c-2.2 0-4 1.8-4 4v11c0 2.2 1.8 4 4 4h7c2.2 0 4-1.8 4-4v-11c0-2.2-1.8-4-4-4zm-3.5 14c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3z"/>
+                          <path d="M15.5 2.5h-7c-2.2 0-4 1.8-4 4v11c0 2.2 1.8 4 4 4h7c2.2 0 4-1.8 4-4v-11c0-2.2-1.8-4-4-4zm-3.5 14c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3z" />
                         </svg>
                         Pagar con Mercado Pago
                       </span>
                     )}
                   </Button>
 
-                  {/* Info Note */}
                   <div className="mt-6 p-4 bg-[#FFF4E6] rounded-2xl">
                     <div className="flex gap-3">
                       <Package className="w-5 h-5 text-[#FF6B00] flex-shrink-0 mt-0.5" />
                       <div className="text-[#2E2E2E] text-sm">
                         <p className="mb-2">
-                          Serás redirigido a <span style={{ fontWeight: 600 }}>Mercado Pago</span> para completar el pago de forma segura.
+                          Serás redirigido a{" "}
+                          <span style={{ fontWeight: 600 }}>Mercado Pago</span>{" "}
+                          para completar el pago de forma segura.
                         </p>
                         <p>
-                          Una vez confirmado, vas a recibir tu <span style={{ fontWeight: 600 }}>código alfanumérico</span> y <span style={{ fontWeight: 600 }}>ID de pedido</span> para retirar en tu HeyPoint.
+                          Una vez confirmado, vas a recibir tu{" "}
+                          <span style={{ fontWeight: 600 }}>
+                            código alfanumérico
+                          </span>{" "}
+                          y{" "}
+                          <span style={{ fontWeight: 600 }}>ID de pedido</span>{" "}
+                          para retirar en tu HeyPoint.
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Payment Methods Accepted */}
                   <div className="mt-6 p-4 bg-gray-50 rounded-2xl">
-                    <p className="text-[#2E2E2E] text-sm mb-3 text-center" style={{ fontWeight: 600 }}>
+                    <p
+                      className="text-[#2E2E2E] text-sm mb-3 text-center"
+                      style={{ fontWeight: 600 }}
+                    >
                       Métodos de pago disponibles en Mercado Pago:
                     </p>
                     <div className="flex items-center justify-center gap-3 flex-wrap">
-                      <div className="px-3 py-2 bg-white rounded-lg border border-gray-200 text-xs" style={{ fontWeight: 600 }}>
+                      <div
+                        className="px-3 py-2 bg-white rounded-lg border border-gray-200 text-xs"
+                        style={{ fontWeight: 600 }}
+                      >
                         Tarjetas
                       </div>
-                      <div className="px-3 py-2 bg-white rounded-lg border border-gray-200 text-xs" style={{ fontWeight: 600 }}>
+                      <div
+                        className="px-3 py-2 bg-white rounded-lg border border-gray-200 text-xs"
+                        style={{ fontWeight: 600 }}
+                      >
                         Débito
                       </div>
-                      <div className="px-3 py-2 bg-white rounded-lg border border-gray-200 text-xs" style={{ fontWeight: 600 }}>
+                      <div
+                        className="px-3 py-2 bg-white rounded-lg border border-gray-200 text-xs"
+                        style={{ fontWeight: 600 }}
+                      >
                         Efectivo
                       </div>
-                      <div className="px-3 py-2 bg-white rounded-lg border border-gray-200 text-xs" style={{ fontWeight: 600 }}>
+                      <div
+                        className="px-3 py-2 bg-white rounded-lg border border-gray-200 text-xs"
+                        style={{ fontWeight: 600 }}
+                      >
                         Transferencia
                       </div>
                     </div>
@@ -392,10 +526,8 @@ export function CheckoutPage({ onNavigate, isLoggedIn = true }: CheckoutPageProp
         </div>
       </div>
 
-      {/* Footer */}
       <Footer onNavigate={onNavigate} />
 
-      {/* Inactivity Expiration Modal */}
       <InactivityExpirationModal
         isOpen={showExpirationModal}
         onConfirm={handleExpirationConfirm}

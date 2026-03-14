@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   ShoppingBag,
   Trash2,
@@ -41,15 +41,12 @@ export function ShoppingCartPage({
 }: ShoppingCartPageProps) {
   const { cartItems, updateCartItem, removeFromCart, clearCart } = useCart();
 
-  // ✅ Settings dinámicos desde Firebase (via backend público)
   const { settings } = useStoreSettings();
-  const ivaPct = settings.iva ?? 21; // default seguro
-  const servicePct = settings.serviceCharge ?? 1; // default seguro
+  const ivaPct = settings?.iva ?? 21;
 
-  const [currentStep] = useState(1); // 1 = Cart, 2 = Payment, 3 = Pickup Confirmation
+  const [currentStep] = useState(1);
   const [showExpirationModal, setShowExpirationModal] = useState(false);
 
-  // Inactivity timer - 15 minutos
   useInactivityTimer({
     onInactive: () => setShowExpirationModal(true),
     timeoutMinutes: 15,
@@ -62,7 +59,6 @@ export function ShoppingCartPage({
     onNavigate?.("shop");
   };
 
-  // ✅ IMPORTANTE: productId debe ser string (Firestore doc id)
   const updateQuantity = async (productId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
     await updateCartItem(productId, newQuantity);
@@ -72,14 +68,42 @@ export function ShoppingCartPage({
     await removeFromCart(productId);
   };
 
-  // Calcular totales con settings dinámicos
   const subtotalProductos = cartItems.reduce((sum, item) => {
     const precioConIVA = getPrecioFinalConIVA(item.price, ivaPct);
     return sum + precioConIVA * item.quantity;
   }, 0);
 
-  const cargoServicio = subtotalProductos * (servicePct / 100);
+  const reglaCargoAplicada = useMemo(() => {
+    const rules = settings?.serviceChargeRules ?? [];
+
+    return (
+      rules.find(
+        (rule) =>
+          subtotalProductos >= Number(rule.min) &&
+          subtotalProductos <= Number(rule.max),
+      ) || null
+    );
+  }, [settings?.serviceChargeRules, subtotalProductos]);
+
+  const cargoServicio = reglaCargoAplicada ? Number(reglaCargoAplicada.fee) : 0;
   const totalAPagar = subtotalProductos + cargoServicio;
+
+  const textoCargoServicio = useMemo(() => {
+    if (!reglaCargoAplicada) return "Cargo por servicio";
+
+    const min = Number(reglaCargoAplicada.min);
+    const max = Number(reglaCargoAplicada.max);
+
+    if (min === 0) {
+      return `Cargo por servicio (compras hasta ${formatPrecioARS(max)})`;
+    }
+
+    if (max >= 999000) {
+      return `Cargo por servicio (compras mayores a ${formatPrecioARS(min - 1)})`;
+    }
+
+    return `Cargo por servicio (${formatPrecioARS(min)} - ${formatPrecioARS(max)})`;
+  }, [reglaCargoAplicada]);
 
   const steps = [
     { number: 1, label: "Carrito", icon: ShoppingBag },
@@ -98,7 +122,6 @@ export function ShoppingCartPage({
 
       <div className="pt-20 lg:pt-24">
         <div className="container mx-auto px-4 sm:px-6 py-8 max-w-7xl">
-          {/* Back Button */}
           <button
             onClick={() => onNavigate?.("shop")}
             className="flex items-center gap-2 text-[#2E2E2E] hover:text-[#FF6B00] transition-colors mb-6"
@@ -108,7 +131,6 @@ export function ShoppingCartPage({
             Volver a la tienda
           </button>
 
-          {/* Progress Indicator */}
           <div className="mb-8 md:mb-12">
             <div className="flex items-center justify-center gap-2 sm:gap-4 max-w-3xl mx-auto">
               {steps.map((step, index) => (
@@ -149,7 +171,6 @@ export function ShoppingCartPage({
             </div>
           </div>
 
-          {/* Page Title */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -171,7 +192,6 @@ export function ShoppingCartPage({
             )}
           </motion.div>
 
-          {/* Empty Cart */}
           {cartItems.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -201,7 +221,6 @@ export function ShoppingCartPage({
             </motion.div>
           ) : (
             <div className="grid lg:grid-cols-3 gap-8">
-              {/* Cart Items */}
               <div className="lg:col-span-2">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -215,7 +234,6 @@ export function ShoppingCartPage({
                       className="p-4 sm:p-6 border-none shadow-lg rounded-3xl bg-white hover:shadow-xl transition-shadow"
                     >
                       <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
-                        {/* Image */}
                         <div className="w-full sm:w-32 h-48 sm:h-32 rounded-2xl overflow-hidden bg-gray-100 flex-shrink-0">
                           <ImageWithFallback
                             src={item.image}
@@ -224,7 +242,6 @@ export function ShoppingCartPage({
                           />
                         </div>
 
-                        {/* Details */}
                         <div className="flex-1 flex flex-col justify-between gap-4">
                           <div>
                             <h3
@@ -296,7 +313,6 @@ export function ShoppingCartPage({
                 </motion.div>
               </div>
 
-              {/* Order Summary */}
               <div className="lg:col-span-1">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -329,7 +345,7 @@ export function ShoppingCartPage({
                       <div className="flex justify-between items-center gap-4">
                         <div className="flex items-center gap-2">
                           <span className="text-[#2E2E2E] text-sm">
-                            Cargo por servicio ({servicePct}%)
+                            {textoCargoServicio}
                           </span>
                           <Popover>
                             <PopoverTrigger asChild>
@@ -355,10 +371,27 @@ export function ShoppingCartPage({
                                   Este cargo cubre el uso de la plataforma
                                   digital HeyPoint!, incluyendo el sistema de
                                   pagos seguros, tecnología de casilleros
-                                  inteligentes, y mantenimiento de la
-                                  infraestructura que hace posible tu compra
-                                  24/7.
+                                  inteligentes y mantenimiento de la
+                                  infraestructura.
                                 </p>
+
+                                {reglaCargoAplicada && (
+                                  <div className="pt-2 border-t border-gray-100">
+                                    <p className="text-xs text-[#666666]">
+                                      Regla aplicada:
+                                    </p>
+                                    <p className="text-xs font-medium text-[#1C2335]">
+                                      Desde{" "}
+                                      {formatPrecioARS(reglaCargoAplicada.min)}{" "}
+                                      hasta{" "}
+                                      {formatPrecioARS(reglaCargoAplicada.max)}
+                                    </p>
+                                    <p className="text-xs font-medium text-[#FF6B00]">
+                                      Cargo fijo:{" "}
+                                      {formatPrecioARS(reglaCargoAplicada.fee)}
+                                    </p>
+                                  </div>
+                                )}
                               </div>
                             </PopoverContent>
                           </Popover>
@@ -415,7 +448,6 @@ export function ShoppingCartPage({
                         <div className="mt-6 p-4 bg-[#FFF4E6] rounded-2xl">
                           <div className="flex gap-3">
                             <Key className="w-5 h-5 text-[#FF6B00] flex-shrink-0 mt-1" />
-
                             <div>
                               <p className="font-bold text-base sm:text-lg text-[#2E2E2E] mb-1">
                                 Tu código para retirar
