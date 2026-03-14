@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export type ServiceChargeRule = {
   id: string;
@@ -24,44 +24,62 @@ export function useStoreSettings() {
   const [settings, setSettings] = useState<StoreSettings>(DEFAULTS);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let alive = true;
+  const load = useCallback(async () => {
+    try {
+      const base = import.meta.env.VITE_API_URL || "";
 
-    async function load() {
-      try {
-        const base = import.meta.env.VITE_API_URL || "";
-        const res = await fetch(`${base}/api/settings/store`);
-        if (!res.ok) throw new Error("Failed to load store settings");
+      const res = await fetch(`${base}/api/settings/store?_ts=${Date.now()}`, {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      });
 
-        const data = await res.json();
-        const s = data?.settings ?? data;
+      if (!res.ok) throw new Error("Failed to load store settings");
 
-        if (!alive) return;
+      const data = await res.json();
+      const s = data?.settings ?? data;
 
-        setSettings({
-          iva: Number(s?.iva ?? DEFAULTS.iva),
-          serviceChargeRules: Array.isArray(s?.serviceChargeRules)
-            ? s.serviceChargeRules.map((rule: any, index: number) => ({
-                id: String(rule?.id ?? index + 1),
-                min: Number(rule?.min ?? 0),
-                max: Number(rule?.max ?? 0),
-                fee: Number(rule?.fee ?? 0),
-              }))
-            : DEFAULTS.serviceChargeRules,
-        });
-      } catch {
-        if (alive) setSettings(DEFAULTS);
-      } finally {
-        if (alive) setLoading(false);
-      }
+      setSettings({
+        iva: Number(s?.iva ?? DEFAULTS.iva),
+        serviceChargeRules: Array.isArray(s?.serviceChargeRules)
+          ? s.serviceChargeRules.map((rule: any, index: number) => ({
+              id: String(rule?.id ?? index + 1),
+              min: Number(rule?.min ?? 0),
+              max: Number(rule?.max ?? 0),
+              fee: Number(rule?.fee ?? 0),
+            }))
+          : DEFAULTS.serviceChargeRules,
+      });
+    } catch {
+      setSettings(DEFAULTS);
+    } finally {
+      setLoading(false);
     }
-
-    load();
-
-    return () => {
-      alive = false;
-    };
   }, []);
 
-  return { settings, loading };
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // Refresca al volver a la pestaña
+  useEffect(() => {
+    const onFocus = () => load();
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") load();
+    };
+
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [load]);
+
+  return { settings, loading, refresh: load };
 }
