@@ -28,15 +28,7 @@ export function useStoreSettings() {
     try {
       const base = import.meta.env.VITE_API_URL || "";
 
-      const res = await fetch(`${base}/api/settings/store?_ts=${Date.now()}`, {
-        method: "GET",
-        cache: "no-store",
-        headers: {
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          Pragma: "no-cache",
-          Expires: "0",
-        },
-      });
+      const res = await fetch(`${base}/api/settings/store?_ts=${Date.now()}`);
 
       if (!res.ok) throw new Error("Failed to load store settings");
 
@@ -65,7 +57,6 @@ export function useStoreSettings() {
     load();
   }, [load]);
 
-  // Refresca al volver a la pestaña
   useEffect(() => {
     const onFocus = () => load();
     const onVisibility = () => {
