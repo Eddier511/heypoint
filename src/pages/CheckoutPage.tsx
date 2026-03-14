@@ -39,7 +39,7 @@ export function CheckoutPage({
 }: CheckoutPageProps) {
   const { cartItems, clearCart } = useCart();
   const { settings: storeSettings } = useStoreSettings();
-
+  const ivaPct = storeSettings?.iva ?? 21;
   const [currentStep] = useState(2);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showExpirationModal, setShowExpirationModal] = useState(false);
@@ -333,6 +333,9 @@ export function CheckoutPage({
                       {formatPrecioARS(subtotalProductos)}
                     </span>
                   </div>
+                  <p className="text-xs text-[#666666]">
+                    Precios con IVA incluido ({ivaPct}%).
+                  </p>
 
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">

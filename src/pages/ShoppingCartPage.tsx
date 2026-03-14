@@ -339,6 +339,9 @@ export function ShoppingCartPage({
                           {formatPrecioARS(subtotalProductos)}
                         </span>
                       </div>
+                      <p className="text-xs text-[#666666]">
+                        Precios con IVA incluido ({ivaPct}%).
+                      </p>
 
                       <Separator className="my-4" />
 
