@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "motion/react";
 import { X, MessageCircle, UserPlus, Zap } from "lucide-react";
-import type { ReactNode } from "react";
+import type { ReactNode, ComponentType } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -13,7 +13,7 @@ interface SupportModalProps {
 }
 
 type FaqItem = {
-  icon: React.ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string }>;
   question: string;
   answer: ReactNode;
 };
@@ -67,9 +67,7 @@ export function SupportModal({
             <li>
               Ingresá a la tienda virtual y seleccioná el producto que deseás.
             </li>
-
             <li>Pagá con tu billetera virtual vía Mercado Pago.</li>
-
             <li>
               Acercate a tu HeyPoint!, ingresá el código que recibiste por mail
               y retirás tu compra.
@@ -110,7 +108,6 @@ export function SupportModal({
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
           <motion.button
             type="button"
             aria-label="Cerrar"
@@ -122,7 +119,6 @@ export function SupportModal({
             onClick={onClose}
           />
 
-          {/* Modal */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -134,11 +130,12 @@ export function SupportModal({
               className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[85vh] sm:max-h-[90vh] overflow-y-auto border-0 ring-0"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Header */}
               <div className="bg-gradient-to-r from-[#FF6B00] to-[#ff8534] p-6 relative rounded-t-3xl">
                 <button
+                  type="button"
                   onClick={onClose}
                   className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+                  aria-label="Cerrar modal"
                 >
                   <X className="w-5 h-5 text-white" />
                 </button>
@@ -146,7 +143,7 @@ export function SupportModal({
                 <h2
                   className="text-white pr-12"
                   style={{
-                    fontSize: "clamp(1.25rem,4vw,1.75rem)",
+                    fontSize: "clamp(1.25rem, 4vw, 1.75rem)",
                     fontWeight: 700,
                   }}
                 >
@@ -161,7 +158,6 @@ export function SupportModal({
                 </p>
               </div>
 
-              {/* FAQ Content */}
               <div className="p-6 space-y-5">
                 {faqs.map((faq, index) => (
                   <div key={index}>
@@ -200,7 +196,6 @@ export function SupportModal({
                 ))}
               </div>
 
-              {/* Footer */}
               <div className="bg-[#FFF4E6] p-6 border-t border-gray-100">
                 <p
                   className="text-[#2E2E2E] mb-4 text-center"

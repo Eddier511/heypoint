@@ -992,6 +992,7 @@ export function UnifiedHeader({
       <SupportModal
         isOpen={showSupportModal}
         onClose={() => setShowSupportModal(false)}
+        onNavigate={onNavigate}
       />
     </>
   );
