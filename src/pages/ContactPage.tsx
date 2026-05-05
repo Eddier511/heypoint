@@ -318,7 +318,7 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
                         className="text-[#2E2E2E]"
                         style={{ fontSize: "0.938rem", lineHeight: "1.6" }}
                       >
-                        heypoint.arg@gmail.com
+                        heypoint.ar@gmail.com
                       </p>
                     </div>
                   </div>

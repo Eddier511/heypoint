@@ -406,7 +406,7 @@ export function TermsPage({ onNavigate }: TermsPageProps) {
                 <li><strong>Cookies:</strong> bloquear/eliminar desde su navegador o ajustar preferencias en nuestro panel.</li>
               </ul>
               <p className="text-[#2E2E2E]/80 mb-8">
-                Para ejercer cualquier derecho: <a className="text-[#FF6B00] underline" href="mailto:heypoint.arg@gmail.com">heypoint.arg@gmail.com</a>
+                Para ejercer cualquier derecho: <a className="text-[#FF6B00] underline" href="mailto:heypoint.ar@gmail.com">heypoint.ar@gmail.com</a>
               </p>
 
               <h3 className="text-[#2E2E2E] mb-3">6. Retención de datos</h3>
@@ -455,8 +455,8 @@ export function TermsPage({ onNavigate }: TermsPageProps) {
 
               <h3 className="text-[#2E2E2E] mb-3">12. Cómo contactarnos</h3>
               <ul className="list-disc pl-6 mb-6 text-[#2E2E2E]/80 space-y-2">
-                <li><strong>Email general:</strong> <a className="text-[#FF6B00] underline" href="mailto:heypoint.arg@gmail.com">heypoint.arg@gmail.com</a></li>
-                <li><strong>Protección de datos:</strong> <a className="text-[#FF6B00] underline" href="mailto:heypoint.arg@gmail.com">heypoint.arg@gmail.com</a></li>
+                <li><strong>Email general:</strong> <a className="text-[#FF6B00] underline" href="mailto:heypoint.ar@gmail.com">heypoint.ar@gmail.com</a></li>
+                <li><strong>Protección de datos:</strong> <a className="text-[#FF6B00] underline" href="mailto:heypoint.ar@gmail.com">heypoint.ar@gmail.com</a></li>
                 <li><strong>Teléfono:</strong> <a className="text-[#FF6B00] underline" href="tel:+5491131475522">+54 9 11 3147 5522</a></li>
                 <li><strong>Dirección postal:</strong> Cacique Coliqueo 1020, El Palomar, CP 1685</li>
               </ul>
