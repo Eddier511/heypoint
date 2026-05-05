@@ -75,7 +75,7 @@ const API_ORIGIN = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 // ✅ HERO banner (Home) - para evitar flash/CLS
 const HERO_SRC =
-  "https://firebasestorage.googleapis.com/v0/b/heymarket-35d03.firebasestorage.app/o/images%2Fbg-banner-hey-point-II.png?alt=media&token=0bb49f6d-c2a8-466e-bae3-27247abd7058";
+  "/images/bg-banner-hey-point-II.png";
 
 async function apiGet<T>(path: string): Promise<T> {
   const res = await fetch(`${API_ORIGIN}/api${path}`, {
@@ -597,21 +597,17 @@ function AppContent() {
       <BackToTopButton />
 
       {/* Hero Section */}
-      <section className="relative min-h-[100vh] flex items-center justify-center overflow-hidden bg-[#FFF4E6]">
+      <section className="relative min-h-[100svh] md:h-[100vh] flex items-center justify-center overflow-hidden bg-[#FFF4E6]">
         <div className="absolute inset-0 z-0">
           {/* 1) Placeholder consistente */}
           <div className="absolute inset-0 bg-gradient-to-br from-[#1C2335] via-[#2E2E2E] to-black" />
 
-          {/* 2) Imagen (fade-in) */}
-          <div
-            className={`absolute inset-0 transition-opacity duration-500 ease-out ${
-              heroLoaded ? "opacity-100" : "opacity-0"
-            }`}
-          >
+          {/* 2) Imagen */}
+          <div className="absolute inset-0">
             <ImageWithFallback
               src={HERO_SRC}
               alt="HeyPoint! Estación inteligente automatizada"
-              className="w-full h-full object-cover"
+              className="block w-full h-full object-cover object-center"
               loading="eager"
               decoding="async"
               fetchPriority="high"
