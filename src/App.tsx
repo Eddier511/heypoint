@@ -641,22 +641,22 @@ function AppContent() {
               Elegí tus productos, pagá online y retirá tu compra.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 items-center justify-center max-w-3xl mx-auto mt-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center justify-center max-w-3xl mx-auto mt-10">
               <motion.div
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
-                className="w-full sm:w-auto"
+                className="w-full"
               >
                 <Button
                   onClick={() => handleNavigation("shop")}
-                  className="w-full sm:w-auto h-14 px-8 bg-[#FF6B00] hover:bg-[#e56000] text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2"
+                  className="w-full h-14 px-8 bg-[#FF6B00] hover:bg-[#e56000] text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2"
                 >
                   <Store className="w-5 h-5" />
                   Entrar a la tienda
                 </Button>
               </motion.div>
 
-              <motion.div className="w-full sm:w-auto sm:flex-1 sm:max-w-md">
+              <motion.div className="w-full sm:col-span-2 sm:order-first">
                 <SmartSearchBar
                   onProductClick={(product) => {
                     setSelectedProduct(product);
@@ -677,13 +677,13 @@ function AppContent() {
               <motion.div
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
-                className="w-full sm:w-auto"
+                className="w-full"
               >
                 <Button
                   onClick={scrollToHowItWorks}
                   variant="outline"
                   aria-label="Ir a Cómo comprar"
-                  className="w-full sm:w-auto h-14 px-8 bg-white/10 hover:bg-white/20 border-2 border-white/40 hover:border-white/60 text-white rounded-full backdrop-blur-sm transition-all duration-300 flex items-center justify-center gap-2"
+                  className="w-full h-14 px-8 bg-white/10 hover:bg-white/20 border-2 border-white/40 hover:border-white/60 text-white rounded-full backdrop-blur-sm transition-all duration-300 flex items-center justify-center gap-2"
                 >
                   <motion.div
                     animate={scrollY < 100 ? { y: [0, 3, 0] } : {}}
