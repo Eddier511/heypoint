@@ -51,6 +51,10 @@ export function Footer({ onNavigate }: FooterProps) {
                   "https://firebasestorage.googleapis.com/v0/b/heymarket-35d03.firebasestorage.app/o/images%2FHeypoint-header-logo-100x60-white.svg?alt=media&token=9402edf6-17bc-463a-b233-2999af7158c5"
                 }
                 alt="HeyPoint! Logo"
+                width={100}
+                height={60}
+                loading="lazy"
+                decoding="async"
                 className="w-[80px] sm:w-[100px] h-auto transition-all duration-300"
               />
             </div>
