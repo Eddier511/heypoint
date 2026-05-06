@@ -367,6 +367,8 @@ export function ShopPage({
       .filter((p) => p.originalPrice !== undefined && p.originalPrice > p.price)
       .slice(0, 6);
   }, [products]);
+  const shouldShowOffersSection =
+    isCatalogLoading || productosEnOferta.length > 0;
 
   const FilterPanel = ({ onClose }: { onClose?: () => void }) => (
     <div className="space-y-6">
@@ -519,7 +521,7 @@ export function ShopPage({
           </div>
 
           {/* Ofertas */}
-          {productosEnOferta.length > 0 && (
+          {shouldShowOffersSection && (
             <div className="mb-8 sm:mb-12">
               <Card className="bg-gradient-to-br from-[#FFF8F0] via-white to-[#FFF4E6] border-2 border-[#FF6B00]/20 shadow-lg rounded-3xl overflow-hidden">
                 <div className="bg-gradient-to-r from-[#FF6B00] to-[#FF8534] p-4 sm:p-6">
@@ -559,6 +561,31 @@ export function ShopPage({
                 </div>
 
                 <div className="p-4 sm:p-6">
+                  {isCatalogLoading ? (
+                    <>
+                      <div className="lg:hidden overflow-x-auto pb-4 -mx-2 px-2 scrollbar-hide">
+                        <div className="flex gap-4 min-w-max">
+                          {Array.from({ length: 3 }).map((_, index) => (
+                            <div
+                              key={`offer-skeleton-mobile-${index}`}
+                              className="w-[280px] sm:w-[320px] flex-shrink-0"
+                            >
+                              <ProductCardSkeleton />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="hidden lg:grid lg:grid-cols-3 gap-6">
+                        {Array.from({ length: 3 }).map((_, index) => (
+                          <ProductCardSkeleton
+                            key={`offer-skeleton-desktop-${index}`}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <>
                   <div className="lg:hidden overflow-x-auto pb-4 -mx-2 px-2 scrollbar-hide">
                     <div className="flex gap-4 min-w-max">
                       {productosEnOferta.map((product) => {
@@ -574,16 +601,18 @@ export function ShopPage({
                             className="w-[280px] sm:w-[320px] flex-shrink-0"
                           >
                             <Card
-                              className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md hover:shadow-xl transition-shadow p-4 h-full"
+                              className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md hover:shadow-xl transition-shadow p-4 h-full min-h-[392px]"
                               onClick={() => onProductClick(product)}
                             >
-                              <div className="relative h-48 rounded-xl overflow-hidden flex-shrink-0">
+                              <div className="relative h-48 aspect-[4/3] rounded-xl overflow-hidden flex-shrink-0">
                                 <ImageWithFallback
                                   src={product.image}
                                   alt={product.name}
+                                  width={600}
+                                  height={400}
                                   loading="lazy"
                                   decoding="async"
-                                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                  className="block w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                                 />
                                 <div className="absolute top-3 right-3">
                                   <SaleChip variant="orange" size="lg" />
@@ -683,16 +712,18 @@ export function ShopPage({
                           transition={{ duration: 0.18, ease: "easeOut" }}
                         >
                           <Card
-                            className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md hover:shadow-xl transition-shadow p-4 h-full"
+                            className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md hover:shadow-xl transition-shadow p-4 h-full min-h-[392px]"
                             onClick={() => onProductClick(product)}
                           >
-                            <div className="relative h-48 rounded-xl overflow-hidden flex-shrink-0">
+                            <div className="relative h-48 aspect-[4/3] rounded-xl overflow-hidden flex-shrink-0">
                               <ImageWithFallback
                                 src={product.image}
                                 alt={product.name}
+                                width={600}
+                                height={400}
                                 loading="lazy"
                                 decoding="async"
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                className="block w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                               />
                               <div className="absolute top-3 right-3">
                                 <SaleChip variant="orange" size="lg" />
@@ -761,6 +792,8 @@ export function ShopPage({
                       );
                     })}
                   </div>
+                    </>
+                  )}
 
                   <div className="sm:hidden mt-4 flex justify-center">
                     <button
@@ -871,16 +904,18 @@ export function ShopPage({
                             transition={{ duration: 0.18, ease: "easeOut" }}
                           >
                             <Card
-                              className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md hover:shadow-xl transition-shadow p-4 h-full"
+                              className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md hover:shadow-xl transition-shadow p-4 h-full min-h-[392px]"
                               onClick={() => onProductClick(product)}
                             >
-                              <div className="relative h-48 rounded-xl overflow-hidden flex-shrink-0">
+                              <div className="relative h-48 aspect-[4/3] rounded-xl overflow-hidden flex-shrink-0">
                                 <ImageWithFallback
                                   src={product.image}
                                   alt={product.name}
+                                  width={600}
+                                  height={400}
                                   loading="lazy"
                                   decoding="async"
-                                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                  className="block w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                                 />
                                 {product.badges?.length ? (
                                   <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
