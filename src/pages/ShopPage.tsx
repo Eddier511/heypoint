@@ -593,6 +593,8 @@ export function ShopPage({
                                 <ImageWithFallback
                                   src={product.image}
                                   alt={product.name}
+                                  loading="lazy"
+                                  decoding="async"
                                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                                 />
                                 <div className="absolute top-3 right-3">
@@ -700,6 +702,8 @@ export function ShopPage({
                               <ImageWithFallback
                                 src={product.image}
                                 alt={product.name}
+                                loading="lazy"
+                                decoding="async"
                                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                               />
                               <div className="absolute top-3 right-3">
@@ -886,6 +890,8 @@ export function ShopPage({
                                 <ImageWithFallback
                                   src={product.image}
                                   alt={product.name}
+                                  loading="lazy"
+                                  decoding="async"
                                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                                 />
                                 {product.badges?.length ? (
