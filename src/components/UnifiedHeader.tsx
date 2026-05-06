@@ -16,18 +16,31 @@ import {
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
-import { useMemo, useState, useEffect, useRef } from "react";
+import { lazy, Suspense, useMemo, useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
-import { EmptyCartModal } from "./EmptyCartModal";
-import { GlobalSearchModal } from "./GlobalSearchModal";
-import { SupportModal } from "./SupportModal";
 import { useAuth } from "../contexts/AuthContext";
 import { useModal } from "../contexts/ModalContext";
 import { useCart } from "../contexts/CartContext";
 import { useHasPendingOrders } from "../hooks/useHasPendingOrders";
 import { toast } from "sonner";
 import { type ApiCategory, useCategories } from "../hooks/useCategories";
+
+const EmptyCartModal = lazy(() =>
+  import("./EmptyCartModal").then((module) => ({
+    default: module.EmptyCartModal,
+  })),
+);
+const GlobalSearchModal = lazy(() =>
+  import("./GlobalSearchModal").then((module) => ({
+    default: module.GlobalSearchModal,
+  })),
+);
+const SupportModal = lazy(() =>
+  import("./SupportModal").then((module) => ({
+    default: module.SupportModal,
+  })),
+);
 
 interface UnifiedHeaderProps {
   onNavigate?: (page: string) => void;
@@ -950,31 +963,39 @@ export function UnifiedHeader({
         )}
       </AnimatePresence>
 
-      <EmptyCartModal
-        isOpen={showEmptyCartModal}
-        onClose={() => setShowEmptyCartModal(false)}
-        onSignIn={() => {
-          setShowEmptyCartModal(false);
-          openLoginModal();
-        }}
-        onSignUp={() => {
-          setShowEmptyCartModal(false);
-          openSignupModal();
-        }}
-      />
+      <Suspense fallback={null}>
+        {showEmptyCartModal && (
+          <EmptyCartModal
+            isOpen={showEmptyCartModal}
+            onClose={() => setShowEmptyCartModal(false)}
+            onSignIn={() => {
+              setShowEmptyCartModal(false);
+              openLoginModal();
+            }}
+            onSignUp={() => {
+              setShowEmptyCartModal(false);
+              openSignupModal();
+            }}
+          />
+        )}
 
-      <GlobalSearchModal
-        isOpen={showGlobalSearchModal}
-        onClose={() => setShowGlobalSearchModal(false)}
-        onNavigate={onNavigate}
-        onCategorySelect={onCategorySelect}
-      />
+        {showGlobalSearchModal && (
+          <GlobalSearchModal
+            isOpen={showGlobalSearchModal}
+            onClose={() => setShowGlobalSearchModal(false)}
+            onNavigate={onNavigate}
+            onCategorySelect={onCategorySelect}
+          />
+        )}
 
-      <SupportModal
-        isOpen={showSupportModal}
-        onClose={() => setShowSupportModal(false)}
-        onNavigate={onNavigate}
-      />
+        {showSupportModal && (
+          <SupportModal
+            isOpen={showSupportModal}
+            onClose={() => setShowSupportModal(false)}
+            onNavigate={onNavigate}
+          />
+        )}
+      </Suspense>
     </>
   );
 }
