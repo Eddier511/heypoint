@@ -146,6 +146,11 @@ export function ShopPage({
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isMobileGridCompact, setIsMobileGridCompact] = useState(true);
+  const [isLargeViewport, setIsLargeViewport] = useState(() =>
+    typeof window !== "undefined"
+      ? window.matchMedia("(min-width: 1024px)").matches
+      : false,
+  );
 
   const [productQuantities, setProductQuantities] = useState<
     Record<number, number>
@@ -203,6 +208,15 @@ export function ShopPage({
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedCategories, priceRange, searchQuery, isOfertasFilterActive]);
+
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 1024px)");
+    const handleChange = () => setIsLargeViewport(query.matches);
+
+    handleChange();
+    query.addEventListener("change", handleChange);
+    return () => query.removeEventListener("change", handleChange);
+  }, []);
 
   const catalog = useMemo(() => {
     const catIdToName = new Map<string, string>();
@@ -565,44 +579,45 @@ export function ShopPage({
                     <div className="min-h-[424px]" aria-hidden="true" />
                   ) : (
                     <>
-                  <div className="lg:hidden overflow-x-auto pb-4 -mx-2 px-2 scrollbar-hide">
-                    <div className="flex gap-4 min-w-max">
-                      {productosEnOferta.map((product, index) => {
-                        const hasDiscount =
-                          product.originalPrice !== undefined &&
-                          product.originalPrice > product.price;
-                        const isPriorityImage = index === 0;
+                      {!isLargeViewport ? (
+                        <div className="overflow-x-auto pb-4 -mx-2 px-2 scrollbar-hide">
+                          <div className="flex gap-4 min-w-max">
+                            {productosEnOferta.map((product, index) => {
+                              const hasDiscount =
+                                product.originalPrice !== undefined &&
+                                product.originalPrice > product.price;
+                              const isPriorityImage = index === 0;
 
-                        return (
-                          <motion.div
-                            key={product.id}
-                            whileHover={{ y: -4 }}
-                            transition={{ duration: 0.18, ease: "easeOut" }}
-                            className="w-[280px] sm:w-[320px] flex-shrink-0"
-                          >
-                            <Card
-                              className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md hover:shadow-xl transition-shadow p-4 h-full min-h-[392px]"
-                              onClick={() => onProductClick(product)}
-                            >
-                              <div className="relative h-48 aspect-[4/3] rounded-xl overflow-hidden flex-shrink-0">
-                                <ImageWithFallback
-                                  src={product.image}
-                                  alt={product.name}
-                                  width={600}
-                                  height={400}
-                                  loading={isPriorityImage ? "eager" : "lazy"}
-                                  decoding="async"
-                                  fetchPriority={
-                                    isPriorityImage ? "high" : "auto"
-                                  }
-                                  className="block w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                                />
-                                <div className="absolute top-3 right-3">
-                                  <SaleChip variant="orange" size="lg" />
-                                </div>
-                              </div>
+                              return (
+                                <motion.div
+                                  key={product.id}
+                                  whileHover={{ y: -4 }}
+                                  transition={{ duration: 0.18, ease: "easeOut" }}
+                                  className="w-[280px] sm:w-[320px] flex-shrink-0"
+                                >
+                                  <Card
+                                    className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md hover:shadow-xl transition-shadow p-4 h-full min-h-[392px]"
+                                    onClick={() => onProductClick(product)}
+                                  >
+                                    <div className="relative h-48 aspect-[4/3] rounded-xl overflow-hidden flex-shrink-0">
+                                      <ImageWithFallback
+                                        src={product.image}
+                                        alt={product.name}
+                                        width={600}
+                                        height={400}
+                                        loading={isPriorityImage ? "eager" : "lazy"}
+                                        decoding="async"
+                                        fetchPriority={
+                                          isPriorityImage ? "high" : "auto"
+                                        }
+                                        className="block w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                      />
+                                      <div className="absolute top-3 right-3">
+                                        <SaleChip variant="orange" size="lg" />
+                                      </div>
+                                    </div>
 
-                              <div className="flex-1 flex flex-col pt-3">
+                                    <div className="flex-1 flex flex-col pt-3">
                                 <h3
                                   className="text-[#1C2335] mb-3 line-clamp-2"
                                   style={{
@@ -651,10 +666,10 @@ export function ShopPage({
                                 </div>
                               </div>
 
-                              <div
-                                className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center flex-shrink-0"
-                                onClick={(e) => e.stopPropagation()}
-                              >
+                                    <div
+                                      className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center flex-shrink-0"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
                                 <div className="flex justify-center sm:justify-start">
                                   <QuantitySelector
                                     quantity={getQuantity(product.id)}
@@ -675,14 +690,15 @@ export function ShopPage({
                                   stock={product.stock}
                                 />
                               </div>
-                            </Card>
-                          </motion.div>
-                        );
-                      })}
-                    </div>
-                  </div>
+                                  </Card>
+                                </motion.div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : (
 
-                  <div className="hidden lg:grid lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-3 gap-6">
                     {productosEnOferta.map((product, index) => {
                       const hasDiscount =
                         product.originalPrice !== undefined &&
@@ -779,6 +795,7 @@ export function ShopPage({
                       );
                     })}
                   </div>
+                      )}
                     </>
                   )}
 
