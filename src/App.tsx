@@ -37,6 +37,7 @@ import { PurchaseSuccessPage } from "./pages/PurchaseSuccessPage";
 import { MyOrdersPage } from "./pages/MyOrdersPage";
 import { TermsPage } from "./pages/TermsPage";
 import { PrivacyPage } from "./pages/PrivacyPage";
+import { useCategories } from "./hooks/useCategories";
 
 type Page =
   | "home"
@@ -206,9 +207,6 @@ function AppContent() {
   }, []);
 
   // ✅ categorías API
-  const [dbCategories, setDbCategories] = useState<UiCategory[]>([]);
-  const [loadingCategories, setLoadingCategories] = useState(false);
-
   // Use contexts
   const { user, login, loadingAuth } = useAuth();
   const { openLoginModal, openSignupModal, closeAllModals, openedAt } =
@@ -316,100 +314,33 @@ function AppContent() {
   }, []);
 
   /** =========================
-   * ✅ FALLBACK LOCAL (se pinta INMEDIATO)
+   * Home categories
    * ========================= */
   const PLACEHOLDER_IMG = "https://placehold.co/600x400?text=HeyPoint";
 
-  const newCategories: UiCategory[] = [
-    {
-      id: "snacks",
-      name: "Snacks",
-      items: 120,
-      image:
-        "https://images.unsplash.com/photo-1762417582697-f17df0c69348?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
-    },
-    {
-      id: "bebidas",
-      name: "Bebidas",
-      items: 90,
-      image:
-        "https://images.unsplash.com/photo-1672826979189-faae44e1b7a6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
-    },
-    {
-      id: "electronica",
-      name: "Electrónica",
-      items: 45,
-      image:
-        "https://images.unsplash.com/photo-1707485122968-56916bd2c464?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
-    },
-    {
-      id: "higiene",
-      name: "Higiene",
-      items: 110,
-      image:
-        "https://images.unsplash.com/photo-1629198688000-71f23e745b6e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
-    },
-    {
-      id: "otros",
-      name: "Otros",
-      items: 75,
-      image:
-        "https://images.unsplash.com/photo-1651383140368-9b3ee59c2981?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
-    },
-  ];
 
-  /** =========================
-   * ✅ cargar categorías desde backend (SIN loader en UI)
-   * - pinta fallback al instante
-   * - cuando llega API, reemplaza
-   * ========================= */
-  useEffect(() => {
-    let alive = true;
+  const {
+    data: sharedCategories = [],
+    isLoading: loadingCategories,
+    isError: categoriesError,
+  } = useCategories();
 
-    (async () => {
-      try {
-        setLoadingCategories(true);
-
-        const raw = await apiGet<ApiCategoriesResponse>("/categories");
-        const list = Array.isArray(raw) ? raw : raw?.categories || [];
-        const active = list.filter((c) => c.status !== "inactive");
-
-        const FALLBACK_IMAGES: Record<string, string> = {
-          Snacks:
-            "https://images.unsplash.com/photo-1762417582697-f17df0c69348?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
-          Bebidas:
-            "https://images.unsplash.com/photo-1672826979189-faae44e1b7a6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
-          Electrónica:
-            "https://images.unsplash.com/photo-1707485122968-56916bd2c464?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
-          Higiene:
-            "https://images.unsplash.com/photo-1629198688000-71f23e745b6e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
-          Otros:
-            "https://images.unsplash.com/photo-1651383140368-9b3ee59c2981?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
-        };
-
-        const mapped: UiCategory[] = active.map((c) => ({
+  const homeCategories = useMemo<UiCategory[]>(
+    () =>
+      sharedCategories
+        .filter((c) => c.status !== "inactive")
+        .map((c) => ({
           id: c.id,
           name: c.name,
-          items: Number(c.productCount ?? 0),
-          image: c.imageUrl || FALLBACK_IMAGES[c.name] || PLACEHOLDER_IMG,
-        }));
-
-        if (!alive) return;
-        if (mapped.length > 0) setDbCategories(mapped);
-      } catch (e) {
-        console.warn("[Home] Failed to load categories", e);
-      } finally {
-        if (alive) setLoadingCategories(false);
-      }
-    })();
-
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  // ✅ lo que se muestra (carga de una):
-  const homeCategories = dbCategories.length ? dbCategories : newCategories;
+          items: Number(c.productCount ?? c.items ?? 0),
+          image: c.imageUrl || c.image || PLACEHOLDER_IMG,
+        })),
+    [sharedCategories],
+  );
+  const showCategorySkeletons = loadingCategories;
+  const showCategoryEmptyState =
+    !loadingCategories && (categoriesError || homeCategories.length === 0);
+  const categorySkeletonItems = Array.from({ length: 4 });
 
   const howItWorksSteps = [
     {
@@ -778,12 +709,36 @@ function AppContent() {
           </motion.div>
 
           <div className="relative">
-            {/* ✅ SIN loader: pinta directo con fallback, luego se reemplaza */}
-
+            {showCategoryEmptyState && (
+              <Card className="max-w-3xl mx-auto border-none shadow-lg rounded-3xl bg-white p-8 text-center">
+                <p className="text-[#1C2335] text-lg">
+                  No hay categorías disponibles.
+                </p>
+                <p className="text-[#2E2E2E] mt-2">
+                  Volvé a intentarlo en unos minutos.
+                </p>
+              </Card>
+            )}
             {/* Mobile */}
-            <div className="md:hidden overflow-x-auto pb-8 scrollbar-hide snap-x snap-mandatory">
+            <div
+              className={`md:hidden overflow-x-auto pb-8 scrollbar-hide snap-x snap-mandatory ${
+                showCategoryEmptyState ? "hidden" : ""
+              }`}
+            >
               <div className="flex gap-4 pl-4 pr-4 min-w-max">
-                {homeCategories.map((category, index) => (
+                {showCategorySkeletons
+                  ? categorySkeletonItems.map((_, index) => (
+                      <Card
+                        key={`category-skeleton-mobile-${index}`}
+                        className="flex-shrink-0 w-[calc(50vw-24px)] min-w-[140px] max-w-[180px] border-none shadow-lg rounded-3xl overflow-hidden h-full"
+                      >
+                        <div className="h-36 bg-[#EAEAEA]/70 animate-pulse" />
+                        <div className="p-4 bg-white">
+                          <div className="h-5 w-24 mx-auto rounded bg-[#EAEAEA]/80 animate-pulse" />
+                        </div>
+                      </Card>
+                    ))
+                  : homeCategories.map((category, index) => (
                   <motion.button
                     key={category.id || category.name}
                     initial={{ opacity: 0, x: 50 }}
@@ -824,9 +779,21 @@ function AppContent() {
             </div>
 
             {/* Desktop */}
-            <div className="hidden md:block">
+            <div className={`hidden md:block ${showCategoryEmptyState ? "md:hidden" : ""}`}>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-                {homeCategories.map((category, index) => (
+                {showCategorySkeletons
+                  ? categorySkeletonItems.map((_, index) => (
+                      <Card
+                        key={`category-skeleton-desktop-${index}`}
+                        className="border-none shadow-lg rounded-3xl overflow-hidden h-full"
+                      >
+                        <div className="h-44 bg-[#EAEAEA]/70 animate-pulse" />
+                        <div className="p-5 bg-white">
+                          <div className="h-6 w-28 mx-auto rounded bg-[#EAEAEA]/80 animate-pulse" />
+                        </div>
+                      </Card>
+                    ))
+                  : homeCategories.map((category, index) => (
                   <motion.button
                     key={category.id || category.name}
                     initial={{ opacity: 0, y: 30 }}
