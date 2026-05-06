@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Filter, X, ChevronDown, Grid3x3, LayoutList } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -29,6 +29,7 @@ import {
 } from "../components/ui/collapsible";
 import { formatPrecioARS, getPrecioFinalConIVA } from "../utils/priceUtils";
 import { api } from "../lib/api";
+import { useCategories } from "../hooks/useCategories";
 
 /** =========================
  * UI Types
@@ -59,13 +60,6 @@ interface ShopPageProps {
 /** =========================
  * API DTOs (REAL backend)
  * ========================= */
-type ApiCategory = {
-  id: string;
-  name: string;
-  productCount?: number;
-  status?: "active" | "inactive";
-};
-
 type ApiProduct = {
   id: string;
   name: string;
@@ -95,12 +89,8 @@ type ApiProduct = {
   updatedAt?: string;
 };
 
-type ApiCategoriesResponse = ApiCategory[] | { categories: ApiCategory[] };
 type ApiProductsResponse = ApiProduct[] | { products: ApiProduct[] };
 
-function normalizeCategories(data: ApiCategoriesResponse): ApiCategory[] {
-  return Array.isArray(data) ? data : data?.categories || [];
-}
 function normalizeProducts(data: ApiProductsResponse): ApiProduct[] {
   return Array.isArray(data) ? data : data?.products || [];
 }
@@ -161,12 +151,24 @@ export function ShopPage({
   const [isLoadingPage, setIsLoadingPage] = useState(false);
   const [isOfertasFilterActive, setIsOfertasFilterActive] = useState(false);
 
+  const {
+    data: sharedCategories = [],
+    isLoading: categoriesLoading,
+  } = useCategories();
+  const apiCats = useMemo(
+    () => sharedCategories.filter((c) => c.status !== "inactive"),
+    [sharedCategories],
+  );
+
+  const [apiProducts, setApiProducts] = useState<ApiProduct[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<
     { name: string; count: number }[]
   >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isCatalogLoading = loading || categoriesLoading;
+  const didInitPriceRange = useRef(false);
 
   useEffect(() => {
     console.log("[ShopPage] searchQuery prop received:", searchQuery);
@@ -193,112 +195,17 @@ export function ShopPage({
         setLoading(true);
         setError(null);
 
-        const [catRaw, prodRaw] = await Promise.allSettled([
-          api.get<ApiCategoriesResponse>("/categories"),
-          api.get<ApiProductsResponse>("/products", {
-            params: { status: "active" },
-          }),
-        ]);
-
-        const apiCats =
-          catRaw.status === "fulfilled"
-            ? normalizeCategories(catRaw.value.data).filter(
-                (c) => c.status !== "inactive",
-              )
-            : [];
-
-        if (prodRaw.status !== "fulfilled") {
-          throw prodRaw.reason;
-        }
-
-        const apiProds = normalizeProducts(prodRaw.value.data).filter(
-          (p) => (p.status ?? "active") === "active",
-        );
-
-        const catIdToName = new Map<string, string>();
-        for (const c of apiCats) catIdToName.set(c.id, c.name);
-
-        const PLACEHOLDER_IMG = "https://placehold.co/600x400?text=HeyPoint";
-
-        const mappedProducts: Product[] = apiProds.map((p) => {
-          const base = Number(p.basePrice || 0);
-
-          const discountFraction = getDiscountFraction(p);
-          const hasDiscount = discountFraction > 0;
-
-          // ✅ precios SIN IVA
-          const finalPrice = hasDiscount ? base * (1 - discountFraction) : base;
-          const originalPrice = hasDiscount ? base : undefined;
-
-          const img =
-            (p.images && p.images.length > 0 ? p.images[0] : "") ||
-            PLACEHOLDER_IMG;
-
-          const categoryName =
-            (p.categoryId ? catIdToName.get(p.categoryId) : undefined) ||
-            "Uncategorized";
-
-          return {
-            id: hashId(p.id),
-            backendId: String(p.id), // ✅ REAL
-            categoryId: p.categoryId ?? null, // ✅ REAL
-            name: p.name,
-            image: img,
-            price: Number(finalPrice.toFixed(2)),
-            originalPrice:
-              originalPrice !== undefined
-                ? Number(originalPrice.toFixed(2))
-                : undefined,
-            rating: 4.7,
-            category: categoryName,
-            badges: hasDiscount ? ["Sale"] : undefined,
-            stock: typeof p.stock === "number" ? p.stock : 0,
-          };
+        const prodRaw = await api.get<ApiProductsResponse>("/products", {
+          params: { status: "active" },
         });
 
-        const countByName = new Map<string, number>();
-        for (const prod of mappedProducts) {
-          countByName.set(
-            prod.category,
-            (countByName.get(prod.category) || 0) + 1,
-          );
-        }
-
-        const mappedCategories: { name: string; count: number }[] =
-          apiCats.length > 0
-            ? apiCats
-                .map((c) => ({
-                  name: c.name,
-                  count:
-                    typeof c.productCount === "number"
-                      ? c.productCount
-                      : countByName.get(c.name) || 0,
-                }))
-                .filter((c) => c.count > 0)
-            : Array.from(countByName.entries()).map(([name, count]) => ({
-                name,
-                count,
-              }));
-
-        const maxPriceFromProducts =
-          mappedProducts.length > 0
-            ? Math.max(...mappedProducts.map((x) => x.price || 0))
-            : 20000;
-
-        const roundedMax = Math.max(
-          20000,
-          Math.ceil(maxPriceFromProducts / 500) * 500,
+        const apiProds = normalizeProducts(prodRaw.data).filter(
+          (p) => (p.status ?? "active") === "active",
         );
 
         if (!mounted) return;
 
-        setProducts(mappedProducts);
-        setCategories(mappedCategories);
-        setPriceMax(roundedMax);
-        setPriceRange(([min, max]) => {
-          const newMax = max === 20000 ? roundedMax : Math.min(max, roundedMax);
-          return [min, newMax];
-        });
+        setApiProducts(apiProds);
       } catch (e: any) {
         if (!mounted) return;
         setError(e?.message || "Error cargando productos");
@@ -313,6 +220,96 @@ export function ShopPage({
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (loading) return;
+
+    const catIdToName = new Map<string, string>();
+    for (const c of apiCats) catIdToName.set(c.id, c.name);
+
+    const PLACEHOLDER_IMG = "https://placehold.co/600x400?text=HeyPoint";
+
+    const mappedProducts: Product[] = apiProducts.map((p) => {
+      const base = Number(p.basePrice || 0);
+
+      const discountFraction = getDiscountFraction(p);
+      const hasDiscount = discountFraction > 0;
+
+      // ✅ precios SIN IVA
+      const finalPrice = hasDiscount ? base * (1 - discountFraction) : base;
+      const originalPrice = hasDiscount ? base : undefined;
+
+      const img =
+        (p.images && p.images.length > 0 ? p.images[0] : "") ||
+        PLACEHOLDER_IMG;
+
+      const categoryName =
+        (p.categoryId ? catIdToName.get(p.categoryId) : undefined) ||
+        "Uncategorized";
+
+      return {
+        id: hashId(p.id),
+        backendId: String(p.id), // ✅ REAL
+        categoryId: p.categoryId ?? null, // ✅ REAL
+        name: p.name,
+        image: img,
+        price: Number(finalPrice.toFixed(2)),
+        originalPrice:
+          originalPrice !== undefined
+            ? Number(originalPrice.toFixed(2))
+            : undefined,
+        rating: 4.7,
+        category: categoryName,
+        badges: hasDiscount ? ["Sale"] : undefined,
+        stock: typeof p.stock === "number" ? p.stock : 0,
+      };
+    });
+
+    const countByName = new Map<string, number>();
+    for (const prod of mappedProducts) {
+      countByName.set(
+        prod.category,
+        (countByName.get(prod.category) || 0) + 1,
+      );
+    }
+
+    const mappedCategories: { name: string; count: number }[] =
+      apiCats.length > 0
+        ? apiCats
+            .map((c) => ({
+              name: c.name,
+              count:
+                typeof c.productCount === "number"
+                  ? c.productCount
+                  : countByName.get(c.name) || 0,
+            }))
+            .filter((c) => c.count > 0)
+        : Array.from(countByName.entries()).map(([name, count]) => ({
+            name,
+            count,
+          }));
+
+    const maxPriceFromProducts =
+      mappedProducts.length > 0
+        ? Math.max(...mappedProducts.map((x) => x.price || 0))
+        : 20000;
+
+    const roundedMax = Math.max(
+      20000,
+      Math.ceil(maxPriceFromProducts / 500) * 500,
+    );
+
+    setProducts(mappedProducts);
+    setCategories(mappedCategories);
+    setPriceMax(roundedMax);
+    if (!didInitPriceRange.current) {
+      didInitPriceRange.current = true;
+      setPriceRange(([min, max]) => {
+        const newMax = max === 20000 ? roundedMax : Math.min(max, roundedMax);
+        return [min, newMax];
+      });
+    }
+  }, [apiProducts, apiCats, loading]);
 
   const toggleCategory = (category: string) => {
     setSelectedCategories((prev) =>
@@ -431,7 +428,7 @@ export function ShopPage({
               </div>
             ))}
 
-            {categories.length === 0 && !loading && (
+            {categories.length === 0 && !isCatalogLoading && (
               <p className="text-[#2E2E2E] text-sm">No hay categorías</p>
             )}
           </div>
@@ -831,7 +828,7 @@ export function ShopPage({
             <main className="flex-1 min-w-0">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 bg-white p-4 rounded-2xl shadow-sm">
                 <p className="text-[#2E2E2E]" style={{ fontSize: "0.938rem" }}>
-                  {loading ? (
+                  {isCatalogLoading ? (
                     "Cargando productos..."
                   ) : (
                     <>
@@ -862,7 +859,7 @@ export function ShopPage({
                   isMobileGridCompact ? "grid-cols-2" : "grid-cols-1"
                 } sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6`}
               >
-                {loading || isLoadingPage
+                {isCatalogLoading || isLoadingPage
                   ? Array.from({ length: itemsPerPage }).map((_, index) => (
                       <ProductCardSkeleton key={`skeleton-${index}`} />
                     ))
