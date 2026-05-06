@@ -26,16 +26,25 @@ import { useStoreSettings } from "../hooks/useStoreSettings";
 import { formatPrecioARS, getPrecioFinalConIVA } from "../utils/priceUtils";
 import { motion } from "motion/react";
 import { useCart } from "../contexts/CartContext";
+import { api } from "../lib/api";
 import { toast } from "sonner";
+
+interface OrderSuccessData {
+  id: string;
+  orderId: string;
+  pickupToken: string;
+}
 
 interface CheckoutPageProps {
   onNavigate?: (page: string) => void;
   isLoggedIn?: boolean;
+  onOrderSuccess?: (data: OrderSuccessData) => void;
 }
 
 export function CheckoutPage({
   onNavigate,
   isLoggedIn = true,
+  onOrderSuccess,
 }: CheckoutPageProps) {
   const { cartItems, clearCart } = useCart();
   const { settings: storeSettings } = useStoreSettings();
@@ -107,22 +116,52 @@ export function CheckoutPage({
     setIsProcessing(true);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const orderItems = cartItems.map((item) => ({
+        id: item.productId,
+        name: item.name,
+        quantity: item.quantity,
+        unitPrice: getPrecioFinalConIVA(item.price),
+        image: item.image ?? "",
+      }));
 
-      toast.success("Redirigiendo a Mercado Pago...", {
-        description: "Serás redirigido al sitio seguro de pago",
+      const { data } = await api.post("/orders", {
+        items: orderItems,
+        subtotal: subtotalProductos,
+        serviceCharge: cargoServicio,
+        total: totalAPagar,
+      });
+
+      toast.success("¡Pedido confirmado!", {
+        description: "Tu orden fue registrada exitosamente",
         duration: 2000,
       });
 
       setTimeout(() => {
+        onOrderSuccess?.({
+          id: data.id,
+          orderId: data.orderId,
+          pickupToken: data.pickupToken,
+        });
         clearCart();
         onNavigate?.("success");
       }, 2000);
-    } catch (error) {
-      toast.error("Error al procesar el pago", {
-        description: "Por favor intentá nuevamente",
-        duration: 3000,
-      });
+    } catch (error: any) {
+      const body = error?.response?.data;
+      if (error?.response?.status === 409 && body?.product) {
+        const available = body.available ?? 0;
+        toast.error(`Stock insuficiente: ${body.product}`, {
+          description:
+            available > 0
+              ? `Solo quedan ${available} unidades disponibles. Ajustá la cantidad en el carrito.`
+              : `Este producto se agotó. Retiralo del carrito para continuar.`,
+          duration: 5000,
+        });
+      } else {
+        toast.error("Error al procesar el pedido", {
+          description: "Por favor intentá nuevamente",
+          duration: 3000,
+        });
+      }
       setIsProcessing(false);
     }
   };
