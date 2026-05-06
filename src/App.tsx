@@ -226,6 +226,11 @@ function AppContent() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [scrollY, setScrollY] = useState(0);
+  const [lastOrder, setLastOrder] = useState<{
+    id: string;
+    orderId: string;
+    pickupToken: string;
+  } | null>(null);
 
   // ✅ Hero image loading (evita salto/flash al entrar por primera vez)
   const [heroLoaded, setHeroLoaded] = useState(false);
@@ -566,7 +571,10 @@ function AppContent() {
   if (currentPage === "checkout")
     return (
       <Suspense fallback={<PageFallback />}>
-        <CheckoutPage onNavigate={handleNavigation} />
+        <CheckoutPage
+          onNavigate={handleNavigation}
+          onOrderSuccess={(data) => setLastOrder(data)}
+        />
       </Suspense>
     );
 
@@ -577,7 +585,8 @@ function AppContent() {
           onNavigate={handleNavigation}
           userEmail={userEmail}
           userName={userName}
-          pickupCode={pickupCodeGenerated}
+          pickupCode={lastOrder?.pickupToken ?? pickupCodeGenerated}
+          orderId={lastOrder?.orderId}
           onClearCart={clearCart}
         />
       </Suspense>

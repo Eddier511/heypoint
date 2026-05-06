@@ -24,6 +24,7 @@ interface PurchaseSuccessPageProps {
   userEmail?: string;
   userName?: string;
   pickupCode?: string;
+  orderId?: string;
   isLoggedIn?: boolean;
   onClearCart?: () => void;
 }
@@ -33,6 +34,7 @@ export function PurchaseSuccessPage({
   userEmail = "john.doe@example.com",
   userName = "John",
   pickupCode = "A3X9K2",
+  orderId,
   isLoggedIn = true,
   onClearCart,
 }: PurchaseSuccessPageProps) {
@@ -262,6 +264,17 @@ export function PurchaseSuccessPage({
               >
                 ¡Pedido Confirmado!
               </motion.h1>
+              {orderId && (
+                <motion.p
+                  className="text-[#FF6B00] mt-2"
+                  style={{ fontSize: "1.125rem", fontWeight: 600 }}
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.75, type: "spring", stiffness: 100 }}
+                >
+                  {orderId}
+                </motion.p>
+              )}
             </motion.div>
           </div>
 
