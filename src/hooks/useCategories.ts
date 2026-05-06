@@ -1,6 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 
+const CATEGORY_STALE_TIME = 5 * 60_000;
+const CATEGORY_CACHE_TIME = 15 * 60_000;
+
 export type ApiCategory = {
   id: string;
   name: string;
@@ -25,5 +28,8 @@ export function useCategories() {
       const { data } = await api.get<ApiCategoriesResponse>("/categories");
       return normalizeCategories(data);
     },
+    staleTime: CATEGORY_STALE_TIME,
+    gcTime: CATEGORY_CACHE_TIME,
+    refetchOnWindowFocus: false,
   });
 }

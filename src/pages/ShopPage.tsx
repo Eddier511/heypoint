@@ -30,6 +30,7 @@ import {
 import { formatPrecioARS, getPrecioFinalConIVA } from "../utils/priceUtils";
 import { api } from "../lib/api";
 import { useCategories } from "../hooks/useCategories";
+import { useQuery } from "@tanstack/react-query";
 
 /** =========================
  * UI Types
@@ -90,6 +91,9 @@ type ApiProduct = {
 };
 
 type ApiProductsResponse = ApiProduct[] | { products: ApiProduct[] };
+
+const PRODUCT_STALE_TIME = 60_000;
+const PRODUCT_CACHE_TIME = 10 * 60_000;
 
 function normalizeProducts(data: ApiProductsResponse): ApiProduct[] {
   return Array.isArray(data) ? data : data?.products || [];
@@ -160,13 +164,34 @@ export function ShopPage({
     [sharedCategories],
   );
 
-  const [apiProducts, setApiProducts] = useState<ApiProduct[]>([]);
+  const {
+    data: apiProducts = [],
+    isLoading: loading,
+    error: productsError,
+  } = useQuery({
+    queryKey: ["products", { status: "active" }],
+    queryFn: async () => {
+      const prodRaw = await api.get<ApiProductsResponse>("/products", {
+        params: { status: "active" },
+      });
+
+      return normalizeProducts(prodRaw.data).filter(
+        (p) => (p.status ?? "active") === "active",
+      );
+    },
+    staleTime: PRODUCT_STALE_TIME,
+    gcTime: PRODUCT_CACHE_TIME,
+    refetchOnWindowFocus: false,
+  });
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<
     { name: string; count: number }[]
   >([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const error = productsError
+    ? productsError instanceof Error
+      ? productsError.message
+      : "Error cargando productos"
+    : null;
   const isCatalogLoading = loading || categoriesLoading;
   const didInitPriceRange = useRef(false);
 
@@ -186,40 +211,6 @@ export function ShopPage({
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedCategories, priceRange, searchQuery, isOfertasFilterActive]);
-
-  useEffect(() => {
-    let mounted = true;
-
-    const load = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const prodRaw = await api.get<ApiProductsResponse>("/products", {
-          params: { status: "active" },
-        });
-
-        const apiProds = normalizeProducts(prodRaw.data).filter(
-          (p) => (p.status ?? "active") === "active",
-        );
-
-        if (!mounted) return;
-
-        setApiProducts(apiProds);
-      } catch (e: any) {
-        if (!mounted) return;
-        setError(e?.message || "Error cargando productos");
-      } finally {
-        if (!mounted) return;
-        setLoading(false);
-      }
-    };
-
-    load();
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   useEffect(() => {
     if (loading) return;
