@@ -183,10 +183,6 @@ export function ShopPage({
     gcTime: PRODUCT_CACHE_TIME,
     refetchOnWindowFocus: false,
   });
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<
-    { name: string; count: number }[]
-  >([]);
   const error = productsError
     ? productsError instanceof Error
       ? productsError.message
@@ -194,10 +190,6 @@ export function ShopPage({
     : null;
   const isCatalogLoading = loading || categoriesLoading;
   const didInitPriceRange = useRef(false);
-
-  useEffect(() => {
-    console.log("[ShopPage] searchQuery prop received:", searchQuery);
-  }, [searchQuery]);
 
   const getQuantity = (productId: number) => productQuantities[productId] || 1;
   const updateQuantity = (productId: number, quantity: number) => {
@@ -212,9 +204,7 @@ export function ShopPage({
     setCurrentPage(1);
   }, [selectedCategories, priceRange, searchQuery, isOfertasFilterActive]);
 
-  useEffect(() => {
-    if (loading) return;
-
+  const catalog = useMemo(() => {
     const catIdToName = new Map<string, string>();
     for (const c of apiCats) catIdToName.set(c.id, c.name);
 
@@ -290,17 +280,27 @@ export function ShopPage({
       Math.ceil(maxPriceFromProducts / 500) * 500,
     );
 
-    setProducts(mappedProducts);
-    setCategories(mappedCategories);
-    setPriceMax(roundedMax);
+    return {
+      products: mappedProducts,
+      categories: mappedCategories,
+      priceMax: roundedMax,
+    };
+  }, [apiProducts, apiCats]);
+  const { products, categories } = catalog;
+
+  useEffect(() => {
+    if (isCatalogLoading) return;
+
+    setPriceMax(catalog.priceMax);
     if (!didInitPriceRange.current) {
       didInitPriceRange.current = true;
       setPriceRange(([min, max]) => {
-        const newMax = max === 20000 ? roundedMax : Math.min(max, roundedMax);
+        const newMax =
+          max === 20000 ? catalog.priceMax : Math.min(max, catalog.priceMax);
         return [min, newMax];
       });
     }
-  }, [apiProducts, apiCats, loading]);
+  }, [catalog.priceMax, isCatalogLoading]);
 
   const toggleCategory = (category: string) => {
     setSelectedCategories((prev) =>
@@ -562,28 +562,7 @@ export function ShopPage({
 
                 <div className="p-4 sm:p-6">
                   {isCatalogLoading ? (
-                    <>
-                      <div className="lg:hidden overflow-x-auto pb-4 -mx-2 px-2 scrollbar-hide">
-                        <div className="flex gap-4 min-w-max">
-                          {Array.from({ length: 3 }).map((_, index) => (
-                            <div
-                              key={`offer-skeleton-mobile-${index}`}
-                              className="w-[280px] sm:w-[320px] flex-shrink-0"
-                            >
-                              <ProductCardSkeleton />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="hidden lg:grid lg:grid-cols-3 gap-6">
-                        {Array.from({ length: 3 }).map((_, index) => (
-                          <ProductCardSkeleton
-                            key={`offer-skeleton-desktop-${index}`}
-                          />
-                        ))}
-                      </div>
-                    </>
+                    <div className="min-h-[424px]" aria-hidden="true" />
                   ) : (
                     <>
                   <div className="lg:hidden overflow-x-auto pb-4 -mx-2 px-2 scrollbar-hide">
