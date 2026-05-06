@@ -567,10 +567,11 @@ export function ShopPage({
                     <>
                   <div className="lg:hidden overflow-x-auto pb-4 -mx-2 px-2 scrollbar-hide">
                     <div className="flex gap-4 min-w-max">
-                      {productosEnOferta.map((product) => {
+                      {productosEnOferta.map((product, index) => {
                         const hasDiscount =
                           product.originalPrice !== undefined &&
                           product.originalPrice > product.price;
+                        const isPriorityImage = index === 0;
 
                         return (
                           <motion.div
@@ -589,8 +590,11 @@ export function ShopPage({
                                   alt={product.name}
                                   width={600}
                                   height={400}
-                                  loading="lazy"
+                                  loading={isPriorityImage ? "eager" : "lazy"}
                                   decoding="async"
+                                  fetchPriority={
+                                    isPriorityImage ? "high" : "auto"
+                                  }
                                   className="block w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                                 />
                                 <div className="absolute top-3 right-3">
@@ -679,10 +683,11 @@ export function ShopPage({
                   </div>
 
                   <div className="hidden lg:grid lg:grid-cols-3 gap-6">
-                    {productosEnOferta.map((product) => {
+                    {productosEnOferta.map((product, index) => {
                       const hasDiscount =
                         product.originalPrice !== undefined &&
                         product.originalPrice > product.price;
+                      const isPriorityImage = index === 0;
 
                       return (
                         <motion.div
@@ -700,8 +705,11 @@ export function ShopPage({
                                 alt={product.name}
                                 width={600}
                                 height={400}
-                                loading="lazy"
+                                loading={isPriorityImage ? "eager" : "lazy"}
                                 decoding="async"
+                                fetchPriority={
+                                  isPriorityImage ? "high" : "auto"
+                                }
                                 className="block w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                               />
                               <div className="absolute top-3 right-3">
@@ -871,10 +879,14 @@ export function ShopPage({
                         (currentPage - 1) * itemsPerPage,
                         currentPage * itemsPerPage,
                       )
-                      .map((product) => {
+                      .map((product, index) => {
                         const hasDiscount =
                           product.originalPrice !== undefined &&
                           product.originalPrice > product.price;
+                        const isPriorityImage =
+                          currentPage === 1 &&
+                          productosEnOferta.length === 0 &&
+                          index === 0;
 
                         return (
                           <motion.div
@@ -892,8 +904,11 @@ export function ShopPage({
                                   alt={product.name}
                                   width={600}
                                   height={400}
-                                  loading="lazy"
+                                  loading={isPriorityImage ? "eager" : "lazy"}
                                   decoding="async"
+                                  fetchPriority={
+                                    isPriorityImage ? "high" : "auto"
+                                  }
                                   className="block w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                                 />
                                 {product.badges?.length ? (
