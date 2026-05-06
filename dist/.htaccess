@@ -2,6 +2,9 @@
   RewriteEngine On
   RewriteBase /
 
+  # Serve robots.txt as a static crawler file, never as the SPA fallback
+  RewriteRule ^robots\.txt$ - [L]
+
   # Si el archivo o carpeta existe, servilo normal
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
