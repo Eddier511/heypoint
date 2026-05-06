@@ -576,7 +576,7 @@ export function ShopPage({
 
                 <div className="p-4 sm:p-6">
                   {isCatalogLoading ? (
-                    <div className="min-h-[424px]" aria-hidden="true" />
+                    <div className="min-h-[560px]" aria-hidden="true" />
                   ) : (
                     <>
                       {!isLargeViewport ? (
@@ -599,18 +599,18 @@ export function ShopPage({
                                     className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md hover:shadow-xl transition-shadow p-4 h-full min-h-[392px]"
                                     onClick={() => onProductClick(product)}
                                   >
-                                    <div className="relative h-48 aspect-[4/3] rounded-xl overflow-hidden flex-shrink-0">
+                                    <div className="relative aspect-square rounded-xl overflow-hidden flex-shrink-0 bg-[#F9FAFB]">
                                       <ImageWithFallback
                                         src={product.image}
                                         alt={product.name}
                                         width={600}
-                                        height={400}
+                                        height={600}
                                         loading={isPriorityImage ? "eager" : "lazy"}
                                         decoding="async"
                                         fetchPriority={
                                           isPriorityImage ? "high" : "auto"
                                         }
-                                        className="block w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                        className="block w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-300"
                                       />
                                       <div className="absolute top-3 right-3">
                                         <SaleChip variant="orange" size="lg" />
@@ -715,18 +715,18 @@ export function ShopPage({
                             className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md hover:shadow-xl transition-shadow p-4 h-full min-h-[392px]"
                             onClick={() => onProductClick(product)}
                           >
-                            <div className="relative h-48 aspect-[4/3] rounded-xl overflow-hidden flex-shrink-0">
+                            <div className="relative aspect-square rounded-xl overflow-hidden flex-shrink-0 bg-[#F9FAFB]">
                               <ImageWithFallback
                                 src={product.image}
                                 alt={product.name}
                                 width={600}
-                                height={400}
+                                height={600}
                                 loading={isPriorityImage ? "eager" : "lazy"}
                                 decoding="async"
                                 fetchPriority={
                                   isPriorityImage ? "high" : "auto"
                                 }
-                                className="block w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                className="block w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-300"
                               />
                               <div className="absolute top-3 right-3">
                                 <SaleChip variant="orange" size="lg" />
@@ -915,18 +915,18 @@ export function ShopPage({
                               className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md hover:shadow-xl transition-shadow p-4 h-full min-h-[392px]"
                               onClick={() => onProductClick(product)}
                             >
-                              <div className="relative h-48 aspect-[4/3] rounded-xl overflow-hidden flex-shrink-0">
+                              <div className="relative aspect-square rounded-xl overflow-hidden flex-shrink-0 bg-[#F9FAFB]">
                                 <ImageWithFallback
                                   src={product.image}
                                   alt={product.name}
                                   width={600}
-                                  height={400}
+                                  height={600}
                                   loading={isPriorityImage ? "eager" : "lazy"}
                                   decoding="async"
                                   fetchPriority={
                                     isPriorityImage ? "high" : "auto"
                                   }
-                                  className="block w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                  className="block w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-300"
                                 />
                                 {product.badges?.length ? (
                                   <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
