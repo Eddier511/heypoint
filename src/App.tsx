@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { lazy, Suspense, useState, useEffect, useMemo } from "react";
 import { motion } from "motion/react";
 import {
   ShoppingBag,
@@ -26,18 +26,63 @@ import { BackToTopButton } from "./components/BackToTopButton";
 import { SmartSearchBar } from "./components/SmartSearchBar";
 import { Footer } from "./components/Footer";
 import { ShopPage } from "./pages/ShopPage";
-import { ProductDetailsPage } from "./pages/ProductDetailsPage";
-import { ContactPage } from "./pages/ContactPage";
-import { BusinessPage } from "./pages/BusinessPage";
-import { OurCompanyPage } from "./pages/OurCompanyPage";
-import { UserProfilePage } from "./pages/UserProfilePage";
-import { ShoppingCartPage } from "./pages/ShoppingCartPage";
-import { CheckoutPage } from "./pages/CheckoutPage";
-import { PurchaseSuccessPage } from "./pages/PurchaseSuccessPage";
-import { MyOrdersPage } from "./pages/MyOrdersPage";
-import { TermsPage } from "./pages/TermsPage";
-import { PrivacyPage } from "./pages/PrivacyPage";
 import { useCategories } from "./hooks/useCategories";
+
+const ProductDetailsPage = lazy(() =>
+  import("./pages/ProductDetailsPage").then((module) => ({
+    default: module.ProductDetailsPage,
+  })),
+);
+const ContactPage = lazy(() =>
+  import("./pages/ContactPage").then((module) => ({
+    default: module.ContactPage,
+  })),
+);
+const BusinessPage = lazy(() =>
+  import("./pages/BusinessPage").then((module) => ({
+    default: module.BusinessPage,
+  })),
+);
+const OurCompanyPage = lazy(() =>
+  import("./pages/OurCompanyPage").then((module) => ({
+    default: module.OurCompanyPage,
+  })),
+);
+const UserProfilePage = lazy(() =>
+  import("./pages/UserProfilePage").then((module) => ({
+    default: module.UserProfilePage,
+  })),
+);
+const ShoppingCartPage = lazy(() =>
+  import("./pages/ShoppingCartPage").then((module) => ({
+    default: module.ShoppingCartPage,
+  })),
+);
+const CheckoutPage = lazy(() =>
+  import("./pages/CheckoutPage").then((module) => ({
+    default: module.CheckoutPage,
+  })),
+);
+const PurchaseSuccessPage = lazy(() =>
+  import("./pages/PurchaseSuccessPage").then((module) => ({
+    default: module.PurchaseSuccessPage,
+  })),
+);
+const MyOrdersPage = lazy(() =>
+  import("./pages/MyOrdersPage").then((module) => ({
+    default: module.MyOrdersPage,
+  })),
+);
+const TermsPage = lazy(() =>
+  import("./pages/TermsPage").then((module) => ({
+    default: module.TermsPage,
+  })),
+);
+const PrivacyPage = lazy(() =>
+  import("./pages/PrivacyPage").then((module) => ({
+    default: module.PrivacyPage,
+  })),
+);
 
 type Page =
   | "home"
@@ -107,6 +152,10 @@ type UiCategory = {
   items: number;
   image: string;
 };
+
+function PageFallback() {
+  return <div className="min-h-screen bg-[#FFF4E6]" />;
+}
 
 /** =========================
  * ✅ URL <-> Page (SPA routing simple)
@@ -474,46 +523,86 @@ function AppContent() {
 
   if (currentPage === "productDetails" && selectedProduct) {
     return (
-      <ProductDetailsPage
-        product={selectedProduct}
-        onBack={handleBackToShop}
-        onNavigate={handleNavigation}
-        onProductClick={handleProductClick}
-      />
+      <Suspense fallback={<PageFallback />}>
+        <ProductDetailsPage
+          product={selectedProduct}
+          onBack={handleBackToShop}
+          onNavigate={handleNavigation}
+          onProductClick={handleProductClick}
+        />
+      </Suspense>
     );
   }
 
   if (currentPage === "contact")
-    return <ContactPage onNavigate={handleNavigation} />;
+    return (
+      <Suspense fallback={<PageFallback />}>
+        <ContactPage onNavigate={handleNavigation} />
+      </Suspense>
+    );
   if (currentPage === "business")
-    return <BusinessPage onNavigate={handleNavigation} />;
+    return (
+      <Suspense fallback={<PageFallback />}>
+        <BusinessPage onNavigate={handleNavigation} />
+      </Suspense>
+    );
   if (currentPage === "ourcompany")
-    return <OurCompanyPage onNavigate={handleNavigation} />;
+    return (
+      <Suspense fallback={<PageFallback />}>
+        <OurCompanyPage onNavigate={handleNavigation} />
+      </Suspense>
+    );
   if (currentPage === "profile")
-    return <UserProfilePage onNavigate={handleNavigation} />;
+    return (
+      <Suspense fallback={<PageFallback />}>
+        <UserProfilePage onNavigate={handleNavigation} />
+      </Suspense>
+    );
   if (currentPage === "cart")
-    return <ShoppingCartPage onNavigate={handleNavigation} />;
+    return (
+      <Suspense fallback={<PageFallback />}>
+        <ShoppingCartPage onNavigate={handleNavigation} />
+      </Suspense>
+    );
   if (currentPage === "checkout")
-    return <CheckoutPage onNavigate={handleNavigation} />;
+    return (
+      <Suspense fallback={<PageFallback />}>
+        <CheckoutPage onNavigate={handleNavigation} />
+      </Suspense>
+    );
 
   if (currentPage === "success") {
     return (
-      <PurchaseSuccessPage
-        onNavigate={handleNavigation}
-        userEmail={userEmail}
-        userName={userName}
-        pickupCode={pickupCodeGenerated}
-        onClearCart={clearCart}
-      />
+      <Suspense fallback={<PageFallback />}>
+        <PurchaseSuccessPage
+          onNavigate={handleNavigation}
+          userEmail={userEmail}
+          userName={userName}
+          pickupCode={pickupCodeGenerated}
+          onClearCart={clearCart}
+        />
+      </Suspense>
     );
   }
 
   if (currentPage === "orders")
-    return <MyOrdersPage onNavigate={handleNavigation} />;
+    return (
+      <Suspense fallback={<PageFallback />}>
+        <MyOrdersPage onNavigate={handleNavigation} />
+      </Suspense>
+    );
   if (currentPage === "terms")
-    return <TermsPage onNavigate={handleNavigation} />;
+    return (
+      <Suspense fallback={<PageFallback />}>
+        <TermsPage onNavigate={handleNavigation} />
+      </Suspense>
+    );
   if (currentPage === "privacy")
-    return <PrivacyPage onNavigate={handleNavigation} />;
+    return (
+      <Suspense fallback={<PageFallback />}>
+        <PrivacyPage onNavigate={handleNavigation} />
+      </Suspense>
+    );
 
   // Home Page
   return (
