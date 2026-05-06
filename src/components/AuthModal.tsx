@@ -1,6 +1,6 @@
 // src/components/AuthModal.tsx
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import {
   X,
   Mail,
@@ -181,6 +181,7 @@ export default function AuthModal({
   const [birthDate, setBirthDate] = useState("");
   const [birthDateError, setBirthDateError] = useState("");
   const [apartmentNumber, setApartmentNumber] = useState("");
+  const shouldReduceMotion = useReducedMotion();
 
   const pickupPoint = "Aún no hay un Hey Point disponible en esta ubicación.";
 
@@ -637,26 +638,26 @@ export default function AuthModal({
       {isOpen && (
         <>
           <motion.div
-            initial={{ opacity: 0 }}
+            initial={shouldReduceMotion ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: shouldReduceMotion ? 0 : 0.16 }}
             className="fixed inset-0 bg-black/55 backdrop-blur-[8px] z-[9000]"
             onMouseDown={onBackdropMouseDown}
           />
 
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain pointer-events-none">
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 overflow-x-hidden overflow-y-auto overscroll-contain pointer-events-none">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 14 }}
+              initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.98, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 14 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
-              className="relative w-full max-w-md md:max-w-lg bg-white rounded-3xl shadow-2xl pointer-events-auto overflow-hidden flex flex-col my-auto min-h-0"
+              exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98, y: 8 }}
+              transition={{ duration: shouldReduceMotion ? 0 : 0.18, ease: "easeOut" }}
+              className="relative w-full max-w-[calc(100vw-1.5rem)] sm:max-w-md md:max-w-lg bg-white rounded-3xl shadow-2xl pointer-events-auto overflow-hidden flex flex-col my-auto min-h-0"
               style={{ height: "min(88vh, 900px)" }} // 🔥 CAMBIO: height fijo en vez de maxHeight
             >
               <button
                 onClick={guardedClose}
-                className="absolute top-6 right-6 z-20 w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 text-[#2E2E2E] flex items-center justify-center transition-all hover:scale-110"
+                className="absolute top-6 right-6 z-20 w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 text-[#2E2E2E] flex items-center justify-center transition-colors"
                 aria-label="Cerrar"
               >
                 <X className="w-5 h-5" />
@@ -717,7 +718,7 @@ export default function AuthModal({
                           variant="outline"
                           type="button"
                           disabled={loading}
-                          className="w-full mb-6 py-6 rounded-2xl border-2 border-gray-200 hover:border-[#FF6B00] hover:bg-[#FFF4E6] transition-all group"
+                          className="w-full mb-6 py-6 rounded-2xl border-2 border-gray-200 hover:border-[#FF6B00] hover:bg-[#FFF4E6] transition-colors group"
                           style={{ fontWeight: 600 }}
                         >
                           <Chrome className="w-5 h-5 mr-3 text-gray-600 group-hover:text-[#FF6B00]" />
@@ -862,7 +863,7 @@ export default function AuthModal({
                                   setEmailError("");
                                 }}
                                 placeholder="tu.email@ejemplo.com"
-                                className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-all ${
+                                className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-colors ${
                                   emailError
                                     ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                                     : "border-gray-200 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
@@ -891,7 +892,7 @@ export default function AuthModal({
                                   setPasswordError("");
                                 }}
                                 placeholder="Creá una contraseña segura"
-                                className={`pl-12 pr-12 py-6 rounded-2xl border-2 focus:ring-2 transition-all ${
+                                className={`pl-12 pr-12 py-6 rounded-2xl border-2 focus:ring-2 transition-colors ${
                                   passwordError
                                     ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                                     : "border-gray-200 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
@@ -935,12 +936,8 @@ export default function AuthModal({
                                 </div>
 
                                 <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                                  <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{
-                                      width: `${strengthInfo.score}%`,
-                                    }}
-                                    transition={{ duration: 0.25 }}
+                                  <div
+                                    style={{ width: `${strengthInfo.score}%` }}
                                     className={`h-full ${
                                       strengthInfo.strength === "weak"
                                         ? "bg-red-500"
@@ -1078,7 +1075,7 @@ export default function AuthModal({
                                 setForgotPasswordEmail(e.target.value)
                               }
                               placeholder="tu.email@ejemplo.com"
-                              className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-all ${
+                              className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-colors ${
                                 forgotPasswordError
                                   ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                                   : "border-gray-200 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
@@ -1267,8 +1264,8 @@ export default function AuthModal({
 
               {/* COMPLETE PROFILE (Paso 2) */}
               {signUpStep === "completeProfile" && (
-                <div className="flex flex-col h-full min-h-0">
-                  <div className="flex-shrink-0 bg-gradient-to-br from-[#FF6B00] to-[#e56000] text-white px-6 md:px-8 pt-6 pb-4">
+                <div className="flex flex-col h-full min-h-0 min-w-0 overflow-x-hidden">
+                  <div className="flex-shrink-0 bg-gradient-to-br from-[#FF6B00] to-[#e56000] text-white px-6 md:px-8 pt-6 pb-4 min-w-0">
                     <button
                       type="button"
                       onClick={handleBackFromCompleteProfile}
@@ -1281,28 +1278,28 @@ export default function AuthModal({
                     <h2 className="font-bold text-2xl mt-3">
                       Completá tu perfil
                     </h2>
-                    <p className="mt-2 text-[#FFF4E6]">
+                    <p className="mt-2 text-[#FFF4E6] break-words">
                       Esto nos ayuda a validar tu acceso y preparar tu pickup.
                     </p>
                   </div>
 
                   {/* ✅ FIX SCROLL REAL */}
-                  <div className="flex-1 min-h-0 overflow-hidden">
+                  <div className="flex-1 min-h-0 min-w-0 overflow-hidden">
                     <div
-                      className="h-full overflow-y-auto overscroll-contain px-6 md:px-8 py-8"
+                      className="h-full min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain px-6 md:px-8 py-8"
                       style={{ WebkitOverflowScrolling: "touch" as any }}
                     >
                       <form
                         onSubmit={handleCompleteProfile}
-                        className="space-y-6"
+                        className="space-y-6 min-w-0"
                       >
                         {/* Email / Nombre (solo display) */}
-                        <div className="rounded-3xl border border-gray-200 bg-white p-4">
+                        <div className="min-w-0 overflow-hidden rounded-3xl border border-gray-200 bg-white p-4">
                           <div className="text-sm text-gray-600">Cuenta</div>
-                          <div className="mt-1 font-semibold text-[#1C2335]">
+                          <div className="mt-1 font-semibold text-[#1C2335] break-words">
                             {pendingFullName || "User"}
                           </div>
-                          <div className="text-sm text-gray-600">
+                          <div className="text-sm text-gray-600 break-all">
                             {pendingEmail}
                           </div>
                         </div>
@@ -1312,7 +1309,7 @@ export default function AuthModal({
                           <Label className="text-[#1C2335] mb-2 block font-semibold">
                             Teléfono
                           </Label>
-                          <div className="relative">
+                          <div className="relative min-w-0">
                             <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                             <Input
                               value={phone}
@@ -1322,7 +1319,7 @@ export default function AuthModal({
                                 setStep2Dirty(true);
                               }}
                               placeholder="Ej: 8888 8888"
-                              className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-all ${
+                              className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-colors ${
                                 phoneError
                                   ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                                   : "border-gray-200 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
@@ -1341,7 +1338,7 @@ export default function AuthModal({
                           <Label className="text-[#1C2335] mb-2 block font-semibold">
                             DNI / ID
                           </Label>
-                          <div className="relative">
+                          <div className="relative min-w-0">
                             <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                             <Input
                               value={dni}
@@ -1351,7 +1348,7 @@ export default function AuthModal({
                                 setStep2Dirty(true);
                               }}
                               placeholder="Ej: 1-2345-6789"
-                              className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-all ${
+                              className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-colors ${
                                 dniError
                                   ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                                   : "border-gray-200 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
@@ -1370,7 +1367,7 @@ export default function AuthModal({
                           <Label className="text-[#1C2335] mb-2 block font-semibold">
                             Fecha de nacimiento
                           </Label>
-                          <div className="relative">
+                          <div className="relative min-w-0">
                             <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                             <Input
                               type="date"
@@ -1380,7 +1377,7 @@ export default function AuthModal({
                                 setBirthDateError("");
                                 setStep2Dirty(true);
                               }}
-                              className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-all ${
+                              className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-colors ${
                                 birthDateError
                                   ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                                   : "border-gray-200 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
@@ -1399,7 +1396,7 @@ export default function AuthModal({
                           <Label className="text-[#1C2335] mb-2 block font-semibold">
                             Unidad Funcional (UF)
                           </Label>
-                          <div className="relative">
+                          <div className="relative min-w-0">
                             <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                             <Input
                               value={apartmentNumber}
@@ -1414,12 +1411,12 @@ export default function AuthModal({
                         </div>
 
                         {/* Pickup point */}
-                        <div className="rounded-3xl border border-gray-200 bg-white p-4">
+                        <div className="min-w-0 overflow-hidden rounded-3xl border border-gray-200 bg-white p-4">
                           <div className="flex items-center gap-2 text-sm text-gray-600">
                             <MapPin className="w-4 h-4" />
                             Punto de retiro
                           </div>
-                          <div className="mt-1 font-semibold text-[#1C2335]">
+                          <div className="mt-1 font-semibold text-[#1C2335] break-words">
                             {pickupPoint}
                           </div>
                         </div>

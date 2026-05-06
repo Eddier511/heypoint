@@ -21,7 +21,7 @@ import { ProductCardSkeleton } from "../components/ProductCardSkeleton";
 import { SaleChip } from "../components/SaleChip";
 import { StockIndicator } from "../components/StockIndicator";
 import { PriceDisplay } from "../components/PriceDisplay";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -136,6 +136,7 @@ export function ShopPage({
   onClearSearch,
 }: ShopPageProps) {
   const itemsPerPage = 12;
+  const shouldReduceMotion = useReducedMotion();
 
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 20000]);
   const [priceMax, setPriceMax] = useState(20000);
@@ -589,14 +590,12 @@ export function ShopPage({
                               const isPriorityImage = index === 0;
 
                               return (
-                                <motion.div
+                                <div
                                   key={product.id}
-                                  whileHover={{ y: -4 }}
-                                  transition={{ duration: 0.18, ease: "easeOut" }}
                                   className="w-[280px] sm:w-[320px] flex-shrink-0"
                                 >
                                   <Card
-                                    className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md hover:shadow-xl transition-shadow p-4 h-full min-h-[392px]"
+                                    className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md p-4 h-full min-h-[392px]"
                                     onClick={() => onProductClick(product)}
                                   >
                                     <div className="relative aspect-square rounded-xl overflow-hidden flex-shrink-0 bg-[#F9FAFB]">
@@ -610,7 +609,7 @@ export function ShopPage({
                                         fetchPriority={
                                           isPriorityImage ? "high" : "auto"
                                         }
-                                        className="block w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-300"
+                                        className="block w-full h-full object-contain p-3"
                                       />
                                       <div className="absolute top-3 right-3">
                                         <SaleChip variant="orange" size="lg" />
@@ -691,7 +690,7 @@ export function ShopPage({
                                 />
                               </div>
                                   </Card>
-                                </motion.div>
+                                </div>
                               );
                             })}
                           </div>
@@ -706,13 +705,11 @@ export function ShopPage({
                       const isPriorityImage = index === 0;
 
                       return (
-                        <motion.div
+                        <div
                           key={product.id}
-                          whileHover={{ y: -4 }}
-                          transition={{ duration: 0.18, ease: "easeOut" }}
                         >
                           <Card
-                            className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md hover:shadow-xl transition-shadow p-4 h-full min-h-[392px]"
+                            className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md p-4 h-full min-h-[392px]"
                             onClick={() => onProductClick(product)}
                           >
                             <div className="relative aspect-square rounded-xl overflow-hidden flex-shrink-0 bg-[#F9FAFB]">
@@ -726,7 +723,7 @@ export function ShopPage({
                                 fetchPriority={
                                   isPriorityImage ? "high" : "auto"
                                 }
-                                className="block w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-300"
+                                className="block w-full h-full object-contain p-3"
                               />
                               <div className="absolute top-3 right-3">
                                 <SaleChip variant="orange" size="lg" />
@@ -791,7 +788,7 @@ export function ShopPage({
                               />
                             </div>
                           </Card>
-                        </motion.div>
+                        </div>
                       );
                     })}
                   </div>
@@ -906,13 +903,11 @@ export function ShopPage({
                           index === 0;
 
                         return (
-                          <motion.div
+                          <div
                             key={product.id}
-                            whileHover={{ y: -4 }}
-                            transition={{ duration: 0.18, ease: "easeOut" }}
                           >
                             <Card
-                              className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md hover:shadow-xl transition-shadow p-4 h-full min-h-[392px]"
+                              className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md p-4 h-full min-h-[392px]"
                               onClick={() => onProductClick(product)}
                             >
                               <div className="relative aspect-square rounded-xl overflow-hidden flex-shrink-0 bg-[#F9FAFB]">
@@ -926,7 +921,7 @@ export function ShopPage({
                                   fetchPriority={
                                     isPriorityImage ? "high" : "auto"
                                   }
-                                  className="block w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-300"
+                                  className="block w-full h-full object-contain p-3"
                                 />
                                 {product.badges?.length ? (
                                   <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
@@ -1026,7 +1021,7 @@ export function ShopPage({
                                 />
                               </div>
                             </Card>
-                          </motion.div>
+                          </div>
                         );
                       })}
               </div>
@@ -1036,7 +1031,7 @@ export function ShopPage({
                   <Button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="w-full sm:w-auto h-12 px-6 bg-white text-[#FF6B00] border-2 border-[#FF6B00] hover:bg-[#FF6B00] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-[#FF6B00] rounded-full shadow-md transition-all"
+                    className="w-full sm:w-auto h-12 px-6 bg-white text-[#FF6B00] border-2 border-[#FF6B00] hover:bg-[#FF6B00] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-[#FF6B00] rounded-full shadow-md transition-colors"
                     style={{ fontSize: "1rem", fontWeight: 600 }}
                   >
                     Anterior
@@ -1069,7 +1064,7 @@ export function ShopPage({
                       currentPage ===
                       Math.ceil(filteredProducts.length / itemsPerPage)
                     }
-                    className="w-full sm:w-auto h-12 px-6 bg-white text-[#FF6B00] border-2 border-[#FF6B00] hover:bg-[#FF6B00] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-[#FF6B00] rounded-full shadow-md transition-all"
+                    className="w-full sm:w-auto h-12 px-6 bg-white text-[#FF6B00] border-2 border-[#FF6B00] hover:bg-[#FF6B00] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-[#FF6B00] rounded-full shadow-md transition-colors"
                     style={{ fontSize: "1rem", fontWeight: 600 }}
                   >
                     Siguiente
@@ -1085,19 +1080,19 @@ export function ShopPage({
         {isMobileFiltersOpen && (
           <>
             <motion.div
-              initial={{ opacity: 0 }}
+              initial={shouldReduceMotion ? false : { opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: shouldReduceMotion ? 0 : 0.16 }}
               className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 xl:hidden"
               onClick={() => setIsMobileFiltersOpen(false)}
             />
 
             <motion.div
-              initial={{ y: "100%" }}
+              initial={shouldReduceMotion ? false : { y: "100%" }}
               animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              exit={shouldReduceMotion ? { opacity: 0 } : { y: "100%" }}
+              transition={{ duration: shouldReduceMotion ? 0 : 0.18, ease: "easeOut" }}
               className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl z-50 xl:hidden max-h-[85vh] overflow-y-auto"
             >
               <div className="sticky top-0 bg-gradient-to-br from-[#FF6B00] to-[#e56000] p-6 flex items-center justify-between rounded-t-3xl">
@@ -1112,7 +1107,7 @@ export function ShopPage({
                 </div>
                 <button
                   onClick={() => setIsMobileFiltersOpen(false)}
-                  className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm flex items-center justify-center transition-all"
+                  className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm flex items-center justify-center transition-colors"
                 >
                   <X className="w-6 h-6 text-white" />
                 </button>

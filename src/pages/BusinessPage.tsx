@@ -17,7 +17,6 @@ import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { UnifiedHeader } from "../components/UnifiedHeader";
 import { Footer } from "../components/Footer";
-import { motion } from "motion/react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 
 interface BusinessPageProps {
@@ -170,11 +169,7 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
         <section className="bg-gradient-to-br from-[#FF6B00] to-[#ff8533] text-white py-20 lg:py-32">
           <div className="container mx-auto px-6 max-w-7xl">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7 }}
-              >
+              <div>
                 <h1
                   className="mb-6"
                   style={{
@@ -200,12 +195,10 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
                 <div className="flex flex-wrap gap-4">
                   <Button
                     size="lg"
-                    className="bg-white text-[#FF6B00] hover:bg-white/90"
+                    className="h-14 px-8 rounded-full bg-white text-[#FF6B00] hover:bg-white/90 shadow-lg transition-colors flex items-center justify-center gap-2"
                     style={{
                       fontSize: "1rem",
                       fontWeight: 600,
-                      padding: "1.25rem 2rem",
-                      height: "auto",
                     }}
                     onClick={() => onNavigate?.("contact")}
                   >
@@ -213,14 +206,9 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
                     Quiero HeyPoint! en mi espacio
                   </Button>
                 </div>
-              </motion.div>
+              </div>
 
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.7, delay: 0.2 }}
-                className="relative"
-              >
+              <div className="relative">
                 <div className="relative rounded-2xl overflow-hidden shadow-2xl">
                   <ImageWithFallback
                     src="https://firebasestorage.googleapis.com/v0/b/heymarket-35d03.firebasestorage.app/o/images%2Fmodelo-hey-point.png?alt=media&token=2e1816bc-d0a4-450a-95ec-1d9d13b10570"
@@ -229,7 +217,7 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
                 </div>
-              </motion.div>
+              </div>
             </div>
           </div>
         </section>
@@ -237,13 +225,7 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
         {/* Problem Statement */}
         <section className="py-20 bg-white">
           <div className="container mx-auto px-6 max-w-6xl">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="text-center mb-12"
-            >
+            <div className="text-center mb-12">
               <h2
                 className="text-[#1C2335] mb-4"
                 style={{ fontSize: "2.5rem", fontWeight: 700 }}
@@ -259,17 +241,11 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
                 esenciales directamente a tu edificio, para resolver compras de
                 último momento sin salir de casa.
               </p>
-            </motion.div>
+            </div>
 
             <div className="grid md:grid-cols-3 gap-8">
               {problems.map((problem, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                >
+                <div key={index}>
                   <Card className="p-6 border-none shadow-md rounded-2xl bg-[#FFF4E6] h-full">
                     <div className="inline-flex items-center justify-center w-14 h-14 bg-[#FF6B00]/10 text-[#FF6B00] rounded-xl mb-4">
                       {problem.icon}
@@ -287,7 +263,7 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
                       {problem.description}
                     </p>
                   </Card>
-                </motion.div>
+                </div>
               ))}
             </div>
           </div>
@@ -296,13 +272,7 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
         {/* Solution Overview */}
         <section className="py-20 bg-gradient-to-br from-[#FFF4E6] to-white">
           <div className="container mx-auto px-6 max-w-6xl">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="text-center mb-12"
-            >
+            <div className="text-center mb-12">
               <h2
                 className="text-[#1C2335] mb-4"
                 style={{ fontSize: "2.5rem", fontWeight: 700 }}
@@ -316,18 +286,12 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
                 Un ecosistema completo que combina hardware inteligente,
                 software robusto y operación logística eficiente
               </p>
-            </motion.div>
+            </div>
 
             <div className="grid md:grid-cols-3 gap-8">
               {solutions.map((solution, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                >
-                  <Card className="p-8 text-center border-none shadow-lg rounded-2xl bg-white hover:shadow-xl transition-all h-full">
+                <div key={index}>
+                  <Card className="p-8 text-center border-none shadow-lg rounded-2xl bg-white h-full">
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-[#FF6B00]/10 text-[#FF6B00] rounded-xl mb-4">
                       {solution.icon}
                     </div>
@@ -344,7 +308,7 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
                       {solution.description}
                     </p>
                   </Card>
-                </motion.div>
+                </div>
               ))}
             </div>
           </div>
@@ -353,13 +317,7 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
         {/* Where it Works */}
         <section className="py-20 bg-white">
           <div className="container mx-auto px-6 max-w-6xl">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="text-center mb-12"
-            >
+            <div className="text-center mb-12">
               <h2
                 className="text-[#1C2335] mb-4"
                 style={{ fontSize: "2.5rem", fontWeight: 700 }}
@@ -373,18 +331,12 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
                 Nuestro modelo se adapta a múltiples entornos, siempre generando
                 valor para usuarios y propietarios
               </p>
-            </motion.div>
+            </div>
 
             <div className="grid lg:grid-cols-3 gap-8 h-full">
               {locations.map((location, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                >
-                  <Card className="overflow-hidden border-none shadow-lg rounded-2xl bg-white hover:shadow-xl transition-all h-full flex flex-col">
+                <div key={index}>
+                  <Card className="overflow-hidden border-none shadow-lg rounded-2xl bg-white h-full flex flex-col">
                     <div className="relative h-48 overflow-hidden">
                       <ImageWithFallback
                         src={location.image}
@@ -413,7 +365,7 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
                       </p>
                     </div>
                   </Card>
-                </motion.div>
+                </div>
               ))}
             </div>
           </div>
@@ -422,13 +374,7 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
         {/* Key Benefits */}
         <section className="py-20 bg-gradient-to-br from-[#FFF4E6] to-white">
           <div className="container mx-auto px-6 max-w-6xl">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="text-center mb-12"
-            >
+            <div className="text-center mb-12">
               <h2
                 className="text-[#1C2335] mb-4"
                 style={{ fontSize: "2.5rem", fontWeight: 700 }}
@@ -441,17 +387,13 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
               >
                 Diseñado para maximizar el valor sin complejidad operativa
               </p>
-            </motion.div>
+            </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {benefits.map((benefit, index) => (
-                <motion.div
+                <div
                   key={index}
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.4, delay: index * 0.05 }}
-                  className="flex gap-4 p-6 bg-white rounded-xl shadow-sm hover:shadow-md transition-all"
+                  className="flex gap-4 p-6 bg-white rounded-xl shadow-sm"
                 >
                   <div className="flex-shrink-0">
                     <div className="text-[#FF6B00]">{benefit.icon}</div>
@@ -470,7 +412,7 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
                       {benefit.description}
                     </p>
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
           </div>
@@ -479,13 +421,7 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
         {/* How it Works */}
         <section className="py-20 bg-white">
           <div className="container mx-auto px-6 max-w-6xl">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="text-center mb-12"
-            >
+            <div className="text-center mb-12">
               <h2
                 className="text-[#1C2335] mb-4"
                 style={{ fontSize: "2.5rem", fontWeight: 700 }}
@@ -498,18 +434,11 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
               >
                 Una experiencia sin fricciones, diseñada para la vida moderna
               </p>
-            </motion.div>
+            </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
               {steps.map((step, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="relative"
-                >
+                <div key={index} className="relative">
                   <div className="text-center">
                     <div
                       className="inline-flex items-center justify-center w-16 h-16 bg-[#FF6B00] text-white rounded-full mb-4"
@@ -530,7 +459,7 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
                       {step.description}
                     </p>
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
           </div>
@@ -539,13 +468,7 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
         {/* Business Model */}
         <section className="py-20 bg-[#1C2335] text-white">
           <div className="container mx-auto px-6 max-w-6xl">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="grid lg:grid-cols-2 gap-12 items-center"
-            >
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div>
                 <h2
                   className="mb-6"
@@ -637,19 +560,14 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
                   </div>
                 </div>
               </div>
-            </motion.div>
+            </div>
           </div>
         </section>
 
         {/* Vision & Commitment */}
         <section className="py-20 bg-gradient-to-br from-[#FF6B00] to-[#ff8533] text-white">
           <div className="container mx-auto px-6 max-w-4xl text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
+            <div>
               <h2
                 className="mb-6"
                 style={{ fontSize: "2.5rem", fontWeight: 700 }}
@@ -681,12 +599,10 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
               <div className="mt-12">
                 <Button
                   size="lg"
-                  className="bg-white text-[#FF6B00] hover:bg-white/90"
+                  className="h-14 md:h-16 px-10 md:px-12 rounded-full bg-white text-[#FF6B00] hover:bg-white/90 shadow-lg transition-colors flex items-center justify-center gap-2"
                   style={{
                     fontSize: "1.125rem",
                     fontWeight: 600,
-                    padding: "1.5rem 3rem",
-                    height: "auto",
                   }}
                   onClick={() => onNavigate?.("contact")}
                 >
@@ -694,7 +610,7 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
                   Conversemos sobre tu proyecto
                 </Button>
               </div>
-            </motion.div>
+            </div>
           </div>
         </section>
 

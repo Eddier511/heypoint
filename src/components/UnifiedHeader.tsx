@@ -17,7 +17,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
 import { lazy, Suspense, useMemo, useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { useAuth } from "../contexts/AuthContext";
 import { useModal } from "../contexts/ModalContext";
@@ -114,6 +114,7 @@ export function UnifiedHeader({
   const [showGlobalSearchModal, setShowGlobalSearchModal] = useState(false);
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
 
   const {
     data: apiCategories = [],
@@ -346,14 +347,10 @@ export function UnifiedHeader({
 
   return (
     <>
-      <motion.header
-        initial={false}
-        animate={{
-          backgroundColor: scrolled ? "#FFFFFF" : "rgba(255, 255, 255, 0)",
-          backdropFilter: scrolled ? "blur(12px)" : "blur(0px)",
-        }}
-        transition={{ duration: 0.15, ease: "easeInOut" }}
-        className={`fixed top-0 left-0 right-0 z-[5000] border-b ${borderColor} ${
+      <header
+        className={`fixed top-0 left-0 right-0 z-[5000] border-b transition-colors duration-150 ${
+          scrolled ? "bg-white backdrop-blur-md" : "bg-transparent"
+        } ${borderColor} ${
           scrolled ? "shadow-[0_2px_8px_rgba(0,0,0,0.08)]" : ""
         }`}
         role="banner"
@@ -376,7 +373,7 @@ export function UnifiedHeader({
                 width={100}
                 height={60}
                 decoding="async"
-                className="w-[80px] sm:w-[100px] h-auto transition-all duration-300"
+                className="w-[80px] sm:w-[100px] h-auto transition-opacity duration-150"
               />
             </button>
 
@@ -387,7 +384,7 @@ export function UnifiedHeader({
             >
               <button
                 onClick={() => handleNavigation("home")}
-                className={`px-5 py-2 rounded-full transition-all ${
+                className={`px-5 py-2 rounded-full transition-colors ${
                   activeLink === "home"
                     ? "bg-[#FF6B00] text-white"
                     : `${textColor} hover:bg-[#FF6B00]/10`
@@ -404,7 +401,7 @@ export function UnifiedHeader({
                   onClick={handleShopClick}
                   onMouseEnter={handleShopMouseEnter}
                   onMouseLeave={handleShopMouseLeave}
-                  className={`px-5 py-2 rounded-full transition-all inline-flex items-center gap-1.5 ${
+                  className={`px-5 py-2 rounded-full transition-colors inline-flex items-center gap-1.5 ${
                     activeLink === "shop" || isShopDropdownOpen
                       ? "bg-[#FF6B00] text-white"
                       : `${textColor} hover:bg-[#FF6B00]/10`
@@ -425,10 +422,10 @@ export function UnifiedHeader({
                   {isShopDropdownOpen && (
                     <motion.div
                       ref={shopDropdownRef}
-                      initial={{ opacity: 0, y: -10 }}
+                      initial={shouldReduceMotion ? false : { opacity: 0, y: -8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.2 }}
+                      exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
+                      transition={{ duration: shouldReduceMotion ? 0 : 0.16 }}
                       onMouseEnter={handleShopDropdownMouseEnter}
                       onMouseLeave={handleShopDropdownMouseLeave}
                       className="absolute left-1/2 transform -translate-x-1/2 mt-2 w-[700px] max-w-[90vw]"
@@ -465,7 +462,7 @@ export function UnifiedHeader({
                                   <ImageWithFallback
                                     src={category.image}
                                     alt={category.name}
-                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                    className="w-full h-full object-cover"
                                   />
                                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                                   <div className="absolute bottom-2 left-2 right-2">
@@ -497,7 +494,7 @@ export function UnifiedHeader({
                               setIsShopDropdownOpen(false);
                               handleNavigation("shop");
                             }}
-                            className="w-full bg-[#FF6B00] hover:bg-[#e56000] text-white rounded-xl h-10"
+                            className="w-full h-10 px-5 bg-[#FF6B00] hover:bg-[#e56000] text-white rounded-full"
                             style={{ fontSize: "0.875rem", fontWeight: 600 }}
                           >
                             Ver todos los productos
@@ -511,7 +508,7 @@ export function UnifiedHeader({
 
               <button
                 onClick={() => handleNavigation("business")}
-                className={`px-5 py-2 rounded-full transition-all ${
+                className={`px-5 py-2 rounded-full transition-colors ${
                   activeLink === "business"
                     ? "bg-[#FF6B00] text-white"
                     : `${textColor} hover:bg-[#FF6B00]/10`
@@ -523,7 +520,7 @@ export function UnifiedHeader({
 
               <button
                 onClick={() => handleNavigation("contact")}
-                className={`px-5 py-2 rounded-full transition-all ${
+                className={`px-5 py-2 rounded-full transition-colors ${
                   activeLink === "contact"
                     ? "bg-[#FF6B00] text-white"
                     : `${textColor} hover:bg-[#FF6B00]/10`
@@ -536,11 +533,9 @@ export function UnifiedHeader({
 
             {/* Right Actions */}
             <div className="flex items-center gap-3 sm:gap-4">
-              <motion.button
+              <button
                 onClick={handleCartClick}
                 className={`relative p-2 ${textColor} hover:text-[#FF6B00] transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[#FF6B00] rounded-lg`}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
                 aria-label={`Carrito con ${cartCount} productos`}
               >
                 <ShoppingCart
@@ -555,12 +550,12 @@ export function UnifiedHeader({
                     {cartCount}
                   </Badge>
                 )}
-              </motion.button>
+              </button>
 
               <div className="hidden lg:flex items-center gap-3">
                 <Button
                   onClick={handleSupportClick}
-                  className={`px-4 py-2 rounded-full transition-all flex items-center gap-2 ${
+                  className={`h-10 px-5 rounded-full transition-colors flex items-center justify-center gap-2 ${
                     scrolled
                       ? "bg-white border-2 border-[#FF6B00] text-[#FF6B00] hover:bg-[#FFF4E6]"
                       : "bg-white/10 hover:bg-white/20 border border-white/40 text-white"
@@ -574,10 +569,8 @@ export function UnifiedHeader({
 
                 {effectiveIsLoggedIn ? (
                   <div className="relative group">
-                    <motion.button
+                    <button
                       className={`flex items-center gap-2 px-4 py-2 rounded-full ${textColor} hover:bg-[#FF6B00]/10 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[#FF6B00]`}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
                       aria-label="Menú de cuenta"
                       aria-haspopup="true"
                     >
@@ -588,9 +581,9 @@ export function UnifiedHeader({
                         {effectiveUserName.split(" ")[0]}
                       </span>
                       <ChevronDown className="w-4 h-4" />
-                    </motion.button>
+                    </button>
 
-                    <div className="absolute right-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    <div className="absolute right-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-150 z-50">
                       <Card className="bg-white border-none shadow-xl rounded-2xl overflow-hidden p-2">
                         <button
                           onClick={() => handleNavigation("profile")}
@@ -631,7 +624,7 @@ export function UnifiedHeader({
                 ) : (
                   <Button
                     onClick={openLoginModal}
-                    className={`px-5 py-2 rounded-full transition-all ${
+                    className={`h-10 px-6 rounded-full transition-colors ${
                       scrolled
                         ? "bg-[#FF6B00] hover:bg-[#e56000] text-white"
                         : "bg-white/10 hover:bg-white/20 border border-white/40 text-white"
@@ -643,11 +636,9 @@ export function UnifiedHeader({
                 )}
               </div>
 
-              <motion.button
+              <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className={`lg:hidden p-2 ${textColor} hover:text-[#FF6B00] transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[#FF6B00] rounded-lg`}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
                 aria-label={isMobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
                 aria-expanded={isMobileMenuOpen}
               >
@@ -656,11 +647,11 @@ export function UnifiedHeader({
                 ) : (
                   <Menu className="w-6 h-6" aria-hidden="true" />
                 )}
-              </motion.button>
+              </button>
             </div>
           </div>
         </div>
-      </motion.header>
+      </header>
 
       {/* Mobile Menu */}
       {/* Mobile Menu */}
@@ -668,19 +659,19 @@ export function UnifiedHeader({
         {isMobileMenuOpen && (
           <>
             <motion.div
-              initial={{ opacity: 0 }}
+              initial={shouldReduceMotion ? false : { opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.25 }}
+              transition={{ duration: shouldReduceMotion ? 0 : 0.16 }}
               className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[7000] lg:hidden"
               onClick={() => setIsMobileMenuOpen(false)}
             />
 
             <motion.aside
-              initial={{ x: "100%" }}
+              initial={shouldReduceMotion ? false : { x: "100%" }}
               animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              exit={shouldReduceMotion ? { opacity: 0 } : { x: "100%" }}
+              transition={{ duration: shouldReduceMotion ? 0 : 0.18, ease: "easeOut" }}
               className="fixed top-0 right-0 bottom-0 w-[88vw] max-w-sm bg-white z-[8000] lg:hidden overflow-y-auto shadow-2xl"
               role="dialog"
               aria-modal="true"
@@ -732,7 +723,7 @@ export function UnifiedHeader({
                       <div className="mt-4 grid grid-cols-2 gap-3">
                         <Button
                           onClick={() => handleNavigation("profile")}
-                          className="h-11 rounded-xl bg-white border border-gray-200 text-[#1C2335] hover:bg-[#FFF4E6]"
+                          className="h-11 px-5 rounded-full bg-white border border-gray-200 text-[#1C2335] hover:bg-[#FFF4E6]"
                           style={{ fontSize: "0.9rem", fontWeight: 600 }}
                         >
                           <User className="w-4 h-4 mr-2" />
@@ -741,7 +732,7 @@ export function UnifiedHeader({
 
                         <Button
                           onClick={() => handleNavigation("orders")}
-                          className="h-11 rounded-xl bg-white border border-gray-200 text-[#1C2335] hover:bg-[#FFF4E6]"
+                          className="h-11 px-5 rounded-full bg-white border border-gray-200 text-[#1C2335] hover:bg-[#FFF4E6]"
                           style={{ fontSize: "0.9rem", fontWeight: 600 }}
                         >
                           <Package className="w-4 h-4 mr-2" />
@@ -754,7 +745,7 @@ export function UnifiedHeader({
 
                       <button
                         onClick={handleLogoutClick}
-                        className="mt-3 w-full h-11 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
+                        className="mt-3 w-full h-11 px-5 rounded-full bg-red-50 text-red-600 hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
                         style={{ fontSize: "0.9rem", fontWeight: 700 }}
                       >
                         <LogOut className="w-4 h-4" />
@@ -779,7 +770,7 @@ export function UnifiedHeader({
                             setIsMobileMenuOpen(false);
                             openLoginModal();
                           }}
-                          className="h-11 rounded-xl bg-[#FF6B00] hover:bg-[#e56000] text-white"
+                          className="h-11 px-5 rounded-full bg-[#FF6B00] hover:bg-[#e56000] text-white"
                           style={{ fontSize: "0.9rem", fontWeight: 700 }}
                         >
                           Ingresar
@@ -790,7 +781,7 @@ export function UnifiedHeader({
                             setIsMobileMenuOpen(false);
                             openSignupModal();
                           }}
-                          className="h-11 rounded-xl bg-white border border-gray-200 text-[#1C2335] hover:bg-[#FFF4E6]"
+                          className="h-11 px-5 rounded-full bg-white border border-gray-200 text-[#1C2335] hover:bg-[#FFF4E6]"
                           style={{ fontSize: "0.9rem", fontWeight: 700 }}
                         >
                           Crear cuenta
@@ -839,15 +830,8 @@ export function UnifiedHeader({
                     />
                   </button>
 
-                  <AnimatePresence initial={false}>
-                    {expandedMobileShop && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="overflow-hidden"
-                      >
+                  {expandedMobileShop && (
+                      <div>
                         <div className="mt-2 ml-2 pl-3 border-l border-[#FF6B00]/20 space-y-2">
                           <button
                             onClick={() => handleNavigation("shop")}
@@ -897,9 +881,8 @@ export function UnifiedHeader({
                             )}
                           </div>
                         </div>
-                      </motion.div>
+                      </div>
                     )}
-                  </AnimatePresence>
 
                   <button
                     onClick={() => handleNavigation("business")}
@@ -932,7 +915,7 @@ export function UnifiedHeader({
                 <div className="mt-6 space-y-3">
                   <Button
                     onClick={handleSupportClick}
-                    className="w-full h-12 rounded-2xl bg-white border border-gray-200 text-[#1C2335] hover:bg-[#FFF4E6] flex items-center justify-center gap-2"
+                    className="w-full h-12 px-5 rounded-full bg-white border border-gray-200 text-[#1C2335] hover:bg-[#FFF4E6] flex items-center justify-center gap-2"
                     style={{ fontSize: "0.95rem", fontWeight: 700 }}
                   >
                     <HelpCircle className="w-5 h-5 text-[#FF6B00]" />
@@ -941,7 +924,7 @@ export function UnifiedHeader({
 
                   <Button
                     onClick={handleCartClick}
-                    className="w-full h-12 rounded-2xl bg-[#FF6B00] hover:bg-[#e56000] text-white flex items-center justify-center gap-2"
+                    className="w-full h-12 px-5 rounded-full bg-[#FF6B00] hover:bg-[#e56000] text-white flex items-center justify-center gap-2"
                     style={{ fontSize: "0.95rem", fontWeight: 800 }}
                   >
                     <ShoppingCart className="w-5 h-5" />

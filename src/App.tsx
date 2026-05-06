@@ -1,5 +1,4 @@
 import { lazy, Suspense, useState, useEffect, useMemo } from "react";
-import { motion } from "motion/react";
 import {
   ShoppingBag,
   CreditCard,
@@ -641,12 +640,7 @@ function AppContent() {
         </div>
 
         <div className="container mx-auto px-6 relative z-10 text-center max-w-5xl py-20">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="space-y-8"
-          >
+          <div className="space-y-8">
             <h1 className="text-white text-5xl md:text-7xl mb-6 font-[Inter] font-bold text-[48px]">
               Comprá online.
               <br />
@@ -658,21 +652,17 @@ function AppContent() {
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center justify-center max-w-3xl mx-auto mt-10">
-              <motion.div
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                className="w-full"
-              >
+              <div className="w-full order-2 sm:order-none">
                 <Button
                   onClick={() => handleNavigation("shop")}
-                  className="w-full h-14 px-8 bg-[#FF6B00] hover:bg-[#e56000] text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2"
+                  className="w-full h-14 px-8 bg-[#FF6B00] hover:bg-[#e56000] text-white rounded-full shadow-lg transition-colors duration-200 flex items-center justify-center gap-2"
                 >
                   <Store className="w-5 h-5" />
                   Entrar a la tienda
                 </Button>
-              </motion.div>
+              </div>
 
-              <motion.div className="w-full sm:col-span-2 sm:order-first">
+              <div className="w-full order-1 sm:col-span-2 sm:order-first">
                 <SmartSearchBar
                   onProductClick={(product) => {
                     setSelectedProduct(product);
@@ -688,92 +678,58 @@ function AppContent() {
                     }
                   }}
                 />
-              </motion.div>
+              </div>
 
-              <motion.div
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                className="w-full"
-              >
+              <div className="w-full order-3 sm:order-none">
                 <Button
                   onClick={scrollToHowItWorks}
                   variant="outline"
                   aria-label="Ir a Cómo comprar"
-                  className="w-full h-14 px-8 bg-white/10 hover:bg-white/20 border-2 border-white/40 hover:border-white/60 text-white rounded-full backdrop-blur-sm transition-all duration-300 flex items-center justify-center gap-2"
+                  className="w-full h-14 px-8 bg-white/10 hover:bg-white/20 border-2 border-white/40 hover:border-white/60 text-white rounded-full backdrop-blur-sm transition-colors duration-200 flex items-center justify-center gap-2"
                 >
-                  <motion.div
-                    animate={scrollY < 100 ? { y: [0, 3, 0] } : {}}
-                    transition={{
-                      duration: 1.5,
-                      repeat: scrollY < 100 ? Infinity : 0,
-                      ease: "easeInOut",
-                    }}
-                  >
+                  <div>
                     <ChevronDown className="w-4 h-4" />
-                  </motion.div>
+                  </div>
                   ¿Cómo comprar?
                 </Button>
-              </motion.div>
+              </div>
             </div>
-          </motion.div>
+          </div>
         </div>
 
-        <motion.div
-          className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20"
-          animate={{ y: [0, 10, 0] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-        >
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20">
           <div className="w-6 h-10 border-2 border-white/70 rounded-full flex items-start justify-center p-2 backdrop-blur-sm">
-            <motion.div
-              className="w-1.5 h-1.5 bg-white rounded-full"
-              animate={{ y: [0, 16, 0] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            />
+            <div className="w-1.5 h-1.5 bg-white rounded-full mt-1" />
           </div>
-        </motion.div>
+        </div>
       </section>
 
       {/* How It Works Section */}
       <section className="py-16 md:py-24 bg-white" id="como-funciona">
         <div className="container mx-auto px-6 max-w-6xl">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12 md:mb-16"
-          >
-            <h2 className="text-[#1C2335] text-3xl md:text-5xl mb-4">
+          <div className="text-center mb-12 md:mb-16">
+            <h2 className="text-[#1C2335] text-3xl md:text-5xl mb-4 font-bold">
               ¿Cómo funciona?
             </h2>
             <p className="text-[#2E2E2E] max-w-2xl mx-auto text-lg md:text-xl">
               Comprá, pagá y retiralo en minutos. Solo 3 pasos.
             </p>
-          </motion.div>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
             {howItWorksSteps.map((step, index) => (
-              <motion.div
-                key={index}
-                className="h-full"
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: index * 0.2 }}
-                whileHover={{ y: -8, scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <Card className="p-6 text-center border-none shadow-lg rounded-3xl bg-gradient-to-br from-[#FFF8F0] via-[#FFF4E6] to-white hover:shadow-xl transition-all duration-300 h-full flex flex-col items-center">
+              <div key={index} className="h-full">
+                <Card className="p-6 text-center border-none shadow-lg rounded-3xl bg-gradient-to-br from-[#FFF8F0] via-[#FFF4E6] to-white h-full flex flex-col items-center">
                   <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-[#FF6B00] to-[#FF8534] text-white rounded-2xl md:rounded-3xl mb-6 shadow-md">
                     {step.icon}
                   </div>
                   <div className="mb-2 text-[#FF6B00]">Paso {index + 1}</div>
-                  <h3 className="text-[#1C2335] text-xl md:text-2xl mb-3">
+                  <h3 className="text-[#1C2335] text-xl md:text-2xl mb-3 font-semibold">
                     {step.title}
                   </h3>
                   <p className="text-[#2E2E2E] text-base">{step.description}</p>
                 </Card>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -782,20 +738,14 @@ function AppContent() {
       {/* Shop by Category Section */}
       <section className="py-16 md:py-24 bg-[#FFF4E6]">
         <div className="container mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12 md:mb-16"
-          >
-            <h2 className="text-[#1C2335] text-3xl md:text-5xl mb-4">
+          <div className="text-center mb-12 md:mb-16">
+            <h2 className="text-[#1C2335] text-3xl md:text-5xl mb-4 font-bold">
               Categorías
             </h2>
             <p className="text-[#2E2E2E] max-w-2xl mx-auto text-lg md:text-xl">
               Explorá nuestras categorias
             </p>
-          </motion.div>
+          </div>
 
           <div className="relative">
             {showCategoryEmptyState && (
@@ -828,22 +778,17 @@ function AppContent() {
                       </Card>
                     ))
                   : homeCategories.map((category, index) => (
-                  <motion.button
+                  <button
                     key={category.id || category.name}
-                    initial={{ opacity: 0, x: 50 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
-                    whileTap={{ scale: 0.98 }}
                     onClick={() => handleCategorySelect(category.name)}
                     className="flex-shrink-0 w-[calc(50vw-24px)] min-w-[140px] max-w-[180px] snap-start group"
                   >
-                    <Card className="border-none shadow-lg rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-300 h-full">
+                    <Card className="border-none shadow-lg rounded-3xl overflow-hidden h-full">
                       <div className="relative h-36 overflow-hidden">
                         <ImageWithFallback
                           src={category.image}
                           alt={category.name}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          className="w-full h-full object-cover"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-[#1C2335]/70 via-[#1C2335]/20 to-transparent" />
 
@@ -860,9 +805,9 @@ function AppContent() {
                         </h4>
                       </div>
 
-                      <div className="absolute inset-0 bg-gradient-to-br from-[#FF6B00]/0 to-[#FF8534]/0 group-hover:from-[#FF6B00]/10 group-hover:to-[#FF8534]/10 transition-all duration-300 pointer-events-none" />
+                      <div className="absolute inset-0 bg-gradient-to-br from-[#FF6B00]/0 to-[#FF8534]/0 pointer-events-none" />
                     </Card>
-                  </motion.button>
+                  </button>
                 ))}
               </div>
             </div>
@@ -883,23 +828,17 @@ function AppContent() {
                       </Card>
                     ))
                   : homeCategories.map((category, index) => (
-                  <motion.button
+                  <button
                     key={category.id || category.name}
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
-                    whileHover={{ y: -8, scale: 1.05 }}
-                    whileTap={{ scale: 0.98 }}
                     onClick={() => handleCategorySelect(category.name)}
                     className="group"
                   >
-                    <Card className="border-none shadow-lg rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-300 h-full">
+                    <Card className="border-none shadow-lg rounded-3xl overflow-hidden h-full">
                       <div className="relative h-44 overflow-hidden">
                         <ImageWithFallback
                           src={category.image}
                           alt={category.name}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          className="w-full h-full object-cover"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-[#1C2335]/70 via-[#1C2335]/20 to-transparent" />
 
@@ -916,9 +855,9 @@ function AppContent() {
                         </h4>
                       </div>
 
-                      <div className="absolute inset-0 bg-gradient-to-br from-[#FF6B00]/0 to-[#FF8534]/0 group-hover:from-[#FF6B00]/10 group-hover:to-[#FF8534]/10 transition-all duration-300 pointer-events-none" />
+                      <div className="absolute inset-0 bg-gradient-to-br from-[#FF6B00]/0 to-[#FF8534]/0 pointer-events-none" />
                     </Card>
-                  </motion.button>
+                  </button>
                 ))}
               </div>
             </div>
@@ -932,14 +871,8 @@ function AppContent() {
       {/* Key Benefits Section */}
       <section className="py-16 md:py-24 bg-white">
         <div className="container mx-auto px-6 max-w-6xl">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12 md:mb-16"
-          >
-            <h2 className="text-[#1C2335] text-3xl md:text-5xl mb-4">
+          <div className="text-center mb-12 md:mb-16">
+            <h2 className="text-[#1C2335] text-3xl md:text-5xl mb-4 font-bold">
               ¿Por qué HeyPoint?
             </h2>
             <p className="text-[#2E2E2E] max-w-2xl mx-auto text-lg md:text-xl">
@@ -948,26 +881,17 @@ function AppContent() {
               digital, sin intermediarios. Es una solución pensada para pequeñas
               comunidades y resuelve olvidos de último momento.
             </p>
-          </motion.div>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
             {benefits.map((benefit, index) => (
-              <motion.div
-                key={index}
-                className="h-full"
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                whileHover={{ scale: 1.05, y: -4 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <Card className="p-6 border-none shadow-lg rounded-3xl bg-gradient-to-br from-white to-[#FFF8F0] hover:shadow-xl transition-all duration-300 h-full flex flex-col items-center text-center">
+              <div key={index} className="h-full">
+                <Card className="p-6 border-none shadow-lg rounded-3xl bg-gradient-to-br from-white to-[#FFF8F0] h-full flex flex-col items-center text-center">
                   <div className="inline-flex items-center justify-center w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-[#FF6B00]/10 to-[#FF8534]/10 text-[#FF6B00] rounded-2xl mb-4">
                     {benefit.icon}
                   </div>
 
-                  <h3 className="text-[#1C2335] text-lg md:text-xl mb-2">
+                  <h3 className="text-[#1C2335] text-lg md:text-xl mb-2 font-semibold">
                     {benefit.title}
                   </h3>
 
@@ -975,7 +899,7 @@ function AppContent() {
                     {benefit.description}
                   </p>
                 </Card>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -989,25 +913,14 @@ function AppContent() {
         </div>
 
         <div className="container mx-auto px-6 max-w-4xl text-center relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="space-y-8"
-          >
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              whileInView={{ scale: 1, opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-            >
+          <div className="space-y-8">
+            <div>
               <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-white/20 backdrop-blur-sm rounded-3xl mb-6">
                 <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-white" />
               </div>
-            </motion.div>
+            </div>
 
-            <h2 className="text-white text-3xl md:text-5xl mb-6">
+            <h2 className="text-white text-3xl md:text-5xl mb-6 font-bold">
               Encontrá el HeyPoint más cercano
             </h2>
             <p className="text-white/90 text-lg md:text-xl max-w-2xl mx-auto mb-10">
@@ -1015,17 +928,17 @@ function AppContent() {
               seguro y siempre disponible.
             </p>
 
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <div>
               <Button
                 onClick={() => handleNavigation("shop")}
-                className="h-14 md:h-16 px-10 md:px-12 bg-white hover:bg-[#FFF4E6] text-[#FF6B00] rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-3 mx-auto"
+                className="h-14 md:h-16 px-12 md:px-14 bg-white hover:bg-[#FFF4E6] text-[#FF6B00] rounded-full shadow-lg transition-colors duration-200 flex items-center justify-center gap-3 mx-auto"
               >
                 <Store className="w-5 h-5 md:w-6 md:h-6" />
                 Explorar tienda
                 <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
               </Button>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         </div>
       </section>
 
