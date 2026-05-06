@@ -16,7 +16,7 @@ import {
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
-import { useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { EmptyCartModal } from "./EmptyCartModal";
@@ -27,7 +27,7 @@ import { useModal } from "../contexts/ModalContext";
 import { useCart } from "../contexts/CartContext";
 import { useHasPendingOrders } from "../hooks/useHasPendingOrders";
 import { toast } from "sonner";
-import { CategoriesAPI } from "../lib/api"; // ✅ tu api.ts
+import { type ApiCategory, useCategories } from "../hooks/useCategories";
 
 interface UnifiedHeaderProps {
   onNavigate?: (page: string) => void;
@@ -39,17 +39,6 @@ interface UnifiedHeaderProps {
   userName?: string;
   isTransparent?: boolean;
 }
-
-type ApiCategory = {
-  id?: string;
-  name?: string;
-  image?: string;
-  imageUrl?: string;
-  imagePath?: string;
-  items?: number;
-  productCount?: number;
-  status?: "active" | "inactive" | boolean;
-};
 
 type HeaderCategory = {
   id: string;
@@ -113,9 +102,20 @@ export function UnifiedHeader({
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
 
-  // ✅ categories desde API (SIN fallback)
-  const [categories, setCategories] = useState<HeaderCategory[]>([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const {
+    data: apiCategories = [],
+    isLoading: categoriesLoading,
+    isError: categoriesError,
+  } = useCategories();
+
+  // ✅ categories desde API compartida (SIN fallback)
+  const categories = useMemo(
+    () =>
+      apiCategories
+        .map(mapCategoryToHeader)
+        .filter(Boolean) as HeaderCategory[],
+    [apiCategories],
+  );
 
   const shopDropdownRef = useRef<HTMLDivElement>(null);
   const shopButtonRef = useRef<HTMLButtonElement>(null);
@@ -124,37 +124,11 @@ export function UnifiedHeader({
   const shopHoverCloseTimer = useRef<NodeJS.Timeout | null>(null);
   const aboutHoverCloseTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // ✅ Cargar categorías públicas (GET /api/categories)
   useEffect(() => {
-    let mounted = true;
-
-    (async () => {
-      try {
-        setCategoriesLoading(true);
-
-        const res = await CategoriesAPI.getAll();
-        const raw = Array.isArray(res.data) ? (res.data as ApiCategory[]) : [];
-
-        const mapped = raw
-          .map(mapCategoryToHeader)
-          .filter(Boolean) as HeaderCategory[];
-
-        if (!mounted) return;
-
-        setCategories(mapped); // ✅ directo, aunque venga vacío
-      } catch (e) {
-        console.warn("[UnifiedHeader] categories load failed:", e);
-        if (!mounted) return;
-        setCategories([]); // ✅ sin fallback
-      } finally {
-        if (mounted) setCategoriesLoading(false);
-      }
-    })();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    if (categoriesError) {
+      console.warn("[UnifiedHeader] categories load failed");
+    }
+  }, [categoriesError]);
 
   // Sticky header on scroll
   useEffect(() => {
