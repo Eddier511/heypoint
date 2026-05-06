@@ -2,9 +2,9 @@ import { Card } from "./ui/card";
 
 export function ProductCardSkeleton() {
   return (
-    <Card className="flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md p-4 h-full animate-pulse">
+    <Card className="flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md p-4 h-full min-h-[392px] animate-pulse">
       {/* Image Skeleton */}
-      <div className="relative h-48 rounded-xl bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 flex-shrink-0 bg-[length:200%_200%] animate-[shimmer_2s_ease-in-out_infinite]" />
+      <div className="relative h-48 aspect-[4/3] rounded-xl bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 flex-shrink-0 bg-[length:200%_200%] animate-[shimmer_2s_ease-in-out_infinite]" />
       
       {/* Product Info */}
       <div className="flex-1 flex flex-col pt-3">
@@ -22,7 +22,7 @@ export function ProductCardSkeleton() {
       </div>
       
       {/* Quantity Selector and Button */}
-      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center flex-shrink-0">
+      <div className="flex flex-col gap-3 items-stretch flex-shrink-0">
         {/* Quantity Selector Skeleton */}
         <div className="flex justify-center sm:justify-start">
           <div className="inline-flex items-center gap-3 bg-gray-100 border border-gray-200 rounded-xl px-2 h-11 w-[140px]">
