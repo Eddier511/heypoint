@@ -556,24 +556,38 @@ export function UnifiedHeader({
 
             {/* Right Actions */}
             <div className="flex items-center gap-3 sm:gap-4">
-              <button
-                onClick={handleCartClick}
-                className={`relative p-2 ${textColor} hover:text-[#FF6B00] transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[#FF6B00] rounded-lg`}
-                aria-label={`Carrito con ${cartCount} productos`}
-              >
-                <ShoppingCart
-                  className="w-5 h-5 sm:w-6 sm:h-6"
-                  aria-hidden="true"
-                />
-                {cartCount > 0 && (
-                  <Badge
-                    className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center p-0 px-1.5 bg-[#FF6B00] text-white border-none"
-                    style={{ fontSize: "0.688rem", fontWeight: 600 }}
+              {/* Cart icon — visible on all sizes only when cart is empty */}
+              {cartCount === 0 && (
+                <button
+                  onClick={handleCartClick}
+                  className={`relative p-2 ${textColor} hover:text-[#FF6B00] transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[#FF6B00] rounded-lg`}
+                  aria-label="Carrito vacío"
+                >
+                  <ShoppingCart
+                    className="w-5 h-5 sm:w-6 sm:h-6"
+                    aria-hidden="true"
+                  />
+                </button>
+              )}
+
+              {/* Mobile "Pagar" pill — only on small screens when cart has items */}
+              {cartCount > 0 && (
+                <button
+                  onClick={handleCartClick}
+                  className="lg:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FF6B00] hover:bg-[#e56000] text-white focus:outline-none focus:ring-2 focus:ring-[#FF6B00] transition-colors"
+                  aria-label={`Pagar, ${cartCount} ${cartCount === 1 ? "producto" : "productos"} en el carrito`}
+                  style={{ fontSize: "0.875rem", fontWeight: 600 }}
+                >
+                  <ShoppingCart className="w-4 h-4" aria-hidden="true" />
+                  Pagar
+                  <span
+                    className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-white/25"
+                    style={{ fontSize: "0.75rem", fontWeight: 700 }}
                   >
                     {cartCount}
-                  </Badge>
-                )}
-              </button>
+                  </span>
+                </button>
+              )}
 
               <div className="hidden lg:flex items-center gap-3">
                 {cartCount > 0 && (
