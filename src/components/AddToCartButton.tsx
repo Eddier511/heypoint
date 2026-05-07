@@ -97,8 +97,7 @@ export function AddToCartButton({
       ) : (
         <>
           <Plus className="w-4 h-4 mr-2" />
-          <span className="md:hidden">Agregar</span>
-          <span className="hidden md:inline">Agregar al carrito</span>
+          Agregar
         </>
       )}
     </Button>

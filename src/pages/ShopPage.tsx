@@ -161,6 +161,8 @@ export function ShopPage({
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoadingPage, setIsLoadingPage] = useState(false);
   const [isOfertasFilterActive, setIsOfertasFilterActive] = useState(false);
+  const [isFilterBarStuck, setIsFilterBarStuck] = useState(false);
+  const filterBarSentinelRef = useRef<HTMLDivElement>(null);
 
   const {
     data: sharedCategories = [],
@@ -218,6 +220,17 @@ export function ShopPage({
     handleChange();
     query.addEventListener("change", handleChange);
     return () => query.removeEventListener("change", handleChange);
+  }, []);
+
+  useEffect(() => {
+    const sentinel = filterBarSentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsFilterBarStuck(!entry.isIntersecting),
+      { threshold: 0, rootMargin: "-65px 0px 0px 0px" },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
   }, []);
 
   const catalog = useMemo(() => {
@@ -510,37 +523,22 @@ export function ShopPage({
 
       <div className="pt-20 lg:pt-24">
         <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
-          <div className="mb-8 sm:mb-12">
-            <h1
-              className="text-[#1C2335] mb-2"
-              style={{ fontSize: "clamp(2rem, 5vw, 3rem)", fontWeight: 700 }}
-            >
-              Tienda
-            </h1>
-            <p
-              className="text-[#2E2E2E]"
-              style={{ fontSize: "clamp(1rem, 2.5vw, 1.25rem)" }}
-            >
-              Productos frescos y de calidad directo a tu puerta
-            </p>
-
-            {error && (
-              <Card className="mt-4 p-4 bg-white border-none shadow-md rounded-2xl">
-                <p className="text-[#1C2335]" style={{ fontWeight: 700 }}>
-                  No se pudo cargar el catálogo
-                </p>
-                <p className="text-[#2E2E2E]" style={{ fontSize: "0.938rem" }}>
-                  {error}
-                </p>
-              </Card>
-            )}
-          </div>
+          {error && (
+            <Card className="mb-6 p-4 bg-white border-none shadow-md rounded-2xl">
+              <p className="text-[#1C2335]" style={{ fontWeight: 700 }}>
+                No se pudo cargar el catálogo
+              </p>
+              <p className="text-[#2E2E2E]" style={{ fontSize: "0.938rem" }}>
+                {error}
+              </p>
+            </Card>
+          )}
 
           {/* Ofertas */}
           {shouldShowOffersSection && (
-            <div className="mb-8 sm:mb-12">
+            <div className="mb-4 sm:mb-10">
               {/* Section header */}
-              <div className="flex items-end justify-between mb-4 sm:mb-6">
+              <div className="flex items-end justify-between mb-3 sm:mb-5">
                 <div>
                   <h2
                     className="text-[#1C2335]"
@@ -552,8 +550,8 @@ export function ShopPage({
                     🔥 Ofertas destacadas para vos
                   </h2>
                   <p
-                    className="text-[#4A4A4A] mt-1"
-                    style={{ fontSize: "0.938rem" }}
+                    className="text-[#4A4A4A]/60 mt-1"
+                    style={{ fontSize: "0.875rem" }}
                   >
                     Aprovechá estos precios exclusivos
                   </p>
@@ -589,10 +587,10 @@ export function ShopPage({
                                   className="w-[280px] sm:w-[320px] flex-shrink-0"
                                 >
                                   <Card
-                                    className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md p-4 min-h-[340px]"
+                                    className={`group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-sm p-4 min-h-[340px] transition-opacity${product.stock === 0 ? " opacity-80" : ""}`}
                                     onClick={() => onProductClick(product)}
                                   >
-                                    <div className="relative aspect-square rounded-xl overflow-hidden flex-shrink-0 bg-[#F9FAFB]">
+                                    <div className="relative aspect-square rounded-xl overflow-hidden flex-shrink-0 bg-white">
                                       <ImageWithFallback
                                         src={product.image}
                                         alt={product.name}
@@ -603,14 +601,14 @@ export function ShopPage({
                                         fetchPriority={
                                           isPriorityImage ? "high" : "auto"
                                         }
-                                        className="block w-full h-full object-contain p-3"
+                                        className="block w-full h-full object-contain p-2"
                                       />
                                       <div className="absolute top-3 right-3">
                                         <SaleChip variant="orange" size="lg" />
                                       </div>
                                     </div>
 
-                                    <div className="flex-1 flex flex-col pt-3">
+                                    <div className="flex-1 flex flex-col pt-2">
                                 <h3
                                   className="text-[#1C2335] mb-3 line-clamp-2"
                                   style={{
@@ -651,7 +649,7 @@ export function ShopPage({
                                   )}
                                 </div>
 
-                                <div className="mb-3 min-h-[14px]">
+                                <div className="mb-2 min-h-[14px]">
                                   <StockIndicator
                                     stock={product.stock}
                                     variant="card"
@@ -660,29 +658,27 @@ export function ShopPage({
                               </div>
 
                                     <div
-                                      className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center flex-shrink-0"
+                                      className="flex flex-col gap-2 flex-shrink-0"
                                       onClick={(e) => e.stopPropagation()}
                                     >
-                                <div className="flex justify-center sm:justify-start">
-                                  <QuantitySelector
-                                    quantity={getQuantity(product.id)}
-                                    onQuantityChange={(newQ) =>
-                                      updateQuantity(product.id, newQ)
-                                    }
-                                    max={product.stock}
-                                  />
-                                </div>
-                                <AddToCartButton
-                                  productId={product.backendId}
-                                  productName={product.name}
-                                  productImage={product.image}
-                                  productPrice={product.price}
-                                  quantity={getQuantity(product.id)}
-                                  variant="compact"
-                                  disabled={product.stock === 0}
-                                  stock={product.stock}
-                                />
-                              </div>
+                                      <QuantitySelector
+                                        quantity={getQuantity(product.id)}
+                                        onQuantityChange={(newQ) =>
+                                          updateQuantity(product.id, newQ)
+                                        }
+                                        max={product.stock}
+                                      />
+                                      <AddToCartButton
+                                        productId={product.backendId}
+                                        productName={product.name}
+                                        productImage={product.image}
+                                        productPrice={product.price}
+                                        quantity={getQuantity(product.id)}
+                                        variant="compact"
+                                        disabled={product.stock === 0}
+                                        stock={product.stock}
+                                      />
+                                    </div>
                                   </Card>
                                 </div>
                               );
@@ -690,7 +686,15 @@ export function ShopPage({
                           </div>
                     </div>
                   ) : (
-                    <div className="flex flex-wrap gap-4">
+                    <div
+                      className="grid gap-6"
+                      style={{
+                        gridTemplateColumns:
+                          productosEnOferta.length >= 3
+                            ? "repeat(3, 1fr)"
+                            : `repeat(${productosEnOferta.length}, minmax(0, 420px))`,
+                      }}
+                    >
                     {productosEnOferta.map((product, index) => {
                       const hasDiscount =
                         product.originalPrice !== undefined &&
@@ -700,13 +704,12 @@ export function ShopPage({
                       return (
                         <div
                           key={product.id}
-                          className="w-[280px]"
                         >
                           <Card
-                            className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md p-4"
+                            className={`group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-sm p-4 transition-opacity${product.stock === 0 ? " opacity-80" : ""}`}
                             onClick={() => onProductClick(product)}
                           >
-                            <div className="relative aspect-square rounded-xl overflow-hidden flex-shrink-0 bg-[#F9FAFB]">
+                            <div className="relative aspect-square rounded-xl overflow-hidden flex-shrink-0 bg-white">
                               <ImageWithFallback
                                 src={product.image}
                                 alt={product.name}
@@ -717,14 +720,14 @@ export function ShopPage({
                                 fetchPriority={
                                   isPriorityImage ? "high" : "auto"
                                 }
-                                className="block w-full h-full object-contain p-3"
+                                className="block w-full h-full object-contain p-2"
                               />
                               <div className="absolute top-3 right-3">
                                 <SaleChip variant="orange" size="lg" />
                               </div>
                             </div>
 
-                            <div className="flex-1 flex flex-col pt-3">
+                            <div className="flex-1 flex flex-col pt-2">
                               <h3 className="text-[#1C2335] mb-3 line-clamp-2 text-base">
                                 {product.name}
                               </h3>
@@ -751,7 +754,7 @@ export function ShopPage({
                                 )}
                               </div>
 
-                              <div className="mb-3 min-h-[14px]">
+                              <div className="mb-2 min-h-[14px]">
                                 <StockIndicator
                                   stock={product.stock}
                                   variant="card"
@@ -760,7 +763,7 @@ export function ShopPage({
                             </div>
 
                             <div
-                              className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center flex-shrink-0"
+                              className="flex flex-col gap-2 flex-shrink-0"
                               onClick={(e) => e.stopPropagation()}
                             >
                               <QuantitySelector
@@ -790,30 +793,26 @@ export function ShopPage({
                     </>
                   )}
 
-              <div className="sm:hidden mt-4 flex justify-center">
-                <button
-                  onClick={() => {
-                    setIsOfertasFilterActive(true);
-                    productsGridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-                  }}
-                  className="flex items-center gap-1.5 border-2 border-[#FF6B00] text-[#FF6B00] hover:bg-[#FFF4E6] transition-colors rounded-full px-4 py-1.5"
-                  style={{ fontSize: "0.875rem", fontWeight: 600 }}
-                >
-                  Ver todas las ofertas →
-                </button>
-              </div>
             </div>
           )}
 
+          {/* Sentinel for sticky shadow detection (mobile only) */}
+          <div ref={filterBarSentinelRef} className="xl:hidden h-px -mt-px" aria-hidden="true" />
+
           {/* Mobile Filter + Grid Toggle */}
-          <div className="xl:hidden mb-6 flex gap-3">
+          <div className={`xl:hidden sticky top-16 z-30 -mx-4 px-4 py-3 mb-4 bg-[#FFF4E6] flex gap-3 transition-shadow${isFilterBarStuck ? " shadow-md" : ""}`}>
             <Button
               onClick={() => setIsMobileFiltersOpen(true)}
-              className="flex-1 sm:flex-initial sm:w-auto bg-white text-[#1C2335] border-2 border-[#FF6B00] hover:bg-[#FFF4E6] rounded-full shadow-md"
-              style={{ fontSize: "1rem", fontWeight: 600 }}
+              className="flex-1 sm:flex-initial sm:w-auto bg-white text-[#1C2335] border-2 border-[#FF6B00] hover:bg-[#FFF4E6] rounded-full shadow-sm"
+              style={{ fontSize: "0.938rem", fontWeight: 700 }}
             >
-              <Filter className="w-5 h-5 mr-2" />
-              Filtros
+              <Filter className="w-4 h-4 mr-2 flex-shrink-0" />
+              Filtrar productos
+              {categories.length > 0 && activeFiltersCount === 0 && (
+                <span className="ml-1.5 text-[#FF6B00]/70" style={{ fontWeight: 500 }}>
+                  ({categories.length})
+                </span>
+              )}
               {activeFiltersCount > 0 && (
                 <Badge className="ml-2 bg-[#FF6B00] text-white border-none">
                   {activeFiltersCount}
@@ -823,7 +822,7 @@ export function ShopPage({
 
             <Button
               onClick={() => setIsMobileGridCompact(!isMobileGridCompact)}
-              className="sm:hidden bg-white text-[#1C2335] border-2 border-[#FF6B00] hover:bg-[#FFF4E6] rounded-full shadow-md px-4"
+              className="sm:hidden bg-white text-[#1C2335] border-2 border-[#FF6B00] hover:bg-[#FFF4E6] rounded-full shadow-sm px-4"
               aria-label={
                 isMobileGridCompact
                   ? "Cambiar a vista expandida"
@@ -846,6 +845,9 @@ export function ShopPage({
             </aside>
 
             <main ref={productsGridRef} className="flex-1 min-w-0">
+              <p className="text-[#4A4A4A]/50 mb-3 text-center xl:text-left" style={{ fontSize: "0.813rem" }}>
+                Comprá online y retirá en tu punto de forma rápida
+              </p>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 bg-white p-4 rounded-2xl shadow-sm">
                 <p className="text-[#2E2E2E]" style={{ fontSize: "0.938rem" }}>
                   {isCatalogLoading ? (
@@ -902,10 +904,10 @@ export function ShopPage({
                             key={product.id}
                           >
                             <Card
-                              className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md p-4 h-full min-h-[392px]"
+                              className={`group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-sm p-4 h-full min-h-[360px] transition-opacity${product.stock === 0 ? " opacity-80" : ""}`}
                               onClick={() => onProductClick(product)}
                             >
-                              <div className="relative aspect-square rounded-xl overflow-hidden flex-shrink-0 bg-[#F9FAFB]">
+                              <div className="relative aspect-square rounded-xl overflow-hidden flex-shrink-0 bg-white">
                                 <ImageWithFallback
                                   src={product.image}
                                   alt={product.name}
@@ -916,7 +918,7 @@ export function ShopPage({
                                   fetchPriority={
                                     isPriorityImage ? "high" : "auto"
                                   }
-                                  className="block w-full h-full object-contain p-3"
+                                  className="block w-full h-full object-contain p-2"
                                 />
                                 {product.badges?.length ? (
                                   <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
@@ -944,7 +946,7 @@ export function ShopPage({
                                 ) : null}
                               </div>
 
-                              <div className="flex-1 flex flex-col pt-3">
+                              <div className="flex-1 flex flex-col pt-2">
                                 <h3
                                   className="text-[#1C2335] mb-3 line-clamp-2 md:line-clamp-3"
                                   style={{
@@ -985,7 +987,7 @@ export function ShopPage({
                                   )}
                                 </div>
 
-                                <div className="mb-3 min-h-[14px]">
+                                <div className="mb-2 min-h-[14px]">
                                   <StockIndicator
                                     stock={product.stock}
                                     variant="card"
@@ -994,7 +996,7 @@ export function ShopPage({
                               </div>
 
                               <div
-                                className="flex flex-col gap-3 items-stretch flex-shrink-0"
+                                className="flex flex-col gap-2 flex-shrink-0"
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <QuantitySelector
