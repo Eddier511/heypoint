@@ -464,44 +464,75 @@ export function MyOrdersPage({
                   ))}
                 </motion.div>
               ) : (
-                <motion.div key="all" className="space-y-3">
-                  {order.items.map((item) => (
-                    <div key={item.id} className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
-                        <ImageWithFallback
-                          src={item.image}
-                          alt={item.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <h5
-                          className="text-[#1C2335]"
-                          style={{ fontSize: "0.938rem", fontWeight: 600 }}
-                        >
-                          {item.name}
-                        </h5>
-                        <p
-                          className="text-[#2E2E2E]"
-                          style={{ fontSize: "0.813rem" }}
-                        >
-                          Qty: {item.quantity} × ${item.price.toFixed(2)}
-                        </p>
-                        <p
-                          className="text-[#FF6B00]"
-                          style={{ fontSize: "0.75rem", fontWeight: 500 }}
-                        >
-                          {item.locker}
-                        </p>
-                      </div>
-                      <div
-                        className="text-[#1C2335]"
-                        style={{ fontSize: "1rem", fontWeight: 600 }}
-                      >
-                        ${(item.quantity * item.price).toFixed(2)}
-                      </div>
-                    </div>
-                  ))}
+                <motion.div key="all" className="space-y-4">
+                  {(() => {
+                    // Group items by module (locker), preserving first-appearance order
+                    const groups = new Map<string, OrderItem[]>();
+                    for (const item of order.items) {
+                      const key = item.locker || "Sin módulo";
+                      const existing = groups.get(key);
+                      if (existing) existing.push(item);
+                      else groups.set(key, [item]);
+                    }
+                    return Array.from(groups.entries()).map(
+                      ([moduleName, groupItems]) => (
+                        <div key={moduleName}>
+                          <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[#FF6B00]/20">
+                            <Package className="w-4 h-4 text-[#FF6B00] flex-shrink-0" />
+                            <span
+                              className="text-[#1C2335]"
+                              style={{ fontSize: "0.875rem", fontWeight: 700 }}
+                            >
+                              {moduleName}
+                            </span>
+                          </div>
+                          <div className="space-y-3">
+                            {groupItems.map((item) => (
+                              <div
+                                key={item.id}
+                                className="flex items-center gap-4"
+                              >
+                                <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
+                                  <ImageWithFallback
+                                    src={item.image}
+                                    alt={item.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                                <div className="flex-1">
+                                  <h5
+                                    className="text-[#1C2335]"
+                                    style={{
+                                      fontSize: "0.938rem",
+                                      fontWeight: 600,
+                                    }}
+                                  >
+                                    {item.name}
+                                  </h5>
+                                  <p
+                                    className="text-[#2E2E2E]"
+                                    style={{ fontSize: "0.813rem" }}
+                                  >
+                                    Qty: {item.quantity} ×{" "}
+                                    ${item.price.toFixed(2)}
+                                  </p>
+                                </div>
+                                <div
+                                  className="text-[#1C2335]"
+                                  style={{
+                                    fontSize: "1rem",
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  ${(item.quantity * item.price).toFixed(2)}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ),
+                    );
+                  })()}
                 </motion.div>
               )}
             </AnimatePresence>
