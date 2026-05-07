@@ -6,6 +6,7 @@ import {
   CreditCard,
   Shield,
   HelpCircle,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
@@ -79,6 +80,7 @@ export function CheckoutPage({
   const ivaPct = storeSettings?.iva ?? 21;
   const [currentStep] = useState(2);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [stockError, setStockError] = useState<string | null>(null);
   const [showExpirationModal, setShowExpirationModal] = useState(false);
 
   useInactivityTimer({
@@ -141,6 +143,7 @@ export function CheckoutPage({
   ];
 
   const handleMercadoPagoPayment = async () => {
+    setStockError(null);
     setIsProcessing(true);
 
     try {
@@ -201,6 +204,7 @@ export function CheckoutPage({
     } catch (error: any) {
       const body = error?.response?.data;
       if (error?.response?.status === 409 && body?.product) {
+        setStockError(body.product);
         const available = body.available ?? 0;
         toast.error(`Stock insuficiente: ${body.product}`, {
           description:
@@ -537,9 +541,43 @@ export function CheckoutPage({
                     </p>
                   </div>
 
+                  {stockError && (
+                    <div className="mb-6 p-4 bg-[#FFF8F0] border-2 border-[#FFCF9D] rounded-2xl">
+                      <div className="flex gap-3 mb-3">
+                        <AlertTriangle className="w-5 h-5 text-[#FF6B00] flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p
+                            className="text-[#1C2335] mb-1"
+                            style={{ fontSize: "0.938rem", fontWeight: 600 }}
+                          >
+                            Stock insuficiente
+                          </p>
+                          <p
+                            className="text-[#4A4A4A]"
+                            style={{ fontSize: "0.813rem", lineHeight: 1.5 }}
+                          >
+                            Uno o más productos de tu carrito ya no tienen stock
+                            suficiente. Revisá tu carrito antes de continuar.
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => onNavigate?.("cart")}
+                        className="w-full py-3 rounded-full text-white"
+                        style={{
+                          fontSize: "0.938rem",
+                          fontWeight: 600,
+                          backgroundColor: "#FF6B00",
+                        }}
+                      >
+                        Volver al carrito
+                      </Button>
+                    </div>
+                  )}
+
                   <Button
                     onClick={handleMercadoPagoPayment}
-                    disabled={isProcessing}
+                    disabled={isProcessing || !!stockError}
                     className="w-full py-7 rounded-full shadow-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                     style={{
                       fontSize: "1.125rem",
