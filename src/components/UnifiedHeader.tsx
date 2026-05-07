@@ -108,6 +108,7 @@ export function UnifiedHeader({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isShopDropdownOpen, setIsShopDropdownOpen] = useState(false);
   const [isAboutDropdownOpen, setIsAboutDropdownOpen] = useState(false);
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [expandedMobileShop, setExpandedMobileShop] = useState(false);
   const [activeLink, setActiveLink] = useState(currentPage);
   const [showEmptyCartModal, setShowEmptyCartModal] = useState(false);
@@ -135,6 +136,8 @@ export function UnifiedHeader({
   const shopButtonRef = useRef<HTMLButtonElement>(null);
   const aboutDropdownRef = useRef<HTMLDivElement>(null);
   const aboutButtonRef = useRef<HTMLButtonElement>(null);
+  const accountDropdownRef = useRef<HTMLDivElement>(null);
+  const accountButtonRef = useRef<HTMLButtonElement>(null);
   const shopHoverCloseTimer = useRef<NodeJS.Timeout | null>(null);
   const aboutHoverCloseTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -196,12 +199,21 @@ export function UnifiedHeader({
       ) {
         setIsAboutDropdownOpen(false);
       }
+      if (
+        accountDropdownRef.current &&
+        !accountDropdownRef.current.contains(event.target as Node) &&
+        accountButtonRef.current &&
+        !accountButtonRef.current.contains(event.target as Node)
+      ) {
+        setIsAccountMenuOpen(false);
+      }
     };
 
     const handleEscapeKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setIsShopDropdownOpen(false);
         setIsAboutDropdownOpen(false);
+        setIsAccountMenuOpen(false);
       }
     };
 
@@ -218,6 +230,7 @@ export function UnifiedHeader({
     setIsMobileMenuOpen(false);
     setIsShopDropdownOpen(false);
     setIsAboutDropdownOpen(false);
+    setIsAccountMenuOpen(false);
     if (onNavigate) onNavigate(page);
   };
 
@@ -230,6 +243,7 @@ export function UnifiedHeader({
 
   const handleLogoutClick = () => {
     setIsMobileMenuOpen(false);
+    setIsAccountMenuOpen(false);
     logout();
     onLogout?.();
 
@@ -251,6 +265,7 @@ export function UnifiedHeader({
     // 2) cerrar dropdowns por las dudas
     setIsShopDropdownOpen(false);
     setIsAboutDropdownOpen(false);
+    setIsAccountMenuOpen(false);
 
     // 3) abrir el modal en el siguiente frame (ya con el menú cerrado)
     requestAnimationFrame(() => {
@@ -266,6 +281,7 @@ export function UnifiedHeader({
     }
     setIsShopDropdownOpen((v) => !v);
     setIsAboutDropdownOpen(false);
+    setIsAccountMenuOpen(false);
   };
 
   const handleShopMouseEnter = () => {
@@ -308,6 +324,13 @@ export function UnifiedHeader({
     }
     setIsAboutDropdownOpen((v) => !v);
     setIsShopDropdownOpen(false);
+    setIsAccountMenuOpen(false);
+  };
+
+  const handleAccountMenuClick = () => {
+    setIsAccountMenuOpen((v) => !v);
+    setIsShopDropdownOpen(false);
+    setIsAboutDropdownOpen(false);
   };
 
   const handleAboutMouseEnter = () => {
@@ -568,11 +591,14 @@ export function UnifiedHeader({
                 </Button>
 
                 {effectiveIsLoggedIn ? (
-                  <div className="relative group">
+                  <div className="relative">
                     <button
+                      ref={accountButtonRef}
+                      onClick={handleAccountMenuClick}
                       className={`flex items-center gap-2 px-4 py-2 rounded-full ${textColor} hover:bg-[#FF6B00]/10 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[#FF6B00]`}
                       aria-label="Menú de cuenta"
                       aria-haspopup="true"
+                      aria-expanded={isAccountMenuOpen}
                     >
                       <div className="w-8 h-8 rounded-full bg-[#FF6B00] flex items-center justify-center">
                         <User className="w-4 h-4 text-white" />
@@ -580,19 +606,27 @@ export function UnifiedHeader({
                       <span style={{ fontSize: "0.938rem", fontWeight: 500 }}>
                         {effectiveUserName.split(" ")[0]}
                       </span>
-                      <ChevronDown className="w-4 h-4" />
+                      <ChevronDown
+                        className={`w-4 h-4 transition-transform duration-150 ${
+                          isAccountMenuOpen ? "rotate-180" : ""
+                        }`}
+                      />
                     </button>
 
-                    <div className="absolute right-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-150 z-50">
-                      <Card className="bg-white border-none shadow-xl rounded-2xl overflow-hidden p-2">
-                        <button
-                          onClick={() => handleNavigation("profile")}
-                          className="w-full text-left px-4 py-3 rounded-xl hover:bg-[#FFF4E6] text-[#2E2E2E] hover:text-[#FF6B00] transition-colors flex items-center gap-3"
-                          style={{ fontSize: "0.938rem", fontWeight: 500 }}
-                        >
-                          <User className="w-4 h-4" />
-                          Mi perfil
-                        </button>
+                    {isAccountMenuOpen && (
+                      <div
+                        ref={accountDropdownRef}
+                        className="absolute right-0 mt-2 w-56 z-50"
+                      >
+                        <Card className="bg-white border-none shadow-xl rounded-2xl overflow-hidden p-2">
+                          <button
+                            onClick={() => handleNavigation("profile")}
+                            className="w-full text-left px-4 py-3 rounded-xl hover:bg-[#FFF4E6] text-[#2E2E2E] hover:text-[#FF6B00] transition-colors flex items-center gap-3"
+                            style={{ fontSize: "0.938rem", fontWeight: 500 }}
+                          >
+                            <User className="w-4 h-4" />
+                            Mi perfil
+                          </button>
 
                         <button
                           onClick={() => handleNavigation("orders")}
@@ -619,7 +653,8 @@ export function UnifiedHeader({
                           Cerrar sesión
                         </button>
                       </Card>
-                    </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <Button
