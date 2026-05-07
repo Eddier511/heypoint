@@ -563,10 +563,10 @@ export function ShopPage({
                     setIsOfertasFilterActive(true);
                     productsGridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
                   }}
-                  className="hidden sm:flex items-center gap-1 text-[#FF6B00] hover:text-[#e56000] transition-colors flex-shrink-0 ml-4"
-                  style={{ fontSize: "0.938rem", fontWeight: 600 }}
+                  className="hidden sm:flex items-center gap-1.5 border-2 border-[#FF6B00] text-[#FF6B00] hover:bg-[#FFF4E6] transition-colors rounded-full px-4 py-1.5 flex-shrink-0 ml-4"
+                  style={{ fontSize: "0.875rem", fontWeight: 600 }}
                 >
-                  Ver todas las ofertas <span className="text-lg">→</span>
+                  Ver todas las ofertas →
                 </button>
               </div>
 
@@ -589,7 +589,7 @@ export function ShopPage({
                                   className="w-[280px] sm:w-[320px] flex-shrink-0"
                                 >
                                   <Card
-                                    className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md p-4 h-full min-h-[392px]"
+                                    className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md p-4 min-h-[340px]"
                                     onClick={() => onProductClick(product)}
                                   >
                                     <div className="relative aspect-square rounded-xl overflow-hidden flex-shrink-0 bg-[#F9FAFB]">
@@ -690,13 +690,7 @@ export function ShopPage({
                           </div>
                     </div>
                   ) : (
-                    <div
-                      className="grid gap-6"
-                      style={{
-                        gridTemplateColumns:
-                          "repeat(auto-fit, minmax(260px, 1fr))",
-                      }}
-                    >
+                    <div className="flex flex-wrap gap-4">
                     {productosEnOferta.map((product, index) => {
                       const hasDiscount =
                         product.originalPrice !== undefined &&
@@ -706,9 +700,10 @@ export function ShopPage({
                       return (
                         <div
                           key={product.id}
+                          className="w-[280px]"
                         >
                           <Card
-                            className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md p-4 h-full min-h-[392px]"
+                            className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md p-4"
                             onClick={() => onProductClick(product)}
                           >
                             <div className="relative aspect-square rounded-xl overflow-hidden flex-shrink-0 bg-[#F9FAFB]">
@@ -801,10 +796,10 @@ export function ShopPage({
                     setIsOfertasFilterActive(true);
                     productsGridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
                   }}
-                  className="text-[#FF6B00] hover:text-[#e56000] transition-colors flex items-center gap-1"
-                  style={{ fontSize: "0.938rem", fontWeight: 600 }}
+                  className="flex items-center gap-1.5 border-2 border-[#FF6B00] text-[#FF6B00] hover:bg-[#FFF4E6] transition-colors rounded-full px-4 py-1.5"
+                  style={{ fontSize: "0.875rem", fontWeight: 600 }}
                 >
-                  Ver todas las ofertas <span className="text-lg">→</span>
+                  Ver todas las ofertas →
                 </button>
               </div>
             </div>
