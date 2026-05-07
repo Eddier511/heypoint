@@ -273,6 +273,11 @@ export function UserProfilePage({
       newErrors.dni = "El DNI debe tener entre 7 y 15 caracteres";
     }
 
+    const uf = (profileData.apartmentNumber || "").trim();
+    if (uf && !/^\d{1,3}$/.test(uf)) {
+      newErrors.apartmentNumber = "La UF debe tener hasta 3 números.";
+    }
+
     // Password validation if user wants to change it
     const wantsPasswordChange =
       passwordData.currentPassword ||
@@ -299,7 +304,11 @@ export function UserProfilePage({
   };
 
   const handleInputChange = (field: keyof typeof profileData, value: any) => {
-    setProfileData((prev) => ({ ...prev, [field]: value }));
+    const nextValue =
+      field === "apartmentNumber"
+        ? normalizeDigits(String(value)).slice(0, 3)
+        : value;
+    setProfileData((prev) => ({ ...prev, [field]: nextValue }));
     if (errors[field as string]) {
       setErrors((prev) => {
         const n = { ...prev };
@@ -771,7 +780,7 @@ export function UserProfilePage({
                             className="text-[#2E2E2E] mb-2 block"
                             style={{ fontSize: "0.938rem", fontWeight: 500 }}
                           >
-                            Número de departamento / módulo
+                            UF
                           </Label>
                           <div className="relative">
                             <Home className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#2E2E2E]/50 pointer-events-none z-10" />
@@ -783,10 +792,23 @@ export function UserProfilePage({
                                   e.target.value,
                                 )
                               }
-                              placeholder="Ej: A-302"
-                              className="pl-12 pr-4 py-6 rounded-2xl border-2 border-gray-300 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20 focus:ring-4 transition-all"
+                              placeholder="Ej: 101"
+                              inputMode="numeric"
+                              maxLength={3}
+                              pattern="[0-9]*"
+                              className={`pl-12 pr-4 py-6 rounded-2xl border-2 transition-all
+                                ${
+                                  errors.apartmentNumber
+                                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20 focus:ring-4"
+                                    : "border-gray-300 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20 focus:ring-4"
+                                }`}
                             />
                           </div>
+                          {errors.apartmentNumber && (
+                            <p className="text-red-500 mt-2 text-sm font-semibold">
+                              {errors.apartmentNumber}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
