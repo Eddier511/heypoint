@@ -576,6 +576,21 @@ export function UnifiedHeader({
               </button>
 
               <div className="hidden lg:flex items-center gap-3">
+                {cartCount > 0 && (
+                  <Button
+                    onClick={handleCartClick}
+                    className="h-10 px-5 rounded-full bg-[#FF6B00] hover:bg-[#e56000] text-white flex items-center gap-2 shadow-sm"
+                    style={{ fontSize: "0.938rem", fontWeight: 600 }}
+                    aria-label={`Ir a pagar, ${cartCount} ${cartCount === 1 ? "producto" : "productos"} en el carrito`}
+                  >
+                    <ShoppingCart className="w-4 h-4" />
+                    Ir a pagar
+                    <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-white/25 text-white" style={{ fontSize: "0.75rem", fontWeight: 700 }}>
+                      {cartCount}
+                    </span>
+                  </Button>
+                )}
+
                 <Button
                   onClick={handleSupportClick}
                   className={`h-10 px-5 rounded-full transition-colors flex items-center justify-center gap-2 ${
@@ -963,7 +978,7 @@ export function UnifiedHeader({
                     style={{ fontSize: "0.95rem", fontWeight: 800 }}
                   >
                     <ShoppingCart className="w-5 h-5" />
-                    Ir al carrito
+                    {cartCount > 0 ? "Ir a pagar" : "Ir al carrito"}
                     {cartCount > 0 && (
                       <span className="ml-2 inline-flex items-center justify-center min-w-6 h-6 px-2 rounded-full bg-white/20">
                         {cartCount}

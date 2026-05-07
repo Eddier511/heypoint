@@ -1,20 +1,36 @@
+import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { api } from "../lib/api";
 
-/**
- * Hook that returns whether the authenticated user has any pending orders.
- * In a real app, this would query the orders API or state management.
- * For now, it returns mock data based on authentication state.
- */
 export function useHasPendingOrders(): boolean {
   const { isAuthenticated } = useAuth();
-  
-  // Mock logic: authenticated users have pending orders
-  // In a real app, this would check actual orders data
-  if (!isAuthenticated) {
-    return false;
-  }
-  
-  // Mock: simulate having pending orders
-  // Replace this with actual orders query in production
-  return true;
+  const [hasPending, setHasPending] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setHasPending(false);
+      return;
+    }
+
+    let alive = true;
+
+    api
+      .get<{ orders: Array<{ status: string }> } | Array<{ status: string }>>(
+        "/orders/me",
+      )
+      .then(({ data }) => {
+        if (!alive) return;
+        const orders = Array.isArray(data) ? data : data?.orders ?? [];
+        setHasPending(orders.some((o) => o.status === "pending"));
+      })
+      .catch(() => {
+        if (alive) setHasPending(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [isAuthenticated]);
+
+  return hasPending;
 }
