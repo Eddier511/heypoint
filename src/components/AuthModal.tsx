@@ -195,6 +195,7 @@ export default function AuthModal({
   const [birthDate, setBirthDate] = useState("");
   const [birthDateError, setBirthDateError] = useState("");
   const [apartmentNumber, setApartmentNumber] = useState("");
+  const [apartmentNumberError, setApartmentNumberError] = useState("");
   const shouldReduceMotion = useReducedMotion();
 
   const pickupPoint =
@@ -245,6 +246,7 @@ export default function AuthModal({
     setDni("");
     setBirthDate("");
     setApartmentNumber("");
+    setApartmentNumberError("");
 
     // ✅ si Google ya autenticó y el padre cerró el modal, volvemos a Paso 2 automáticamente
     if (pendingProfile) {
@@ -586,6 +588,7 @@ export default function AuthModal({
     setPhoneError("");
     setDniError("");
     setBirthDateError("");
+    setApartmentNumberError("");
     setGlobalError("");
 
     let hasError = false;
@@ -610,6 +613,12 @@ export default function AuthModal({
       hasError = true;
     }
 
+    const uf = normalizeDigits(apartmentNumber).slice(0, 3);
+    if (!uf || !/^\d{1,3}$/.test(uf)) {
+      setApartmentNumberError("La UF debe tener hasta 3 números.");
+      hasError = true;
+    }
+
     if (hasError) return;
 
     try {
@@ -621,7 +630,7 @@ export default function AuthModal({
         phone: phoneDigits,
         dni: dniTrim,
         birthDate,
-        apartmentNumber: (apartmentNumber || "").trim(),
+        apartmentNumber: uf,
         pickupPoint,
       };
 
@@ -652,12 +661,14 @@ export default function AuthModal({
     setPhoneError("");
     setDniError("");
     setBirthDateError("");
+    setApartmentNumberError("");
     setStep2Dirty(false);
 
     setPhone("");
     setDni("");
     setBirthDate("");
     setApartmentNumber("");
+    setApartmentNumberError("");
 
     setSignUpStep("form");
     setActiveTab("signup");
@@ -1439,13 +1450,28 @@ export default function AuthModal({
                             <Input
                               value={apartmentNumber}
                               onChange={(e) => {
-                                setApartmentNumber(e.target.value);
+                                setApartmentNumber(
+                                  normalizeDigits(e.target.value).slice(0, 3),
+                                );
+                                setApartmentNumberError("");
                                 setStep2Dirty(true);
                               }}
-                              placeholder="Ej: 12, 3B, 5A"
-                              className="pl-12 pr-4 py-6 rounded-2xl border-2 border-gray-200 focus:border-[#FF6B00] focus:ring-2 focus:ring-[#FF6B00]/20"
+                              placeholder="Ej: 101"
+                              inputMode="numeric"
+                              maxLength={3}
+                              pattern="[0-9]*"
+                              className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-colors ${
+                                apartmentNumberError
+                                  ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                                  : "border-gray-200 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
+                              }`}
                             />
                           </div>
+                          {apartmentNumberError && (
+                            <p className="text-red-500 mt-2 text-sm font-semibold">
+                              {apartmentNumberError}
+                            </p>
+                          )}
                         </div>
 
                         {/* Pickup point */}

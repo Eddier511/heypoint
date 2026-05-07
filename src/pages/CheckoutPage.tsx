@@ -26,6 +26,8 @@ import { useStoreSettings } from "../hooks/useStoreSettings";
 import { formatPrecioARS, getPrecioFinalConIVA } from "../utils/priceUtils";
 import { motion } from "motion/react";
 import { useCart } from "../contexts/CartContext";
+import { useAuth } from "../contexts/AuthContext";
+import { useModal } from "../contexts/ModalContext";
 import { api } from "../lib/api";
 import { toast } from "sonner";
 
@@ -41,12 +43,38 @@ interface CheckoutPageProps {
   onOrderSuccess?: (data: OrderSuccessData) => void;
 }
 
+const PENDING_PROFILE_KEY = "heypoint_pending_profile";
+const PENDING_EMAIL_KEY = "heypoint_pending_email";
+const PENDING_NAME_KEY = "heypoint_pending_name";
+
+function getMissingProfileFields(profile: any): string[] {
+  const missing: string[] = [];
+  const phone = String(profile?.phone || "").trim();
+  const birthDate = String(profile?.birthDate || "").trim();
+  const dni = String(profile?.dni || profile?.document || "").trim();
+  const apartmentNumber = String(profile?.apartmentNumber || "").trim();
+
+  if (!phone) missing.push("phone");
+  if (!birthDate) missing.push("birthDate");
+  if (!dni) missing.push("dni");
+  if (!/^\d{1,3}$/.test(apartmentNumber)) missing.push("apartmentNumber");
+
+  return missing;
+}
+
+function isCustomerProfileComplete(profile: any): boolean {
+  if (!profile) return false;
+  return profile.profileComplete !== false && getMissingProfileFields(profile).length === 0;
+}
+
 export function CheckoutPage({
   onNavigate,
   isLoggedIn = true,
   onOrderSuccess,
 }: CheckoutPageProps) {
   const { cartItems, clearCart } = useCart();
+  const { fetchMe, user: sessionUser } = useAuth();
+  const { openSignupModal } = useModal();
   const { settings: storeSettings } = useStoreSettings();
   const ivaPct = storeSettings?.iva ?? 21;
   const [currentStep] = useState(2);
@@ -116,6 +144,31 @@ export function CheckoutPage({
     setIsProcessing(true);
 
     try {
+      const { profile } = await fetchMe();
+
+      if (!isCustomerProfileComplete(profile)) {
+        console.warn("[CheckoutPage] Checkout blocked by incomplete profile", {
+          missingFields: getMissingProfileFields(profile),
+          profileComplete: profile?.profileComplete,
+        });
+        localStorage.setItem(PENDING_PROFILE_KEY, "1");
+        localStorage.setItem(
+          PENDING_EMAIL_KEY,
+          profile?.email || sessionUser?.email || "",
+        );
+        localStorage.setItem(
+          PENDING_NAME_KEY,
+          profile?.fullName || sessionUser?.fullName || "",
+        );
+        toast.error("Para continuar con tu compra necesitás completar tu perfil.", {
+          description: "Completá teléfono, DNI, fecha de nacimiento y UF.",
+          duration: 5000,
+        });
+        openSignupModal();
+        setIsProcessing(false);
+        return;
+      }
+
       const orderItems = cartItems.map((item) => ({
         id: item.productId,
         name: item.name,
@@ -157,10 +210,19 @@ export function CheckoutPage({
           duration: 5000,
         });
       } else {
-        toast.error("Error al procesar el pedido", {
-          description: "Por favor intentá nuevamente",
-          duration: 3000,
-        });
+        if (body?.error === "PROFILE_INCOMPLETE") {
+          localStorage.setItem(PENDING_PROFILE_KEY, "1");
+          toast.error("Para continuar con tu compra necesitás completar tu perfil.", {
+            description: "Completá teléfono, DNI, fecha de nacimiento y UF.",
+            duration: 5000,
+          });
+          openSignupModal();
+        } else {
+          toast.error("Error al procesar el pedido", {
+            description: "Por favor intentá nuevamente",
+            duration: 3000,
+          });
+        }
       }
       setIsProcessing(false);
     }
