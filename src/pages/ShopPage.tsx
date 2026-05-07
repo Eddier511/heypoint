@@ -539,54 +539,44 @@ export function ShopPage({
           {/* Ofertas */}
           {shouldShowOffersSection && (
             <div className="mb-8 sm:mb-12">
-              <Card className="bg-gradient-to-br from-[#FFF8F0] via-white to-[#FFF4E6] border-2 border-[#FF6B00]/20 shadow-lg rounded-3xl overflow-hidden">
-                <div className="bg-gradient-to-r from-[#FF6B00] to-[#FF8534] p-4 sm:p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                        <span className="text-2xl sm:text-3xl">🔥</span>
-                      </div>
-                      <div>
-                        <h2
-                          className="text-white"
-                          style={{
-                            fontSize: "clamp(1.25rem, 3vw, 1.75rem)",
-                            fontWeight: 700,
-                          }}
-                        >
-                          Ofertas destacadas para vos
-                        </h2>
-                        <p
-                          className="text-white/90"
-                          style={{ fontSize: "clamp(0.875rem, 2vw, 1rem)" }}
-                        >
-                          Aprovechá estos precios exclusivos
-                        </p>
-                      </div>
-                    </div>
-
-                    <Button
-                      onClick={() => {
-                        setIsOfertasFilterActive(true);
-                        productsGridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-                      }}
-                      variant="ghost"
-                      className="hidden sm:flex bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-full px-4 py-2"
-                      style={{ fontSize: "0.938rem", fontWeight: 600 }}
-                    >
-                      Ver todas
-                    </Button>
-                  </div>
+              {/* Section header */}
+              <div className="flex items-end justify-between mb-4 sm:mb-6">
+                <div>
+                  <h2
+                    className="text-[#1C2335]"
+                    style={{
+                      fontSize: "clamp(1.25rem, 3vw, 1.75rem)",
+                      fontWeight: 700,
+                    }}
+                  >
+                    🔥 Ofertas destacadas para vos
+                  </h2>
+                  <p
+                    className="text-[#4A4A4A] mt-1"
+                    style={{ fontSize: "0.938rem" }}
+                  >
+                    Aprovechá estos precios exclusivos
+                  </p>
                 </div>
+                <button
+                  onClick={() => {
+                    setIsOfertasFilterActive(true);
+                    productsGridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                  className="hidden sm:flex items-center gap-1 text-[#FF6B00] hover:text-[#e56000] transition-colors flex-shrink-0 ml-4"
+                  style={{ fontSize: "0.938rem", fontWeight: 600 }}
+                >
+                  Ver todas las ofertas <span className="text-lg">→</span>
+                </button>
+              </div>
 
-                <div className="p-4 sm:p-6">
-                  {isCatalogLoading ? (
-                    <div className="min-h-[560px]" aria-hidden="true" />
-                  ) : (
-                    <>
-                      {!isLargeViewport ? (
-                        <div className="overflow-x-auto pb-4 -mx-2 px-2 scrollbar-hide">
-                          <div className="flex gap-4 min-w-max">
+              {isCatalogLoading ? (
+                <div className="min-h-[200px]" aria-hidden="true" />
+              ) : (
+                <>
+                  {!isLargeViewport ? (
+                    <div className="overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
+                      <div className="flex gap-4 min-w-max">
                             {productosEnOferta.map((product, index) => {
                               const hasDiscount =
                                 product.originalPrice !== undefined &&
@@ -698,10 +688,15 @@ export function ShopPage({
                               );
                             })}
                           </div>
-                        </div>
-                      ) : (
-
-                  <div className="grid grid-cols-3 gap-6">
+                    </div>
+                  ) : (
+                    <div
+                      className="grid gap-6"
+                      style={{
+                        gridTemplateColumns:
+                          "repeat(auto-fit, minmax(260px, 1fr))",
+                      }}
+                    >
                     {productosEnOferta.map((product, index) => {
                       const hasDiscount =
                         product.originalPrice !== undefined &&
@@ -800,20 +795,18 @@ export function ShopPage({
                     </>
                   )}
 
-                  <div className="sm:hidden mt-4 flex justify-center">
-                    <button
-                      onClick={() => {
-                        setIsOfertasFilterActive(true);
-                        productsGridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-                      }}
-                      className="text-[#FF6B00] hover:text-[#e56000] transition-colors flex items-center gap-1"
-                      style={{ fontSize: "0.938rem", fontWeight: 600 }}
-                    >
-                      Ver todas las ofertas <span className="text-lg">→</span>
-                    </button>
-                  </div>
-                </div>
-              </Card>
+              <div className="sm:hidden mt-4 flex justify-center">
+                <button
+                  onClick={() => {
+                    setIsOfertasFilterActive(true);
+                    productsGridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                  className="text-[#FF6B00] hover:text-[#e56000] transition-colors flex items-center gap-1"
+                  style={{ fontSize: "0.938rem", fontWeight: 600 }}
+                >
+                  Ver todas las ofertas <span className="text-lg">→</span>
+                </button>
+              </div>
             </div>
           )}
 
