@@ -7,6 +7,7 @@ import { motion } from "motion/react";
 import { Card } from "../components/ui/card";
 import { Label } from "../components/ui/label";
 import { ChangeEmailModal } from "../components/ChangeEmailModal";
+import { useStoreSettings } from "../hooks/useStoreSettings";
 
 import {
   User,
@@ -71,6 +72,11 @@ export function UserProfilePage({
     refreshEmailVerification,
     sendVerifyEmailPro,
   } = useAuth();
+  const { settings: storeSettings } = useStoreSettings();
+  const globalPickupPoint =
+    storeSettings?.pickupPoint?.address ||
+    storeSettings?.pickupPoint?.name ||
+    "Vilanova Haedo";
 
   function resolveApiBase() {
     const raw =
@@ -100,7 +106,7 @@ export function UserProfilePage({
     phone: "",
     birthDate: "",
     dni: "",
-    pickupPoint: "Urb. Valle Arriba",
+    pickupPoint: "Vilanova Haedo",
     apartmentNumber: "",
   });
 
@@ -217,7 +223,7 @@ export function UserProfilePage({
           phone: api.phone || "",
           birthDate: api.birthDate || "",
           dni: api.dni || "",
-          pickupPoint: api.pickupPoint || "Urb. Valle Arriba",
+          pickupPoint: globalPickupPoint,
           apartmentNumber: api.apartmentNumber || "",
         };
 
@@ -237,7 +243,7 @@ export function UserProfilePage({
     return () => {
       mounted = false;
     };
-  }, [API_BASE, getIdToken, currentUser]);
+  }, [API_BASE, getIdToken, currentUser, globalPickupPoint]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -351,7 +357,7 @@ export function UserProfilePage({
         dni: (profileData.dni || "").trim(),
         birthDate: profileData.birthDate,
         apartmentNumber: (profileData.apartmentNumber || "").trim(),
-        pickupPoint: profileData.pickupPoint || "Urb. Valle Arriba",
+        pickupPoint: globalPickupPoint,
       };
 
       const res = await fetch(apiUrl("/customers/me"), {

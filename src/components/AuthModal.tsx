@@ -28,6 +28,7 @@ import { Label } from "./ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 
 import { useAuth } from "../contexts/AuthContext";
+import { useStoreSettings } from "../hooks/useStoreSettings";
 
 type SignUpStep = "form" | "verifyEmail" | "completeProfile";
 
@@ -141,6 +142,7 @@ export default function AuthModal({
     sendVerifyEmailPro, // ✅ ESTA ES LA CLAVE
     getIdToken,
   } = useAuth();
+  const { settings: storeSettings } = useStoreSettings();
 
   const [activeTab, setActiveTab] = useState<"login" | "signup">(defaultMode);
   const [signUpStep, setSignUpStep] = useState<SignUpStep>("form");
@@ -183,7 +185,10 @@ export default function AuthModal({
   const [apartmentNumber, setApartmentNumber] = useState("");
   const shouldReduceMotion = useReducedMotion();
 
-  const pickupPoint = "Aún no hay un Hey Point disponible en esta ubicación.";
+  const pickupPoint =
+    storeSettings?.pickupPoint?.address ||
+    storeSettings?.pickupPoint?.name ||
+    "Vilanova Haedo";
 
   // ✅ FIX: token retry (Google puede tardar en estar listo)
   async function getIdTokenWithRetry(retries = 6, delayMs = 250) {

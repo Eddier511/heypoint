@@ -186,21 +186,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   ) => {
     const token = await fbGetIdToken(firebaseUser, true);
     localStorage.setItem(STORAGE_KEY, token);
+    const url = apiUrl("/customers/bootstrap");
 
-    const res = await fetch(apiUrl("/customers/bootstrap"), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ fullName }),
-    });
+    try {
+      console.info("[AuthContext] bootstrapping customer profile", {
+        url,
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+      });
 
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      throw new Error(
-        `No se pudo crear el cliente (${res.status}). ${text}`.trim(),
-      );
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ fullName }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(
+          `No se pudo crear el cliente (${res.status}). ${text}`.trim(),
+        );
+      }
+    } catch (error) {
+      console.error("[AuthContext] customer bootstrap failed", {
+        url,
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        error,
+      });
+      throw error;
     }
   };
 
