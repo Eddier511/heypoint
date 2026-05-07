@@ -41,6 +41,9 @@ interface AuthModalProps {
 
 const PENDING_EMAIL_KEY = "heypoint_pending_email";
 const PENDING_NAME_KEY = "heypoint_pending_name";
+const RESEND_COOLDOWN_SECONDS = 60;
+const TOO_MANY_REQUESTS_MESSAGE =
+  "Hiciste demasiados intentos. Esperá unos minutos antes de volver a intentarlo.";
 const PENDING_PROFILE_KEY = "heypoint_pending_profile"; // ✅ nuevo
 
 const calculatePasswordStrength = (
@@ -80,6 +83,12 @@ function validateAge16(dateStr: string): boolean {
 
 function normalizeDigits(v: string) {
   return (v || "").replace(/\D/g, "");
+}
+
+function getFriendlyAuthError(error: any, fallback: string) {
+  const raw = String(error?.code || error?.message || "");
+  if (raw.includes("too-many-requests")) return TOO_MANY_REQUESTS_MESSAGE;
+  return error?.message || fallback;
 }
 
 /**
@@ -168,8 +177,11 @@ export default function AuthModal({
 
   const [pendingEmail, setPendingEmail] = useState("");
   const [pendingFullName, setPendingFullName] = useState("");
-  const [verificationCountdown, setVerificationCountdown] = useState(45);
+  const [verificationCountdown, setVerificationCountdown] = useState(
+    RESEND_COOLDOWN_SECONDS,
+  );
   const [isResendEnabled, setIsResendEnabled] = useState(false);
+  const [verificationNotice, setVerificationNotice] = useState("");
 
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
@@ -223,6 +235,7 @@ export default function AuthModal({
     setForgotPasswordSent(false);
     setForgotPasswordError("");
     setStep2Dirty(false);
+    setVerificationNotice("");
 
     const savedEmail = localStorage.getItem(PENDING_EMAIL_KEY);
     const savedName = localStorage.getItem(PENDING_NAME_KEY);
@@ -248,8 +261,11 @@ export default function AuthModal({
       setPendingEmail(savedEmail);
       setPendingFullName(savedName || "");
       setSignUpStep("verifyEmail");
-      setVerificationCountdown(45);
+      setVerificationCountdown(RESEND_COOLDOWN_SECONDS);
       setIsResendEnabled(false);
+      setVerificationNotice(
+        "Te enviamos un correo de verificación. Revisá tu bandeja de entrada o spam.",
+      );
     } else {
       setSignUpStep("form");
     }
@@ -341,12 +357,12 @@ export default function AuthModal({
       });
 
       // ✅ Si NO está verificado (caso raro en Google), entramos a verifyEmail y enviamos correo
-      if (!verifiedNow) {
+      if (false && !verifiedNow) {
         // Reenvío vía Firebase (tu función del context)
         // Nota: sendVerifyEmailPro usa sendEmailVerification(auth.currentUser)
         await sendVerifyEmailPro().catch(() => {});
         setSignUpStep("verifyEmail");
-        setVerificationCountdown(45);
+        setVerificationCountdown(RESEND_COOLDOWN_SECONDS);
         setIsResendEnabled(false);
         return;
       }
@@ -391,12 +407,12 @@ export default function AuthModal({
         setPendingEmail((u as any).email);
         setPendingFullName((u as any).fullName || "");
 
-        // Intentamos enviar de nuevo por si nunca llegó
-        await sendVerifyEmailPro().catch(() => {});
-
         setSignUpStep("verifyEmail");
-        setVerificationCountdown(45);
+        setVerificationCountdown(RESEND_COOLDOWN_SECONDS);
         setIsResendEnabled(false);
+        setVerificationNotice(
+          "Te enviamos un correo de verificación. Revisá tu bandeja de entrada o spam.",
+        );
         setGlobalError(
           "Tu cuenta aún no está verificada. Revisá tu correo y Spam.",
         );
@@ -451,10 +467,16 @@ export default function AuthModal({
       setPendingFullName(signUpFullName);
 
       setSignUpStep("verifyEmail");
-      setVerificationCountdown(45);
+      setVerificationCountdown(RESEND_COOLDOWN_SECONDS);
       setIsResendEnabled(false);
+      setVerificationNotice(
+        user.verificationEmailSent
+          ? "Te enviamos un correo de verificación. Revisá tu bandeja de entrada o spam."
+          : user.verificationEmailError ||
+              "La cuenta fue creada, pero no pudimos enviar el correo de verificación. Probá reenviarlo en unos minutos.",
+      );
     } catch (e: any) {
-      setGlobalError(e?.message || "No se pudo crear la cuenta.");
+      setGlobalError(getFriendlyAuthError(e, "No se pudo crear la cuenta."));
     } finally {
       setLoading(false);
     }
@@ -501,12 +523,17 @@ export default function AuthModal({
 
       await sendVerifyEmailPro();
 
-      setVerificationCountdown(45);
+      setVerificationCountdown(RESEND_COOLDOWN_SECONDS);
       setIsResendEnabled(false);
+      setVerificationNotice(
+        "Te enviamos un correo de verificación. Revisá tu bandeja de entrada o spam.",
+      );
 
       openGmail();
     } catch (e: any) {
-      setGlobalError(e?.message || "No se pudo reenviar.");
+      setVerificationCountdown(RESEND_COOLDOWN_SECONDS);
+      setIsResendEnabled(false);
+      setGlobalError(getFriendlyAuthError(e, "No se pudo reenviar."));
     } finally {
       setLoading(false);
     }
@@ -1171,6 +1198,11 @@ export default function AuthModal({
                       <span className="font-semibold">{pendingEmail}</span>.
                       Abrilo y confirmá tu cuenta para continuar.
                     </p>
+                    {verificationNotice && (
+                      <p className="mt-2 text-sm text-[#FFF4E6]">
+                        {verificationNotice}
+                      </p>
+                    )}
                   </div>
 
                   {/* ✅ FIX SCROLL */}

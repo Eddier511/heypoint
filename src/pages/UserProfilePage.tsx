@@ -40,6 +40,16 @@ type ApiProfile = {
   pickupPoint?: string;
 };
 
+const RESEND_COOLDOWN_SECONDS = 60;
+const TOO_MANY_REQUESTS_MESSAGE =
+  "Hiciste demasiados intentos. Esperá unos minutos antes de volver a intentarlo.";
+
+function getFriendlyAuthError(error: any, fallback: string) {
+  const raw = String(error?.code || error?.message || "");
+  if (raw.includes("too-many-requests")) return TOO_MANY_REQUESTS_MESSAGE;
+  return error?.message || fallback;
+}
+
 interface UserProfilePageProps {
   onNavigate?: (page: string) => void;
   isLoggedIn?: boolean;
@@ -133,6 +143,13 @@ export function UserProfilePage({
   const [showChangeEmailModal, setShowChangeEmailModal] = useState(false);
 
   const [checkingEmail, setCheckingEmail] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((prev) => prev - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
 
   const refreshVerifiedState = async () => {
     try {
@@ -146,12 +163,18 @@ export function UserProfilePage({
   };
 
   const handleResendVerification = async () => {
+    if (resendCooldown > 0) return;
     try {
       setPageError("");
       await sendVerifyEmailPro(); // reenvía verificación
+      setResendCooldown(RESEND_COOLDOWN_SECONDS);
     } catch (e: any) {
+      setResendCooldown(RESEND_COOLDOWN_SECONDS);
       setPageError(
-        e?.message || "No se pudo reenviar el correo de verificación.",
+        getFriendlyAuthError(
+          e,
+          "No se pudo reenviar el correo de verificación.",
+        ),
       );
     }
   };
@@ -621,14 +644,21 @@ export function UserProfilePage({
                                 <button
                                   type="button"
                                   onClick={handleResendVerification}
-                                  className="text-[#FF6B00] hover:text-[#e56000] transition-colors inline-flex items-center gap-1"
+                                  disabled={resendCooldown > 0}
+                                  className={`transition-colors inline-flex items-center gap-1 ${
+                                    resendCooldown > 0
+                                      ? "text-gray-400 cursor-not-allowed"
+                                      : "text-[#FF6B00] hover:text-[#e56000]"
+                                  }`}
                                   style={{
                                     fontSize: "0.813rem",
                                     fontWeight: 600,
                                   }}
                                 >
                                   <Mail className="w-3.5 h-3.5" />
-                                  Reenviar verificación
+                                  {resendCooldown > 0
+                                    ? `Reenviar en ${resendCooldown}s`
+                                    : "Reenviar verificación"}
                                 </button>
                               )}
 

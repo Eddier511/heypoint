@@ -33,6 +33,8 @@ interface User {
   fullName: string;
   uid?: string;
   emailVerified?: boolean;
+  verificationEmailSent?: boolean;
+  verificationEmailError?: string;
 }
 
 type GoogleOAuthResult = {
@@ -94,6 +96,19 @@ interface AuthContextType {
 
 const STORAGE_KEY = "heypoint_id_token";
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+function isTooManyRequestsError(error: any) {
+  return String(error?.code || error?.message || "").includes(
+    "too-many-requests",
+  );
+}
+
+function friendlyVerificationError(error: any) {
+  if (isTooManyRequestsError(error)) {
+    return "Hiciste demasiados intentos. Esperá unos minutos antes de volver a intentarlo.";
+  }
+  return error?.message || "No se pudo enviar el correo de verificación.";
+}
 
 function mapFirebaseUser(u: FirebaseUser): User {
   return {
@@ -238,18 +253,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await persistToken(false);
     await bootstrapCustomerProfile(cred.user, fullName);
 
-    // ✅ enviar verificación (link vuelve a tu web)
     const continueUrl = `${window.location.origin}/?verified=1`;
-    await sendEmailVerification(cred.user, {
-      url: continueUrl,
-      handleCodeInApp: false,
-    });
+    let verificationEmailSent = false;
+    let verificationEmailError = "";
+    try {
+      await sendEmailVerification(cred.user, {
+        url: continueUrl,
+        handleCodeInApp: false,
+      });
+      verificationEmailSent = true;
+    } catch (error: any) {
+      verificationEmailError = friendlyVerificationError(error);
+      console.error("[AuthContext] email verification send failed", {
+        uid: cred.user.uid,
+        email: cred.user.email || email,
+        error,
+      });
+    }
 
     return {
       uid: cred.user.uid,
       email: cred.user.email || email,
       fullName,
       emailVerified: !!cred.user.emailVerified,
+      verificationEmailSent,
+      verificationEmailError,
     };
   };
 
@@ -349,10 +377,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!u) throw new Error("No hay sesión activa.");
 
     const continueUrl = `${window.location.origin}/?verified=1`;
-    await sendEmailVerification(u, {
-      url: continueUrl,
-      handleCodeInApp: false,
-    });
+    try {
+      await sendEmailVerification(u, {
+        url: continueUrl,
+        handleCodeInApp: false,
+      });
+    } catch (error: any) {
+      console.error("[AuthContext] email verification resend failed", {
+        uid: u.uid,
+        email: u.email,
+        error,
+      });
+      throw new Error(friendlyVerificationError(error));
+    }
 
     await persistToken(false);
   }, [persistToken]);
