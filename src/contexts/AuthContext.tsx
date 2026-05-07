@@ -180,6 +180,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return mapFirebaseUser(cred.user);
   };
 
+  const bootstrapCustomerProfile = async (
+    firebaseUser: FirebaseUser,
+    fullName?: string,
+  ) => {
+    const token = await fbGetIdToken(firebaseUser, true);
+    localStorage.setItem(STORAGE_KEY, token);
+
+    const res = await fetch(apiUrl("/customers/bootstrap"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ fullName }),
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(
+        `No se pudo crear el cliente (${res.status}). ${text}`.trim(),
+      );
+    }
+  };
+
   const sendResetPassword = useCallback(async (email: string) => {
     const e = (email || "").trim();
     if (!e) throw new Error("Email requerido.");
@@ -195,6 +219,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(cred.user, { displayName: fullName });
     await persistToken(false);
+    await bootstrapCustomerProfile(cred.user, fullName);
 
     // ✅ enviar verificación (link vuelve a tu web)
     const continueUrl = `${window.location.origin}/?verified=1`;
@@ -222,6 +247,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await persistToken(false);
 
     const u = mapFirebaseUser(cred.user);
+    if (isNewUser) {
+      await bootstrapCustomerProfile(cred.user, u.fullName);
+    }
     return { user: u, isNewUser };
   };
 
