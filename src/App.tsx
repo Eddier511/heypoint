@@ -104,6 +104,8 @@ type Page =
  */
 interface Product {
   id: string;
+  // Firestore product document ID used for cart/order stock operations.
+  backendId?: string;
   name: string;
   image: string;
   price: number;

@@ -34,6 +34,8 @@ type ApiProduct = {
 
 interface UiProduct {
   id: string;
+  // Firestore product document ID used for cart/order stock operations.
+  backendId?: string;
   name: string;
   image: string;
   price: number;
@@ -403,7 +405,7 @@ export function ProductDetailsPage({
 
                 <div className="flex gap-3">
                   <AddToCartButton
-                    productId={currentProduct.id}
+                    productId={currentProduct.backendId ?? currentProduct.id}
                     productName={currentProduct.name}
                     productImage={currentProduct.image}
                     productPrice={currentProduct.price}
