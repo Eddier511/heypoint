@@ -137,6 +137,7 @@ export function ShopPage({
 }: ShopPageProps) {
   const itemsPerPage = 12;
   const shouldReduceMotion = useReducedMotion();
+  const productsGridRef = useRef<HTMLElement>(null);
 
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 20000]);
   const [priceMax, setPriceMax] = useState(20000);
@@ -565,7 +566,10 @@ export function ShopPage({
                     </div>
 
                     <Button
-                      onClick={() => setIsOfertasFilterActive(true)}
+                      onClick={() => {
+                        setIsOfertasFilterActive(true);
+                        productsGridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }}
                       variant="ghost"
                       className="hidden sm:flex bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-full px-4 py-2"
                       style={{ fontSize: "0.938rem", fontWeight: 600 }}
@@ -798,7 +802,10 @@ export function ShopPage({
 
                   <div className="sm:hidden mt-4 flex justify-center">
                     <button
-                      onClick={() => setIsOfertasFilterActive(true)}
+                      onClick={() => {
+                        setIsOfertasFilterActive(true);
+                        productsGridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }}
                       className="text-[#FF6B00] hover:text-[#e56000] transition-colors flex items-center gap-1"
                       style={{ fontSize: "0.938rem", fontWeight: 600 }}
                     >
@@ -850,7 +857,7 @@ export function ShopPage({
               </Card>
             </aside>
 
-            <main className="flex-1 min-w-0">
+            <main ref={productsGridRef} className="flex-1 min-w-0">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 bg-white p-4 rounded-2xl shadow-sm">
                 <p className="text-[#2E2E2E]" style={{ fontSize: "0.938rem" }}>
                   {isCatalogLoading ? (

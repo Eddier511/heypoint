@@ -8,6 +8,7 @@ import {
   CheckCircle,
   HelpCircle,
   Key,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
@@ -66,6 +67,23 @@ export function ShoppingCartPage({
 
   const removeItem = async (productId: string) => {
     await removeFromCart(productId);
+  };
+
+  // Items where the cart quantity exceeds available stock (including stock === 0)
+  const invalidItems = useMemo(
+    () => cartItems.filter((item) => item.quantity > item.stock),
+    [cartItems],
+  );
+  const hasStockIssue = invalidItems.length > 0;
+
+  const adjustCart = async () => {
+    await Promise.all(
+      invalidItems.map((item) =>
+        item.stock > 0
+          ? updateCartItem(item.productId, item.stock)
+          : removeFromCart(item.productId),
+      ),
+    );
   };
 
   const subtotalProductos = cartItems.reduce((sum, item) => {
@@ -427,16 +445,64 @@ export function ShoppingCartPage({
 
                     {cartItems.length > 0 && (
                       <>
+                        {hasStockIssue && (
+                          <div className="mb-4 p-4 bg-[#FFF8F0] border-2 border-[#FFCF9D] rounded-2xl">
+                            <div className="flex gap-3 mb-3">
+                              <AlertTriangle className="w-5 h-5 text-[#FF6B00] flex-shrink-0 mt-0.5" />
+                              <div>
+                                <p
+                                  className="text-[#1C2335] mb-1"
+                                  style={{ fontSize: "0.938rem", fontWeight: 600 }}
+                                >
+                                  Algunos productos ya no tienen stock suficiente
+                                </p>
+                                <p
+                                  className="text-[#4A4A4A]"
+                                  style={{ fontSize: "0.813rem", lineHeight: 1.5 }}
+                                >
+                                  Revisá tu carrito antes de continuar.
+                                </p>
+                                <ul className="mt-2 space-y-0.5">
+                                  {invalidItems.map((item) => (
+                                    <li
+                                      key={item.productId}
+                                      className="text-[#CC4400]"
+                                      style={{ fontSize: "0.813rem", fontWeight: 500 }}
+                                    >
+                                      {item.name}
+                                      {item.stock === 0
+                                        ? " — sin stock"
+                                        : ` — solo ${item.stock} disponible${item.stock === 1 ? "" : "s"}`}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            </div>
+                            <Button
+                              onClick={adjustCart}
+                              className="w-full py-3 rounded-full text-white"
+                              style={{
+                                fontSize: "0.938rem",
+                                fontWeight: 600,
+                                backgroundColor: "#FF6B00",
+                              }}
+                            >
+                              Actualizar carrito
+                            </Button>
+                          </div>
+                        )}
+
                         <Button
                           onClick={() => onNavigate?.("checkout")}
-                          className="w-full mb-3 py-6 rounded-full shadow-lg transition-all transform hover:scale-105 text-white"
+                          disabled={hasStockIssue}
+                          className="w-full mb-3 py-6 rounded-full shadow-lg transition-all transform hover:scale-105 text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                           style={{
                             fontSize: "1rem",
                             fontWeight: 600,
                             backgroundColor: "#FF6B00",
                           }}
                         >
-                          Continuar con el pago
+                          Ir a pagar
                         </Button>
 
                         <Button
