@@ -8,6 +8,7 @@ import { Card } from "../components/ui/card";
 import { Label } from "../components/ui/label";
 import { ChangeEmailModal } from "../components/ChangeEmailModal";
 import { useStoreSettings } from "../hooks/useStoreSettings";
+import { API_URL } from "../lib/api";
 
 import {
   User,
@@ -76,7 +77,7 @@ export function UserProfilePage({
   onLogout,
 }: UserProfilePageProps) {
   const {
-    getIdToken,
+    getAuthToken,
     currentUser,
     changePassword,
     refreshEmailVerification,
@@ -88,20 +89,9 @@ export function UserProfilePage({
     storeSettings?.pickupPoint?.name ||
     "Vilanova Haedo";
 
-  function resolveApiBase() {
-    const raw =
-      import.meta.env.VITE_API_URL ||
-      import.meta.env.VITE_API_BASE_URL ||
-      "http://localhost:4000"; // ✅ SIN /api
-    return raw.replace(/\/+$/, ""); // quita trailing slash
-  }
-
-  const API_BASE = resolveApiBase();
-
   function apiUrl(path: string) {
-    // fuerza siempre /api + path
     const clean = path.startsWith("/") ? path : `/${path}`;
-    return `${API_BASE}/api${clean}`;
+    return `${API_URL}${clean}`;
   }
 
   // UI states
@@ -212,10 +202,12 @@ export function UserProfilePage({
       setPageError("");
 
       try {
-        const idToken = await getIdToken();
+        const idToken = await getAuthToken(true);
         if (!idToken) throw new Error("No hay sesión activa.");
 
-        const res = await fetch(apiUrl("/customers/me"), {
+        const url = apiUrl("/customers/me");
+
+        const res = await fetch(url, {
           headers: {
             Authorization: `Bearer ${idToken}`,
           },
@@ -255,7 +247,16 @@ export function UserProfilePage({
         setOriginalData(next);
       } catch (e: any) {
         if (!mounted) return;
-        setPageError(e?.message || "Error cargando el perfil.");
+        console.error("[UserProfilePage] profile fetch failed", {
+          apiUrl: apiUrl("/customers/me"),
+          apiBase: API_URL,
+          userUid: currentUser?.uid,
+          userEmail: currentUser?.email,
+          error: e,
+        });
+        setPageError(
+          "No pudimos cargar tu perfil. Intentá nuevamente en unos segundos.",
+        );
       } finally {
         if (!mounted) return;
         setPageLoading(false);
@@ -266,7 +267,7 @@ export function UserProfilePage({
     return () => {
       mounted = false;
     };
-  }, [API_BASE, getIdToken, currentUser, globalPickupPoint]);
+  }, [getAuthToken, currentUser, globalPickupPoint]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -370,7 +371,7 @@ export function UserProfilePage({
     setIsSaving(true);
 
     try {
-      const idToken = await getIdToken();
+      const idToken = await getAuthToken(false);
       if (!idToken) throw new Error("No hay sesión activa.");
 
       // 1) Guardar perfil en backend

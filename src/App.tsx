@@ -263,7 +263,15 @@ function AppContent() {
 
   // ✅ categorías API
   // Use contexts
-  const { user, login, loadingAuth } = useAuth();
+  const {
+    user,
+    login,
+    loadingAuth,
+    currentUser,
+    refreshEmailVerification,
+    fetchMe,
+    getAuthToken,
+  } = useAuth();
   const { openLoginModal, openSignupModal, closeAllModals, openedAt } =
     useModal();
   const { clearCart } = useCart();
@@ -357,6 +365,61 @@ function AppContent() {
     window.addEventListener("heypoint:logout", handleLogout);
     return () => window.removeEventListener("heypoint:logout", handleLogout);
   }, [loadingAuth]);
+
+  useEffect(() => {
+    if (loadingAuth || !currentUser) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("verified") !== "1") return;
+
+    let cancelled = false;
+
+    async function handleVerifiedRedirect() {
+      try {
+        const verified = await refreshEmailVerification();
+        await getAuthToken(true);
+        const me = await fetchMe();
+        const profile = me.profile;
+
+        if (!cancelled && verified && profile?.profileComplete === false) {
+          localStorage.setItem("heypoint_pending_profile", "1");
+          localStorage.setItem(
+            "heypoint_pending_email",
+            profile.email || currentUser?.email || "",
+          );
+          localStorage.setItem(
+            "heypoint_pending_name",
+            profile.fullName || currentUser?.displayName || "",
+          );
+          openSignupModal();
+        }
+      } catch (error) {
+        console.error("[App] verified redirect handling failed", {
+          uid: currentUser?.uid,
+          email: currentUser?.email,
+          error,
+        });
+      } finally {
+        if (!cancelled) {
+          const url = new URL(window.location.href);
+          url.searchParams.delete("verified");
+          window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+        }
+      }
+    }
+
+    handleVerifiedRedirect();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    loadingAuth,
+    currentUser,
+    refreshEmailVerification,
+    getAuthToken,
+    fetchMe,
+    openSignupModal,
+  ]);
 
   useEffect(() => {
     window.scrollTo(0, 0);

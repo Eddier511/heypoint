@@ -462,6 +462,7 @@ export default function AuthModal({
 
       localStorage.setItem(PENDING_EMAIL_KEY, user.email);
       localStorage.setItem(PENDING_NAME_KEY, signUpFullName);
+      localStorage.setItem(PENDING_PROFILE_KEY, "1");
 
       setPendingEmail(user.email);
       setPendingFullName(signUpFullName);

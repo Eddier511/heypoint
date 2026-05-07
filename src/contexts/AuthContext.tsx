@@ -52,6 +52,7 @@ export type CustomerProfile = {
   birthDate?: string;
   apartmentNumber?: string;
   pickupPoint?: string;
+  profileComplete?: boolean;
 };
 
 interface AuthContextType {
@@ -361,8 +362,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const u = auth.currentUser;
     if (!u) return false;
     await reload(u);
+    await persistToken(true);
+    setFbUser(auth.currentUser);
     return !!auth.currentUser?.emailVerified;
-  }, []);
+  }, [persistToken]);
 
   const isEmailVerified = useCallback(async () => {
     const u = auth.currentUser;
