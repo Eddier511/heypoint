@@ -47,6 +47,7 @@ interface Product {
   category: string;
   badges?: string[];
   stock: number;
+  isFeatured: boolean;
 }
 
 interface ShopPageProps {
@@ -85,6 +86,7 @@ type ApiProduct = {
 
   stock?: number;
   status?: "active" | "inactive";
+  isFeatured?: boolean;
   images?: string[];
   createdAt?: string;
   updatedAt?: string;
@@ -272,6 +274,7 @@ export function ShopPage({
         category: categoryName,
         badges: hasDiscount ? ["Sale"] : undefined,
         stock: typeof p.stock === "number" ? p.stock : 0,
+        isFeatured: Boolean(p.isFeatured ?? false),
       };
     });
 
@@ -392,9 +395,7 @@ export function ShopPage({
   };
 
   const productosEnOferta = useMemo(() => {
-    return products
-      .filter((p) => p.originalPrice !== undefined && p.originalPrice > p.price)
-      .slice(0, 6);
+    return products.filter((p) => p.isFeatured === true);
   }, [products]);
   const shouldShowOffersSection =
     isCatalogLoading || productosEnOferta.length > 0;
@@ -733,9 +734,11 @@ export function ShopPage({
                                         }
                                         className="block w-full h-full object-contain p-2"
                                       />
-                                      <div className="absolute top-3 right-3">
-                                        <SaleChip variant="orange" size="lg" />
-                                      </div>
+                                      {hasDiscount && (
+                                        <div className="absolute top-3 right-3">
+                                          <SaleChip variant="orange" size="lg" />
+                                        </div>
+                                      )}
                                     </div>
 
                                     <div className="flex-1 flex flex-col pt-2">
