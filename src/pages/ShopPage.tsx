@@ -856,9 +856,11 @@ export function ShopPage({
                                 }
                                 className="block w-full h-full object-contain p-2"
                               />
-                              <div className="absolute top-3 right-3">
-                                <SaleChip variant="orange" size="lg" />
-                              </div>
+                              {hasDiscount && (
+                                <div className="absolute top-3 right-3">
+                                  <SaleChip variant="orange" size="lg" />
+                                </div>
+                              )}
                             </div>
 
                             <div className="flex-1 flex flex-col pt-2">
