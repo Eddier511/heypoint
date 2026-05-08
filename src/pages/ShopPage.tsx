@@ -399,6 +399,24 @@ export function ShopPage({
   const shouldShowOffersSection =
     isCatalogLoading || productosEnOferta.length > 0;
 
+  const PLACEHOLDER_IMG = "https://placehold.co/600x400?text=HeyPoint";
+  const categoryShelfItems = useMemo(
+    () =>
+      apiCats.map((c) => ({
+        id: c.id,
+        name: c.name,
+        image: (c.imageUrl || c.image || PLACEHOLDER_IMG),
+        count: typeof c.productCount === "number" ? c.productCount : typeof c.items === "number" ? c.items : 0,
+      })),
+    [apiCats],
+  );
+
+  const handleCategoryCardClick = (categoryName: string) => {
+    setSelectedCategories([categoryName]);
+    setIsOfertasFilterActive(false);
+    productsGridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const FilterPanel = ({ onClose }: { onClose?: () => void }) => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -534,28 +552,126 @@ export function ShopPage({
             </Card>
           )}
 
+          {/* Category shelf */}
+          {(isCatalogLoading || categoryShelfItems.length > 0) && (
+            <div className="mb-6 sm:mb-8">
+              <h2
+                className="text-[#1C2335] mb-3"
+                style={{ fontSize: "1.125rem", fontWeight: 700 }}
+              >
+                Explorá por categoría
+              </h2>
+              {/* Mobile: horizontal scroll. Desktop: flex-wrap row that fills width */}
+              <div className="lg:hidden overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide">
+                <div className="flex gap-3 min-w-max">
+                  {isCatalogLoading
+                    ? Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i} className="w-[100px] flex-shrink-0 animate-pulse">
+                          <div className="rounded-2xl bg-white shadow-sm p-3">
+                            <div className="aspect-square rounded-xl bg-gray-200 mb-2" />
+                            <div className="h-3 bg-gray-200 rounded-full" />
+                          </div>
+                        </div>
+                      ))
+                    : categoryShelfItems.map((cat) => {
+                        const isActive = selectedCategories.includes(cat.name);
+                        return (
+                          <button
+                            key={cat.id}
+                            onClick={() => handleCategoryCardClick(cat.name)}
+                            className={`w-[100px] flex-shrink-0 group text-left focus:outline-none rounded-2xl transition-all duration-200 bg-white shadow-sm border ${
+                              isActive
+                                ? "border-[#FF6B00] shadow-md ring-2 ring-[#FF6B00]/20"
+                                : "border-transparent"
+                            }`}
+                          >
+                            <div className="p-3">
+                              <div className="relative aspect-square rounded-xl overflow-hidden bg-[#F9FAFB] flex items-center justify-center mb-2">
+                                <ImageWithFallback
+                                  src={cat.image}
+                                  alt={cat.name}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-[#1C2335]/40 to-transparent" />
+                                {cat.count > 0 && (
+                                  <span
+                                    className="absolute top-1.5 right-1.5 bg-white/90 backdrop-blur-sm text-[#1C2335] rounded-full px-2 py-0.5 leading-none shadow-sm"
+                                    style={{ fontSize: "0.625rem", fontWeight: 700 }}
+                                  >
+                                    {cat.count}
+                                  </span>
+                                )}
+                              </div>
+                              <p className={`text-center truncate leading-tight text-sm font-medium ${isActive ? "text-[#FF6B00]" : "text-[#1A1A1A]"}`}>
+                                {cat.name}
+                              </p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                </div>
+              </div>
+              <div className="hidden lg:flex flex-wrap gap-3">
+                {isCatalogLoading
+                  ? Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className="w-[152px] animate-pulse">
+                        <div className="rounded-2xl bg-white shadow-sm p-3">
+                          <div className="aspect-square rounded-xl bg-gray-200 mb-2" />
+                          <div className="h-3 bg-gray-200 rounded-full" />
+                        </div>
+                      </div>
+                    ))
+                  : categoryShelfItems.map((cat) => {
+                      const isActive = selectedCategories.includes(cat.name);
+                      return (
+                        <button
+                          key={cat.id}
+                          onClick={() => handleCategoryCardClick(cat.name)}
+                          className={`w-[152px] group text-left focus:outline-none rounded-2xl transition-all duration-200 bg-white shadow-sm border hover:-translate-y-[1px] hover:shadow-md ${
+                            isActive
+                              ? "border-[#FF6B00] shadow-md ring-2 ring-[#FF6B00]/20"
+                              : "border-transparent"
+                          }`}
+                        >
+                          <div className="p-3">
+                            <div className="relative aspect-square rounded-xl overflow-hidden bg-[#F9FAFB] flex items-center justify-center mb-2">
+                              <ImageWithFallback
+                                src={cat.image}
+                                alt={cat.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-[#1C2335]/40 to-transparent" />
+                              {cat.count > 0 && (
+                                <span
+                                  className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm text-[#1C2335] rounded-full px-2 py-0.5 leading-none shadow-sm"
+                                  style={{ fontSize: "0.688rem", fontWeight: 700 }}
+                                >
+                                  {cat.count}
+                                </span>
+                              )}
+                            </div>
+                            <p className={`text-center truncate leading-tight font-semibold ${isActive ? "text-[#FF6B00]" : "text-[#1A1A1A]"}`} style={{ fontSize: "0.813rem" }}>
+                              {cat.name}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+              </div>
+            </div>
+          )}
+
           {/* Ofertas */}
           {shouldShowOffersSection && (
             <div className="mb-4 sm:mb-10">
               {/* Section header */}
-              <div className="flex items-end justify-between mb-3 sm:mb-5">
-                <div>
-                  <h2
-                    className="text-[#1C2335]"
-                    style={{
-                      fontSize: "clamp(1.25rem, 3vw, 1.75rem)",
-                      fontWeight: 700,
-                    }}
-                  >
-                    🔥 Ofertas destacadas para vos
-                  </h2>
-                  <p
-                    className="text-[#4A4A4A]/60 mt-1"
-                    style={{ fontSize: "0.875rem" }}
-                  >
-                    Aprovechá estos precios exclusivos
-                  </p>
-                </div>
+              <div className="flex items-center justify-between mb-3 sm:mb-5">
+                <h2
+                  className="text-[#1C2335]"
+                  style={{ fontSize: "1.125rem", fontWeight: 700 }}
+                >
+                  🔥 Ofertas destacadas para vos
+                </h2>
                 <button
                   onClick={() => {
                     setIsOfertasFilterActive(true);
@@ -569,7 +685,21 @@ export function ShopPage({
               </div>
 
               {isCatalogLoading ? (
-                <div className="min-h-[200px]" aria-hidden="true" />
+                <div className="overflow-x-auto -mx-4 px-4 pb-4 lg:overflow-visible lg:mx-0 lg:px-0 lg:pb-0 scrollbar-hide">
+                  <div className="flex gap-4 min-w-max lg:grid lg:min-w-0 lg:gap-6" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i} className="w-[280px] sm:w-[320px] lg:w-auto flex-shrink-0 animate-pulse">
+                        <div className="rounded-2xl bg-white shadow-sm p-4">
+                          <div className="aspect-square rounded-xl bg-gray-200 mb-3" />
+                          <div className="h-4 bg-gray-200 rounded-full mb-2" />
+                          <div className="h-4 bg-gray-200 rounded-full w-3/4 mb-4" />
+                          <div className="h-6 bg-gray-200 rounded-full w-1/2 mb-3" />
+                          <div className="h-10 bg-gray-200 rounded-full" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               ) : (
                 <>
                   {!isLargeViewport ? (
@@ -587,10 +717,10 @@ export function ShopPage({
                                   className="w-[280px] sm:w-[320px] flex-shrink-0"
                                 >
                                   <Card
-                                    className={`group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-sm p-4 min-h-[340px] transition-opacity${product.stock === 0 ? " opacity-80" : ""}`}
+                                    className={`group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-sm p-4 min-h-[300px] transition-opacity${product.stock === 0 ? " opacity-80" : ""}`}
                                     onClick={() => onProductClick(product)}
                                   >
-                                    <div className="relative aspect-square rounded-xl overflow-hidden flex-shrink-0 bg-white">
+                                    <div className="relative h-36 rounded-xl overflow-hidden flex-shrink-0 bg-white">
                                       <ImageWithFallback
                                         src={product.image}
                                         alt={product.name}
@@ -704,12 +834,13 @@ export function ShopPage({
                       return (
                         <div
                           key={product.id}
+                          className="h-full"
                         >
                           <Card
-                            className={`group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-sm p-4 transition-opacity${product.stock === 0 ? " opacity-80" : ""}`}
+                            className={`group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-sm p-4 h-full transition-opacity${product.stock === 0 ? " opacity-80" : ""}`}
                             onClick={() => onProductClick(product)}
                           >
-                            <div className="relative aspect-square rounded-xl overflow-hidden flex-shrink-0 bg-white">
+                            <div className="relative h-44 rounded-xl overflow-hidden flex-shrink-0 bg-white">
                               <ImageWithFallback
                                 src={product.image}
                                 alt={product.name}
@@ -845,10 +976,7 @@ export function ShopPage({
             </aside>
 
             <main ref={productsGridRef} className="flex-1 min-w-0">
-              <p className="text-[#4A4A4A]/50 mb-3 text-center xl:text-left" style={{ fontSize: "0.813rem" }}>
-                Comprá online y retirá en tu punto de forma rápida
-              </p>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 bg-white p-4 rounded-2xl shadow-sm">
+<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 bg-white p-4 rounded-2xl shadow-sm">
                 <p className="text-[#2E2E2E]" style={{ fontSize: "0.938rem" }}>
                   {isCatalogLoading ? (
                     "Cargando productos..."
