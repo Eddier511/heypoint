@@ -87,6 +87,9 @@ interface AuthContextType {
   fetchMe: () => Promise<{ exists: boolean; profile: CustomerProfile | null }>;
   saveProfile: (payload: CustomerProfile) => Promise<any>;
 
+  // provider detection
+  isGoogleUser: () => boolean;
+
   // account ops
   changePassword: (
     currentPassword: string,
@@ -440,6 +443,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return res.json().catch(() => ({}));
   };
 
+  const isGoogleUser = useCallback(() => {
+    return (
+      auth.currentUser?.providerData?.some(
+        (p) => p.providerId === "google.com",
+      ) ?? false
+    );
+  }, []);
+
   const changePassword = async (
     currentPassword: string,
     newPassword: string,
@@ -499,6 +510,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         fetchMe,
         saveProfile,
 
+        isGoogleUser,
         changePassword,
         updateDisplayName,
       }}

@@ -81,6 +81,12 @@ function validateAge16(dateStr: string): boolean {
   return age >= 16;
 }
 
+function getMaxBirthDate(): string {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - 16);
+  return d.toISOString().split("T")[0];
+}
+
 function normalizeDigits(v: string) {
   return (v || "").replace(/\D/g, "");
 }
@@ -615,7 +621,7 @@ export default function AuthModal({
 
     const uf = normalizeDigits(apartmentNumber).slice(0, 3);
     if (!uf || !/^\d{1,3}$/.test(uf)) {
-      setApartmentNumberError("La UF debe tener hasta 3 números.");
+      setApartmentNumberError("Ingresá un número válido (máx. 3 dígitos)");
       hasError = true;
     }
 
@@ -1421,15 +1427,17 @@ export default function AuthModal({
                             <Input
                               type="date"
                               value={birthDate}
+                              min="1900-01-01"
+                              max={getMaxBirthDate()}
                               onChange={(e) => {
                                 setBirthDate(e.target.value);
                                 setBirthDateError("");
                                 setStep2Dirty(true);
                               }}
-                              className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-colors ${
+                              className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-4 transition-all ${
                                 birthDateError
                                   ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                                  : "border-gray-200 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
+                                  : "border-gray-300 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
                               }`}
                             />
                           </div>
@@ -1443,7 +1451,7 @@ export default function AuthModal({
                         {/* Apartamento */}
                         <div>
                           <Label className="text-[#1C2335] mb-2 block font-semibold">
-                            Unidad Funcional (UF)
+                            UF
                           </Label>
                           <div className="relative min-w-0">
                             <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -1460,10 +1468,10 @@ export default function AuthModal({
                               inputMode="numeric"
                               maxLength={3}
                               pattern="[0-9]*"
-                              className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-colors ${
+                              className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-4 transition-all ${
                                 apartmentNumberError
                                   ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                                  : "border-gray-200 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
+                                  : "border-gray-300 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
                               }`}
                             />
                           </div>

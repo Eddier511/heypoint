@@ -71,6 +71,12 @@ function validateAge16(dateStr: string): boolean {
   return age >= 16;
 }
 
+function getMaxBirthDate(): string {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - 16);
+  return d.toISOString().split("T")[0];
+}
+
 export function UserProfilePage({
   onNavigate,
   isLoggedIn = true,
@@ -82,6 +88,7 @@ export function UserProfilePage({
     changePassword,
     refreshEmailVerification,
     sendVerifyEmailPro,
+    isGoogleUser,
   } = useAuth();
   const { settings: storeSettings } = useStoreSettings();
   const globalPickupPoint =
@@ -305,7 +312,7 @@ export function UserProfilePage({
 
     const uf = (profileData.apartmentNumber || "").trim();
     if (uf && !/^\d{1,3}$/.test(uf)) {
-      newErrors.apartmentNumber = "La UF debe tener hasta 3 números.";
+      newErrors.apartmentNumber = "Ingresá un número válido (máx. 3 dígitos)";
     }
 
     // Password validation if user wants to change it
@@ -728,6 +735,8 @@ export function UserProfilePage({
                             <Input
                               type="date"
                               value={profileData.birthDate}
+                              min="1900-01-01"
+                              max={getMaxBirthDate()}
                               onChange={(e) =>
                                 handleInputChange("birthDate", e.target.value)
                               }
@@ -842,7 +851,11 @@ export function UserProfilePage({
                             />
                           </div>
                           {errors.apartmentNumber && (
-                            <p className="text-red-500 mt-2 text-sm font-semibold">
+                            <p
+                              className="mt-2 text-red-500 flex items-center gap-1"
+                              style={{ fontSize: "0.813rem" }}
+                            >
+                              <AlertCircle className="w-4 h-4" />
                               {errors.apartmentNumber}
                             </p>
                           )}
@@ -851,6 +864,21 @@ export function UserProfilePage({
                     </div>
 
                     {/* Password section */}
+                    {isGoogleUser() ? (
+                      <div className="mb-8 p-5 rounded-2xl bg-blue-50 border border-blue-100 flex items-start gap-3">
+                        <svg className="w-5 h-5 mt-0.5 flex-shrink-0 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                        </svg>
+                        <div>
+                          <p className="text-blue-800 font-semibold" style={{ fontSize: "0.938rem" }}>
+                            Iniciás sesión con Google
+                          </p>
+                          <p className="text-blue-700 mt-1" style={{ fontSize: "0.875rem" }}>
+                            Tu cuenta no tiene contraseña. Para cambiarla, gestionala desde tu cuenta de Google.
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
                     <div className="mb-8">
                       <h2
                         className="text-[#1C2335] mb-6 pb-3 border-b border-gray-200"
@@ -1071,6 +1099,7 @@ export function UserProfilePage({
                         )}
                       </div>
                     </div>
+                    )}
 
                     {/* Actions */}
                     <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200">
