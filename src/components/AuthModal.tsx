@@ -242,6 +242,15 @@ export default function AuthModal({
   const [birthDateError, setBirthDateError] = useState("");
   const [apartmentNumber, setApartmentNumber] = useState("");
   const [apartmentNumberError, setApartmentNumberError] = useState("");
+
+  // Legal consent — signup form (step 1)
+  const [signUpTermsAccepted, setSignUpTermsAccepted] = useState(false);
+  const [signUpTermsError, setSignUpTermsError] = useState("");
+
+  // Legal consent — complete profile form (step 3, both email and Google new users)
+  const [profileTermsAccepted, setProfileTermsAccepted] = useState(false);
+  const [profileTermsError, setProfileTermsError] = useState("");
+
   const shouldReduceMotion = useReducedMotion();
 
   const pickupPoint =
@@ -502,6 +511,13 @@ export default function AuthModal({
       return;
     }
 
+    if (!signUpTermsAccepted) {
+      setSignUpTermsError(
+        "Debés aceptar los Términos y Condiciones para continuar.",
+      );
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -669,11 +685,21 @@ export default function AuthModal({
       hasError = true;
     }
 
+    // Only require consent in this step if the user did NOT already accept
+    // during email/password signup (signUpTermsAccepted covers that case).
+    if (!signUpTermsAccepted && !profileTermsAccepted) {
+      setProfileTermsError(
+        "Debés aceptar los Términos y Condiciones para continuar.",
+      );
+      hasError = true;
+    }
+
     if (hasError) return;
 
     try {
       setLoading(true);
 
+      const consentAt = new Date().toISOString();
       const finalUser = {
         email: pendingEmail,
         fullName: pendingFullName || "User",
@@ -682,6 +708,10 @@ export default function AuthModal({
         birthDate,
         apartmentNumber: uf,
         pickupPoint,
+        termsAccepted: true,
+        termsAcceptedAt: consentAt,
+        privacyAccepted: true,
+        privacyAcceptedAt: consentAt,
       };
 
       // ✅ FIX: token con retry (evita fallos random con Google)
@@ -712,6 +742,8 @@ export default function AuthModal({
     setDniError("");
     setBirthDateError("");
     setApartmentNumberError("");
+    setProfileTermsAccepted(false);
+    setProfileTermsError("");
     setStep2Dirty(false);
 
     setPhone("");
@@ -1098,6 +1130,69 @@ export default function AuthModal({
                             {passwordError && (
                               <p className="text-red-500 mt-2 text-sm font-semibold">
                                 {passwordError}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Legal consent */}
+                          <div className="space-y-2.5">
+                            <p className="text-sm text-gray-500 leading-relaxed">
+                              Te invitamos a conocer nuestras{" "}
+                              <a
+                                href="/privacidad"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[#FF6B00] hover:underline font-medium"
+                              >
+                                Políticas de Privacidad
+                              </a>{" "}
+                              y los{" "}
+                              <a
+                                href="/terminos"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[#FF6B00] hover:underline font-medium"
+                              >
+                                Términos y Condiciones
+                              </a>
+                              .
+                            </p>
+                            <label className="flex items-start gap-3 cursor-pointer select-none">
+                              <input
+                                type="checkbox"
+                                checked={signUpTermsAccepted}
+                                onChange={(e) => {
+                                  setSignUpTermsAccepted(e.target.checked);
+                                  if (e.target.checked) setSignUpTermsError("");
+                                }}
+                                className="mt-0.5 w-4 h-4 flex-shrink-0 rounded border-gray-300 accent-[#FF6B00]"
+                              />
+                              <span className="text-sm text-gray-600 leading-relaxed">
+                                He leído y acepto los{" "}
+                                <a
+                                  href="/terminos"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[#FF6B00] hover:underline font-medium"
+                                >
+                                  Términos y Condiciones
+                                </a>{" "}
+                                y las{" "}
+                                <a
+                                  href="/privacidad"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[#FF6B00] hover:underline font-medium"
+                                >
+                                  Políticas de Privacidad
+                                </a>
+                                .
+                              </span>
+                            </label>
+                            {signUpTermsError && (
+                              <p className="text-red-500 text-sm flex items-center gap-1">
+                                <span className="text-red-500">•</span>{" "}
+                                {signUpTermsError}
                               </p>
                             )}
                           </div>
@@ -1544,6 +1639,72 @@ export default function AuthModal({
                             {pickupPoint}
                           </div>
                         </div>
+
+                        {/* Legal consent — only shown for Google new users.
+                            Email/password users already accepted in step 1. */}
+                        {!signUpTermsAccepted && (
+                          <div className="space-y-2.5">
+                            <p className="text-sm text-gray-500 leading-relaxed">
+                              Te invitamos a conocer nuestras{" "}
+                              <a
+                                href="/privacidad"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[#FF6B00] hover:underline font-medium"
+                              >
+                                Políticas de Privacidad
+                              </a>{" "}
+                              y los{" "}
+                              <a
+                                href="/terminos"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[#FF6B00] hover:underline font-medium"
+                              >
+                                Términos y Condiciones
+                              </a>
+                              .
+                            </p>
+                            <label className="flex items-start gap-3 cursor-pointer select-none">
+                              <input
+                                type="checkbox"
+                                checked={profileTermsAccepted}
+                                onChange={(e) => {
+                                  setProfileTermsAccepted(e.target.checked);
+                                  if (e.target.checked) setProfileTermsError("");
+                                }}
+                                className="mt-0.5 w-4 h-4 flex-shrink-0 rounded border-gray-300 accent-[#FF6B00]"
+                              />
+                              <span className="text-sm text-gray-600 leading-relaxed">
+                                He leído y acepto los{" "}
+                                <a
+                                  href="/terminos"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[#FF6B00] hover:underline font-medium"
+                                >
+                                  Términos y Condiciones
+                                </a>{" "}
+                                y las{" "}
+                                <a
+                                  href="/privacidad"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[#FF6B00] hover:underline font-medium"
+                                >
+                                  Políticas de Privacidad
+                                </a>
+                                .
+                              </span>
+                            </label>
+                            {profileTermsError && (
+                              <p className="text-red-500 text-sm flex items-center gap-1">
+                                <span className="text-red-500">•</span>{" "}
+                                {profileTermsError}
+                              </p>
+                            )}
+                          </div>
+                        )}
 
                         <Button
                           type="submit"
