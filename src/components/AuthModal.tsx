@@ -30,7 +30,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import { useAuth } from "../contexts/AuthContext";
 import { useStoreSettings } from "../hooks/useStoreSettings";
 
-type SignUpStep = "form" | "verifyEmail" | "completeProfile";
+type SignUpStep = "form" | "creating" | "verifyEmail" | "completeProfile";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -357,6 +357,9 @@ export default function AuthModal({
   }, [signUpStep, verificationCountdown, isResendEnabled]);
 
   const guardedClose = useCallback(() => {
+    // Email verification is a hard blocking step — cannot be dismissed.
+    if (signUpStep === "verifyEmail") return;
+    if (signUpStep === "creating") return;
     if (signUpStep === "completeProfile" && step2Dirty) {
       setShowConfirmLeave(true);
       return;
@@ -520,6 +523,8 @@ export default function AuthModal({
 
     try {
       setLoading(true);
+      // Show intermediate loading screen immediately — hides the empty form flash.
+      setSignUpStep("creating");
 
       // ✅ crea usuario + envía verificación (lo hace AuthContext)
       const user = await signupWithEmail(
@@ -545,6 +550,8 @@ export default function AuthModal({
               "La cuenta fue creada, pero no pudimos enviar el correo de verificación. Probá reenviarlo en unos minutos.",
       );
     } catch (e: any) {
+      // Roll back to form so the user can correct and retry.
+      setSignUpStep("form");
       setGlobalError(getFriendlyAuthError(e, "No se pudo crear la cuenta."));
     } finally {
       setLoading(false);
@@ -781,13 +788,15 @@ export default function AuthModal({
               className="relative w-full max-w-[calc(100vw-1.5rem)] sm:max-w-md md:max-w-lg bg-white rounded-3xl shadow-2xl pointer-events-auto overflow-hidden flex flex-col my-auto min-h-0"
               style={{ height: "min(88vh, 900px)" }} // 🔥 CAMBIO: height fijo en vez de maxHeight
             >
-              <button
-                onClick={guardedClose}
-                className="absolute top-6 right-6 z-20 w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 text-[#2E2E2E] flex items-center justify-center transition-colors"
-                aria-label="Cerrar"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              {signUpStep !== "verifyEmail" && signUpStep !== "creating" && (
+                <button
+                  onClick={guardedClose}
+                  className="absolute top-6 right-6 z-20 w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 text-[#2E2E2E] flex items-center justify-center transition-colors"
+                  aria-label="Cerrar"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
 
               {!!globalError && (
                 <div className="px-6 md:px-8 pt-5">
@@ -1136,13 +1145,13 @@ export default function AuthModal({
 
                           {/* Legal consent */}
                           <div className="space-y-2.5">
-                            <p className="text-sm text-gray-500 leading-relaxed">
+                            <p className="text-xs text-gray-400 leading-relaxed">
                               Te invitamos a conocer nuestras{" "}
                               <a
                                 href="/privacidad"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-[#FF6B00] hover:underline font-medium"
+                                className="hover:underline"
                               >
                                 Políticas de Privacidad
                               </a>{" "}
@@ -1151,7 +1160,7 @@ export default function AuthModal({
                                 href="/terminos"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-[#FF6B00] hover:underline font-medium"
+                                className="hover:underline"
                               >
                                 Términos y Condiciones
                               </a>
@@ -1342,6 +1351,24 @@ export default function AuthModal({
                       </div>
                     )}
                   </div>
+                </div>
+              )}
+
+              {/* CREATING ACCOUNT — intermediate loading screen */}
+              {signUpStep === "creating" && (
+                <div className="flex flex-col items-center justify-center h-full px-8 py-16 text-center">
+                  <div className="w-16 h-16 rounded-full bg-[#FFF4E6] flex items-center justify-center mb-6">
+                    <RefreshCw className="w-8 h-8 text-[#FF6B00] animate-spin" />
+                  </div>
+                  <h2
+                    className="text-[#1C2335] font-bold"
+                    style={{ fontSize: "clamp(1.25rem, 3vw, 1.5rem)" }}
+                  >
+                    Estamos creando tu cuenta…
+                  </h2>
+                  <p className="mt-3 text-gray-500 text-sm leading-relaxed">
+                    Esto puede tardar unos segundos.
+                  </p>
                 </div>
               )}
 
@@ -1644,13 +1671,13 @@ export default function AuthModal({
                             Email/password users already accepted in step 1. */}
                         {!signUpTermsAccepted && (
                           <div className="space-y-2.5">
-                            <p className="text-sm text-gray-500 leading-relaxed">
+                            <p className="text-xs text-gray-400 leading-relaxed">
                               Te invitamos a conocer nuestras{" "}
                               <a
                                 href="/privacidad"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-[#FF6B00] hover:underline font-medium"
+                                className="hover:underline"
                               >
                                 Políticas de Privacidad
                               </a>{" "}
@@ -1659,7 +1686,7 @@ export default function AuthModal({
                                 href="/terminos"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-[#FF6B00] hover:underline font-medium"
+                                className="hover:underline"
                               >
                                 Términos y Condiciones
                               </a>
