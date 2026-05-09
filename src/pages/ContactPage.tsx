@@ -6,8 +6,8 @@ import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
 import { Button } from "../components/ui/button";
-import { Phone, Mail, Send } from "lucide-react";
-import { motion } from "motion/react";
+import { Phone, Mail, Send, ChevronDown } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -47,6 +47,8 @@ Solo utilizamos los datos necesarios para gestionar tu compra y generar el códi
 ];
 
 export function ContactPage({ onNavigate }: ContactPageProps) {
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -278,7 +280,7 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
 
               {/* Right: Contact Info Cards */}
               <div className="space-y-6">
-                <Card className="bg-white border-none shadow-md rounded-2xl p-6 hover:shadow-lg transition-shadow">
+                <Card className="bg-white border-none shadow-md rounded-2xl p-6 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-xl bg-[#FF6B00]/10 flex items-center justify-center flex-shrink-0">
                       <Phone className="w-6 h-6 text-[#FF6B00]" />
@@ -302,7 +304,7 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
                   </div>
                 </Card>
 
-                <Card className="bg-white border-none shadow-md rounded-2xl p-6 hover:shadow-lg transition-shadow">
+                <Card className="bg-white border-none shadow-md rounded-2xl p-6 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-xl bg-[#FF6B00]/10 flex items-center justify-center flex-shrink-0">
                       <Mail className="w-6 h-6 text-[#FF6B00]" />
@@ -335,7 +337,7 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.5 }}
             >
               <h2
                 className="text-[#1C2335] text-center mb-12"
@@ -344,31 +346,49 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
                 Preguntas Frecuentes
               </h2>
 
-              <div className="space-y-6">
-                {faqs.map((faq, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
-                  >
-                    <div className="pb-6 border-b border-gray-200 last:border-0">
-                      <h3
-                        className="text-[#1C2335] mb-3"
-                        style={{ fontSize: "1.125rem", fontWeight: 600 }}
+              <div className="divide-y divide-gray-100 border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+                {faqs.map((faq, index) => {
+                  const isOpen = openFaq === index;
+                  return (
+                    <div key={index} className="bg-white">
+                      <button
+                        type="button"
+                        onClick={() => setOpenFaq(isOpen ? null : index)}
+                        className="w-full flex items-center justify-between gap-4 px-6 py-5 text-left hover:bg-gray-50/70 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] focus-visible:ring-inset"
+                        aria-expanded={isOpen}
                       >
-                        {faq.question}
-                      </h3>
-                      <p
-                        className="text-[#2E2E2E]"
-                        style={{ fontSize: "0.938rem", lineHeight: "1.7" }}
-                      >
-                        {faq.answer}
-                      </p>
+                        <span
+                          className="text-[#1C2335]"
+                          style={{ fontSize: "1rem", fontWeight: 600 }}
+                        >
+                          {faq.question}
+                        </span>
+                        <ChevronDown
+                          className={`flex-shrink-0 w-5 h-5 text-[#FF6B00] transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                        />
+                      </button>
+                      <AnimatePresence initial={false}>
+                        {isOpen && (
+                          <motion.div
+                            key="content"
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+                            style={{ overflow: "hidden" }}
+                          >
+                            <p
+                              className="px-6 pb-6 text-[#2E2E2E] whitespace-pre-line"
+                              style={{ fontSize: "0.938rem", lineHeight: "1.75" }}
+                            >
+                              {faq.answer}
+                            </p>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
-                  </motion.div>
-                ))}
+                  );
+                })}
               </div>
             </motion.div>
           </div>

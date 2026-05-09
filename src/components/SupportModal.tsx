@@ -85,23 +85,6 @@ export function SupportModal({
         </>
       ),
     },
-    {
-      icon: MessageCircle,
-      question: "¿Necesitás contactarte con nosotros?",
-      answer: (
-        <>
-          Hacelo desde aquí:{" "}
-          <button
-            type="button"
-            onClick={handleWhatsAppClick}
-            className="text-[#FF6B00] underline underline-offset-2 hover:opacity-80"
-          >
-            contactanos por WhatsApp
-          </button>
-          .
-        </>
-      ),
-    },
   ];
 
   return createPortal(
@@ -114,16 +97,30 @@ export function SupportModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
             className="fixed inset-0 bg-black/40 z-[20000]"
             onClick={onClose}
           />
 
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ duration: 0.2 }}
+            variants={{
+              hidden: { opacity: 0, scale: 0.97, y: 14 },
+              visible: {
+                opacity: 1,
+                scale: 1,
+                y: 0,
+                transition: { type: "spring", stiffness: 380, damping: 28 },
+              },
+              exit: {
+                opacity: 0,
+                scale: 0.97,
+                y: 8,
+                transition: { duration: 0.15, ease: "easeIn" },
+              },
+            }}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
             className="fixed inset-0 z-[20010] flex items-start sm:items-center justify-center p-4"
           >
             <Card
@@ -158,17 +155,17 @@ export function SupportModal({
                 </p>
               </div>
 
-              <div className="p-6 space-y-5">
+              <div className="p-6 space-y-4">
                 {faqs.map((faq, index) => (
                   <div key={index}>
-                    <div className="flex gap-4">
-                      <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-[#FFF4E6] flex items-center justify-center">
-                        <faq.icon className="w-6 h-6 text-[#FF6B00]" />
+                    <div className="flex gap-4 rounded-xl p-3 -mx-3 hover:bg-gray-50/80 transition-colors duration-150">
+                      <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-[#FFF4E6] flex items-center justify-center">
+                        <faq.icon className="w-5 h-5 text-[#FF6B00]" />
                       </div>
 
                       <div className="flex-1">
                         <h3
-                          className="text-[#1C2335] mb-2"
+                          className="text-[#1C2335] mb-1.5"
                           style={{
                             fontSize: "0.938rem",
                             fontWeight: 600,
@@ -181,7 +178,7 @@ export function SupportModal({
                           className="text-[#2E2E2E]"
                           style={{
                             fontSize: "0.875rem",
-                            lineHeight: "1.6",
+                            lineHeight: "1.65",
                           }}
                         >
                           {faq.answer}
@@ -190,37 +187,30 @@ export function SupportModal({
                     </div>
 
                     {index < faqs.length - 1 && (
-                      <Separator className="mt-5 bg-gray-100" />
+                      <Separator className="mt-4 bg-gray-100" />
                     )}
                   </div>
                 ))}
               </div>
 
-              <div className="bg-[#FFF4E6] p-6 border-t border-gray-100">
-                <p
-                  className="text-[#2E2E2E] mb-4 text-center"
-                  style={{ fontSize: "0.875rem" }}
-                >
-                  ¿Todavía necesitás ayuda?
-                </p>
-
+              <div className="bg-[#FFF4E6] px-6 py-5 border-t border-gray-100">
                 <Button
                   onClick={handleWhatsAppClick}
-                  className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-full h-14 shadow-md"
+                  className="w-full bg-[#25D366] hover:bg-[#20bd5a] active:bg-[#1aad4e] text-white rounded-full h-13 shadow-sm transition-all duration-150"
                   style={{
                     fontSize: "0.938rem",
                     fontWeight: 600,
                   }}
                 >
                   <MessageCircle className="w-5 h-5 mr-2" />
-                  Contactanos por WhatsApp
+                  ¿Necesitás ayuda? Escribinos
                 </Button>
 
                 <p
-                  className="text-[#2E2E2E] mt-3 text-center"
+                  className="text-[#2E2E2E]/60 mt-3 text-center"
                   style={{ fontSize: "0.75rem" }}
                 >
-                  Respondemos en minutos
+                  Respondemos en minutos · Lun–Vie 9 a 18 hs
                 </p>
               </div>
             </Card>
