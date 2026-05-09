@@ -19,8 +19,6 @@ import {
   TabsList,
   TabsTrigger,
 } from "../components/ui/tabs";
-import { Switch } from "../components/ui/switch";
-import { Label } from "../components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -186,6 +184,378 @@ function buildLockersFromItems(items: OrderItem[]): LockerGroup[] {
   return lockers;
 }
 
+// ─── Stable module-level components ─────────────────────────────────────────
+// Defined outside MyOrdersPage so React always sees the same component type
+// across renders — prevents images from unmounting/flickering when parent
+// state changes (e.g. toggling the groupByLocker switch).
+
+interface OrderCardProps {
+  order: Order;
+  groupByLocker: boolean;
+  onViewDetails: (order: Order) => void;
+  onShowToken: (token: string) => void;
+}
+
+function OrderCard({
+  order,
+  groupByLocker,
+  onViewDetails,
+  onShowToken,
+}: OrderCardProps) {
+  const isCompleted = order.status === "completed";
+
+  return (
+    <Card
+      className={`border-none shadow-lg rounded-3xl overflow-hidden transition-all ${
+        isCompleted
+          ? "bg-gradient-to-br from-green-50 to-white"
+          : "bg-white hover:shadow-xl"
+      }`}
+    >
+      <div className="p-6 md:p-8">
+        {/* Header */}
+        <div className="flex flex-wrap items-start justify-between gap-4 mb-6 pb-6 border-b-2 border-gray-100">
+          <div className="flex-1">
+            <div className="flex items-center flex-wrap gap-3 mb-3">
+              <h3
+                className="text-[#1C2335]"
+                style={{ fontSize: "1.5rem", fontWeight: 700 }}
+              >
+                {order.orderId}
+              </h3>
+
+              {order.status === "pending" ? (
+                <Badge className="bg-gradient-to-r from-[#FF6B00] to-[#FF8534] text-white border-none px-3 py-1.5 rounded-full">
+                  <Clock className="w-3.5 h-3.5 mr-1.5" />
+                  <span style={{ fontSize: "0.813rem", fontWeight: 600 }}>
+                    Pendiente de retiro
+                  </span>
+                </Badge>
+              ) : (
+                <Badge className="bg-gradient-to-r from-green-500 to-green-600 text-white border-none px-3 py-1.5 rounded-full">
+                  <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
+                  <span style={{ fontSize: "0.813rem", fontWeight: 600 }}>
+                    Retirado
+                  </span>
+                </Badge>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <div
+                className="flex items-center gap-2 text-gray-600"
+                style={{ fontSize: "0.875rem" }}
+              >
+                <Clock className="w-4 h-4 flex-shrink-0" />
+                <span>
+                  <span style={{ fontWeight: 600 }}>Pedido:</span>{" "}
+                  {order.purchaseDate}
+                </span>
+              </div>
+              {order.completedDate && (
+                <div
+                  className="flex items-center gap-2 text-green-600"
+                  style={{ fontSize: "0.875rem" }}
+                >
+                  <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>
+                    <span style={{ fontWeight: 600 }}>Completado:</span>{" "}
+                    {order.completedDate}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="text-right">
+            <div
+              className="text-gray-500 mb-1"
+              style={{ fontSize: "0.875rem", fontWeight: 600 }}
+            >
+              Total
+            </div>
+            <div
+              className="text-[#FF6B00]"
+              style={{ fontSize: "2rem", fontWeight: 700 }}
+            >
+              {formatPrecioARS(order.total)}
+            </div>
+          </div>
+        </div>
+
+        {/* Products list */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <h4
+              className="text-[#1C2335]"
+              style={{ fontSize: "0.938rem", fontWeight: 600 }}
+            >
+              {groupByLocker
+                ? `Ubicaciones de retiro (${order.lockers.length})`
+                : `Productos (${order.items.length})`}
+            </h4>
+          </div>
+
+          <AnimatePresence mode="wait">
+            {groupByLocker ? (
+              <motion.div key="grouped" className="space-y-4">
+                {order.lockers.map((locker, lockerIndex) => (
+                  <div
+                    key={lockerIndex}
+                    className={`rounded-2xl p-4 ${
+                      lockerIndex % 2 === 0
+                        ? "bg-[#FFF4E6]"
+                        : "bg-white border-2 border-[#FFF4E6]"
+                    }`}
+                  >
+                    {/* Module header */}
+                    <div className="flex items-start gap-2 mb-3 pb-3 border-b border-[#FF6B00]/20">
+                      <MapPin className="w-5 h-5 text-[#FF6B00] flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <div
+                          className="text-[#1C2335]"
+                          style={{ fontSize: "0.938rem", fontWeight: 700 }}
+                        >
+                          {locker.lockerName}
+                        </div>
+                        <div
+                          className="text-[#2E2E2E]"
+                          style={{ fontSize: "0.813rem" }}
+                        >
+                          {locker.lockerLocation || ""}
+                        </div>
+                      </div>
+                      <div
+                        className="text-[#FF6B00]"
+                        style={{ fontSize: "0.875rem", fontWeight: 600 }}
+                      >
+                        {formatPrecioARS(locker.subtotal)}
+                      </div>
+                    </div>
+
+                    {/* Items */}
+                    <div className="space-y-3">
+                      {locker.items.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center gap-3"
+                        >
+                          {/* translateZ(0) → stable compositing layer → no scroll repaint flicker */}
+                          <div
+                            className="w-12 h-12 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0"
+                            style={{ transform: "translateZ(0)" }}
+                          >
+                            <ImageWithFallback
+                              src={item.image}
+                              alt={item.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h5
+                              className="text-[#1C2335] truncate"
+                              style={{ fontSize: "0.875rem", fontWeight: 600 }}
+                            >
+                              {item.name}
+                            </h5>
+                            <p
+                              className="text-[#2E2E2E]"
+                              style={{ fontSize: "0.75rem" }}
+                            >
+                              {item.quantity} × ${item.price.toFixed(2)}
+                            </p>
+                          </div>
+                          <div
+                            className="text-[#1C2335]"
+                            style={{ fontSize: "0.875rem", fontWeight: 600 }}
+                          >
+                            ${(item.quantity * item.price).toFixed(2)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </motion.div>
+            ) : (
+              <motion.div key="all" className="space-y-4">
+                {(() => {
+                  const groups = new Map<string, OrderItem[]>();
+                  for (const item of order.items) {
+                    const key = item.locker || "Sin módulo";
+                    const existing = groups.get(key);
+                    if (existing) existing.push(item);
+                    else groups.set(key, [item]);
+                  }
+                  return Array.from(groups.entries()).map(
+                    ([moduleName, groupItems]) => (
+                      <div key={moduleName}>
+                        <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[#FF6B00]/20">
+                          <Package className="w-4 h-4 text-[#FF6B00] flex-shrink-0" />
+                          <span
+                            className="text-[#1C2335]"
+                            style={{ fontSize: "0.875rem", fontWeight: 700 }}
+                          >
+                            {moduleName}
+                          </span>
+                        </div>
+                        <div className="space-y-3">
+                          {groupItems.map((item) => (
+                            <div
+                              key={item.id}
+                              className="flex items-center gap-4"
+                            >
+                              <div
+                                className="w-16 h-16 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0"
+                                style={{ transform: "translateZ(0)" }}
+                              >
+                                <ImageWithFallback
+                                  src={item.image}
+                                  alt={item.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <div className="flex-1">
+                                <h5
+                                  className="text-[#1C2335]"
+                                  style={{ fontSize: "0.938rem", fontWeight: 600 }}
+                                >
+                                  {item.name}
+                                </h5>
+                                <p
+                                  className="text-[#2E2E2E]"
+                                  style={{ fontSize: "0.813rem" }}
+                                >
+                                  Qty: {item.quantity} ×{" "}
+                                  ${item.price.toFixed(2)}
+                                </p>
+                              </div>
+                              <div
+                                className="text-[#1C2335]"
+                                style={{ fontSize: "1rem", fontWeight: 600 }}
+                              >
+                                ${(item.quantity * item.price).toFixed(2)}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ),
+                  );
+                })()}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Pickup Token */}
+        {order.status === "pending" && order.pickupToken && (
+          <div className="bg-gradient-to-r from-[#FF6B00]/10 to-[#FF6B00]/5 rounded-2xl p-4 mb-4 border-2 border-[#FF6B00]/20">
+            <div className="flex items-start gap-3">
+              <Hash className="w-6 h-6 text-[#FF6B00] flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <div
+                  className="text-[#1C2335] mb-1"
+                  style={{ fontSize: "0.938rem", fontWeight: 700 }}
+                >
+                  Token de retiro
+                </div>
+                <div
+                  className="text-[#FF6B00] tracking-wider mb-2"
+                  style={{ fontSize: "1.5rem", fontWeight: 700 }}
+                >
+                  {order.pickupToken}
+                </div>
+                <p className="text-[#2E2E2E]" style={{ fontSize: "0.75rem" }}>
+                  Usá este token para desbloquear todos los módulos de este
+                  pedido
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button
+            onClick={() => onViewDetails(order)}
+            variant="outline"
+            className="flex-1 py-5 rounded-full border-2 border-gray-200 hover:border-[#FF6B00] hover:bg-[#FFF4E6] hover:text-[#FF6B00] transition-all"
+            style={{ fontSize: "0.938rem", fontWeight: 600 }}
+          >
+            <Eye className="w-4 h-4 mr-2" />
+            Ver detalles
+          </Button>
+
+          {order.status === "pending" ? (
+            <Button
+              onClick={() => onShowToken(order.pickupToken)}
+              className="flex-1 bg-[#FF6B00] hover:bg-[#e56000] text-white py-5 rounded-full shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+              style={{ fontSize: "0.938rem", fontWeight: 600 }}
+              disabled={!order.pickupToken}
+            >
+              <Hash className="w-4 h-4 mr-2" />
+              Mostrar token
+            </Button>
+          ) : (
+            <Button
+              disabled
+              className="flex-1 bg-green-500 text-white py-5 rounded-full cursor-not-allowed opacity-75"
+              style={{ fontSize: "0.938rem", fontWeight: 600 }}
+            >
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Retirado
+            </Button>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+interface OrdersStateCardProps {
+  title: string;
+  description: string;
+  buttonText: string;
+  onNavigate?: (page: string) => void;
+}
+
+function OrdersStateCard({
+  title,
+  description,
+  buttonText,
+  onNavigate,
+}: OrdersStateCardProps) {
+  return (
+    <Card className="p-12 text-center border-none shadow-lg rounded-3xl bg-white">
+      <div className="inline-flex items-center justify-center w-20 h-20 bg-[#FFF4E6] rounded-full mb-6">
+        <Package className="w-10 h-10 text-[#FF6B00]" />
+      </div>
+      <h3
+        className="text-[#1C2335] mb-2"
+        style={{ fontSize: "1.5rem", fontWeight: 600 }}
+      >
+        {title}
+      </h3>
+      <p className="text-[#2E2E2E] mb-6" style={{ fontSize: "1rem" }}>
+        {description}
+      </p>
+      <div className="flex justify-center">
+        <Button
+          onClick={() => onNavigate?.("shop")}
+          className="w-auto bg-[#FF6B00] hover:bg-[#e56000] text-white px-8 py-4 rounded-full shadow-lg transition-all transform hover:scale-105"
+          style={{ fontSize: "1rem", fontWeight: 600 }}
+        >
+          <ShoppingBag className="w-5 h-5 mr-2" />
+          {buttonText}
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export function MyOrdersPage({
   onNavigate,
   isLoggedIn = true,
@@ -288,7 +658,9 @@ export function MyOrdersPage({
     setSelectedOrder(order);
   };
 
-  const OrderCard = ({ order }: { order: Order }) => {
+  // OrderCard and OrdersStateCard are defined at module level above
+  // to maintain a stable component reference across renders.
+  const _OrderCard = ({ order }: { order: Order }) => {
     const isCompleted = order.status === "completed";
 
     return (
@@ -603,7 +975,7 @@ export function MyOrdersPage({
     );
   };
 
-  const OrdersStateCard = ({
+  const _OrdersStateCard = ({
     title,
     description,
     buttonText,
@@ -669,45 +1041,39 @@ export function MyOrdersPage({
             </p>
           </motion.div>
 
-          {/* View Toggle */}
+          {/* View Toggle — segmented control */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="flex items-center justify-center gap-3 mb-8"
+            className="flex items-center justify-center mb-8"
           >
-            <Card className="inline-flex items-center gap-3 px-6 py-4 border-none shadow-md rounded-full bg-white">
-              <List
-                className={`w-5 h-5 transition-colors ${
-                  !groupByLocker ? "text-[#FF6B00]" : "text-[#2E2E2E]/50"
+            <div className="inline-flex bg-white rounded-2xl shadow-md p-1 border border-gray-100">
+              <button
+                type="button"
+                onClick={() => setGroupByLocker(false)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                  !groupByLocker
+                    ? "bg-[#FF6B00] text-white shadow-sm"
+                    : "text-[#2E2E2E]/60 hover:text-[#1C2335]"
                 }`}
-              />
-              <Label
-                htmlFor="view-toggle"
-                className="text-[#1C2335] cursor-pointer"
-                style={{ fontSize: "0.938rem", fontWeight: 600 }}
               >
+                <List className="w-4 h-4 flex-shrink-0" />
                 Agrupar por productos
-              </Label>
-              <Switch
-                id="view-toggle"
-                checked={groupByLocker}
-                onCheckedChange={setGroupByLocker}
-                className="data-[state=checked]:bg-[#FF6B00]"
-              />
-              <Label
-                htmlFor="view-toggle"
-                className="text-[#1C2335] cursor-pointer"
-                style={{ fontSize: "0.938rem", fontWeight: 600 }}
-              >
-                Agrupar por módulos
-              </Label>
-              <LayoutGrid
-                className={`w-5 h-5 transition-colors ${
-                  groupByLocker ? "text-[#FF6B00]" : "text-[#2E2E2E]/50"
+              </button>
+              <button
+                type="button"
+                onClick={() => setGroupByLocker(true)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                  groupByLocker
+                    ? "bg-[#FF6B00] text-white shadow-sm"
+                    : "text-[#2E2E2E]/60 hover:text-[#1C2335]"
                 }`}
-              />
-            </Card>
+              >
+                <LayoutGrid className="w-4 h-4 flex-shrink-0" />
+                Agrupar por módulos
+              </button>
+            </div>
           </motion.div>
 
           {/* Tabs */}
@@ -775,6 +1141,7 @@ export function MyOrdersPage({
                     title="No hay pedidos pendientes"
                     description="¡Todos tus pedidos fueron retirados!"
                     buttonText="Ir a la tienda"
+                    onNavigate={onNavigate}
                   />
                 ) : (
                   <div className="space-y-6">
@@ -785,7 +1152,12 @@ export function MyOrdersPage({
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4, delay: index * 0.1 }}
                       >
-                        <OrderCard order={order} />
+                        <OrderCard
+                          order={order}
+                          groupByLocker={groupByLocker}
+                          onViewDetails={handleViewDetails}
+                          onShowToken={handleShowToken}
+                        />
                       </motion.div>
                     ))}
                   </div>
@@ -818,6 +1190,7 @@ export function MyOrdersPage({
                     title="Todavía no tenés pedidos"
                     description="Empezá a comprar para ver tu historial"
                     buttonText="Ir a la tienda"
+                    onNavigate={onNavigate}
                   />
                 ) : (
                   <div className="space-y-6">
@@ -828,7 +1201,12 @@ export function MyOrdersPage({
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4, delay: index * 0.1 }}
                       >
-                        <OrderCard order={order} />
+                        <OrderCard
+                          order={order}
+                          groupByLocker={groupByLocker}
+                          onViewDetails={handleViewDetails}
+                          onShowToken={handleShowToken}
+                        />
                       </motion.div>
                     ))}
                   </div>
@@ -972,7 +1350,10 @@ export function MyOrdersPage({
                               key={item.id}
                               className="flex items-center gap-4"
                             >
-                              <div className="w-20 h-20 rounded-xl overflow-hidden bg-gray-100">
+                              <div
+                                className="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0"
+                                style={{ transform: "translateZ(0)" }}
+                              >
                                 <ImageWithFallback
                                   src={item.image}
                                   alt={item.name}
