@@ -11,7 +11,6 @@ import {
   Chrome,
   ArrowLeft,
   CheckCircle2,
-  Phone,
   CreditCard,
   Calendar,
   MapPin,
@@ -674,7 +673,7 @@ export default function AuthModal({
 
     const dniTrim = (dni || "").trim();
     if (!dniTrim || dniTrim.length < 7 || dniTrim.length > 15) {
-      setDniError("DNI debe tener entre 7 y 15 caracteres");
+      setDniError("El DNI debe tener entre 7 y 15 dígitos");
       hasError = true;
     }
 
@@ -967,7 +966,7 @@ export default function AuthModal({
                         <form onSubmit={handleSignup} className="space-y-6">
                           <div>
                             <Label className="text-[#1C2335] mb-2 block font-semibold">
-                              Nombre completo
+                              Nombre y Apellido
                             </Label>
                             <div className="relative">
                               <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -1530,21 +1529,25 @@ export default function AuthModal({
                           <Label className="text-[#1C2335] mb-2 block font-semibold">
                             Teléfono
                           </Label>
-                          <div className="relative min-w-0">
-                            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                            <Input
+                          <div className={`relative min-w-0 flex items-center rounded-2xl border-2 transition-colors overflow-hidden ${
+                            phoneError
+                              ? "border-red-500 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/20"
+                              : "border-gray-200 focus-within:border-[#FF6B00] focus-within:ring-2 focus-within:ring-[#FF6B00]/20"
+                          }`}>
+                            <span className="flex-shrink-0 pl-4 pr-3 text-sm font-semibold text-gray-500 select-none pointer-events-none border-r border-gray-200 py-[22px] bg-gray-50">
+                              +54
+                            </span>
+                            <input
+                              type="text"
+                              inputMode="numeric"
                               value={phone}
                               onChange={(e) => {
-                                setPhone(e.target.value);
+                                setPhone(normalizeDigits(e.target.value));
                                 setPhoneError("");
                                 setStep2Dirty(true);
                               }}
-                              placeholder="Ej: 8888 8888"
-                              className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-colors ${
-                                phoneError
-                                  ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                                  : "border-gray-200 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
-                              }`}
+                              placeholder="11 2345 6789"
+                              className="flex-1 pl-3 pr-4 py-[22px] text-sm bg-transparent outline-none text-[#1C2335] placeholder:text-gray-400"
                             />
                           </div>
                           {phoneError && (
@@ -1557,18 +1560,20 @@ export default function AuthModal({
                         {/* DNI */}
                         <div>
                           <Label className="text-[#1C2335] mb-2 block font-semibold">
-                            DNI / ID
+                            DNI / N° de documento
                           </Label>
                           <div className="relative min-w-0">
                             <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                             <Input
                               value={dni}
                               onChange={(e) => {
-                                setDni(e.target.value);
+                                setDni(normalizeDigits(e.target.value));
                                 setDniError("");
                                 setStep2Dirty(true);
                               }}
-                              placeholder="Ej: 1-2345-6789"
+                              placeholder="Ej: 12345678"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
                               className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-colors ${
                                 dniError
                                   ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"

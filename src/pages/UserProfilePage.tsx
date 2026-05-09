@@ -13,7 +13,6 @@ import { API_URL } from "../lib/api";
 import {
   User,
   Mail,
-  Phone,
   MapPin,
   Calendar,
   CreditCard,
@@ -310,7 +309,7 @@ export function UserProfilePage({
     if (!dniTrim) {
       newErrors.dni = "El DNI es requerido";
     } else if (dniTrim.length < 7 || dniTrim.length > 15) {
-      newErrors.dni = "El DNI debe tener entre 7 y 15 caracteres";
+      newErrors.dni = "El DNI debe tener entre 7 y 15 dígitos";
     }
 
     const uf = (profileData.apartmentNumber || "").trim();
@@ -347,7 +346,9 @@ export function UserProfilePage({
     const nextValue =
       field === "apartmentNumber"
         ? normalizeDigits(String(value)).slice(0, 3)
-        : value;
+        : field === "phone" || field === "dni"
+          ? normalizeDigits(String(value))
+          : value;
     setProfileData((prev) => ({ ...prev, [field]: nextValue }));
     if (errors[field as string]) {
       setErrors((prev) => {
@@ -603,8 +604,8 @@ export function UserProfilePage({
                         {/* Email */}
                         <div>
                           <Label
-                            className="text-[#2E2E2E] mb-2 block"
-                            style={{ fontSize: "0.938rem", fontWeight: 500 }}
+                            className="text-[#1C2335] mb-2 block"
+                            style={{ fontSize: "0.875rem", fontWeight: 600 }}
                           >
                             Correo electrónico{" "}
                             <span className="text-red-500">*</span>
@@ -692,33 +693,36 @@ export function UserProfilePage({
                         {/* Phone */}
                         <div>
                           <Label
-                            className="text-[#2E2E2E] mb-2 block"
-                            style={{ fontSize: "0.938rem", fontWeight: 500 }}
+                            className="text-[#1C2335] mb-2 block"
+                            style={{ fontSize: "0.875rem", fontWeight: 600 }}
                           >
                             Teléfono <span className="text-red-500">*</span>
                           </Label>
-                          <div className="relative">
-                            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#2E2E2E]/50 pointer-events-none z-10" />
-                            <Input
+                          <div className={`flex items-center rounded-2xl border-2 transition-all overflow-hidden ${
+                            errors.phone
+                              ? "border-red-500 focus-within:border-red-500 focus-within:ring-4 focus-within:ring-red-500/20"
+                              : "border-gray-300 focus-within:border-[#FF6B00] focus-within:ring-4 focus-within:ring-[#FF6B00]/20"
+                          }`}>
+                            <span className="flex-shrink-0 pl-4 pr-3 text-sm font-semibold text-gray-500 select-none pointer-events-none border-r border-gray-200 py-[22px] bg-gray-50">
+                              +54
+                            </span>
+                            <input
+                              type="text"
+                              inputMode="numeric"
                               value={profileData.phone}
                               onChange={(e) =>
                                 handleInputChange("phone", e.target.value)
                               }
-                              placeholder="Ej: 8888-8888"
-                              className={`pl-12 pr-4 py-6 rounded-2xl border-2 transition-all
-                                ${
-                                  errors.phone
-                                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                                    : "border-gray-300 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
-                                } focus:ring-4`}
+                              placeholder="11 2345 6789"
+                              className="flex-1 pl-3 pr-4 py-[22px] text-sm bg-transparent outline-none text-[#1C2335] placeholder:text-gray-400"
                             />
                           </div>
                           {errors.phone && (
                             <p
                               className="mt-2 text-red-500 flex items-center gap-1"
-                              style={{ fontSize: "0.813rem" }}
+                              style={{ fontSize: "0.813rem", fontWeight: 600 }}
                             >
-                              <AlertCircle className="w-4 h-4" />
+                              <AlertCircle className="w-3.5 h-3.5" />
                               {errors.phone}
                             </p>
                           )}
@@ -727,8 +731,8 @@ export function UserProfilePage({
                         {/* Birth date */}
                         <div>
                           <Label
-                            className="text-[#2E2E2E] mb-2 block"
-                            style={{ fontSize: "0.938rem", fontWeight: 500 }}
+                            className="text-[#1C2335] mb-2 block"
+                            style={{ fontSize: "0.875rem", fontWeight: 600 }}
                           >
                             Fecha de nacimiento{" "}
                             <span className="text-red-500">*</span>
@@ -773,10 +777,10 @@ export function UserProfilePage({
                         {/* DNI */}
                         <div>
                           <Label
-                            className="text-[#2E2E2E] mb-2 block"
-                            style={{ fontSize: "0.938rem", fontWeight: 500 }}
+                            className="text-[#1C2335] mb-2 block"
+                            style={{ fontSize: "0.875rem", fontWeight: 600 }}
                           >
-                            DNI / Documento{" "}
+                            DNI / N° de documento{" "}
                             <span className="text-red-500">*</span>
                           </Label>
                           <div className="relative">
@@ -786,7 +790,9 @@ export function UserProfilePage({
                               onChange={(e) =>
                                 handleInputChange("dni", e.target.value)
                               }
-                              placeholder="Número de identificación"
+                              placeholder="Ej: 12345678"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
                               className={`pl-12 pr-4 py-6 rounded-2xl border-2 transition-all
                                 ${
                                   errors.dni
@@ -798,9 +804,9 @@ export function UserProfilePage({
                           {errors.dni && (
                             <p
                               className="mt-2 text-red-500 flex items-center gap-1"
-                              style={{ fontSize: "0.813rem" }}
+                              style={{ fontSize: "0.813rem", fontWeight: 600 }}
                             >
-                              <AlertCircle className="w-4 h-4" />
+                              <AlertCircle className="w-3.5 h-3.5" />
                               {errors.dni}
                             </p>
                           )}
@@ -809,10 +815,10 @@ export function UserProfilePage({
                         {/* Pickup */}
                         <div>
                           <Label
-                            className="text-[#2E2E2E] mb-2 block"
-                            style={{ fontSize: "0.938rem", fontWeight: 500 }}
+                            className="text-[#1C2335] mb-2 block"
+                            style={{ fontSize: "0.875rem", fontWeight: 600 }}
                           >
-                            Point – ubicación de retiro
+                            Point – Ubicación de retiro
                           </Label>
                           <div className="relative">
                             <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#2E2E2E]/50 pointer-events-none z-10" />
@@ -834,8 +840,8 @@ export function UserProfilePage({
                         {/* Apartment */}
                         <div>
                           <Label
-                            className="text-[#2E2E2E] mb-2 block"
-                            style={{ fontSize: "0.938rem", fontWeight: 500 }}
+                            className="text-[#1C2335] mb-2 block"
+                            style={{ fontSize: "0.875rem", fontWeight: 600 }}
                           >
                             UF
                           </Label>
