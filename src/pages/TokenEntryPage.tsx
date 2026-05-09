@@ -91,7 +91,7 @@ export function TokenEntryPage({
             </h1>
             <p className="text-white/90" style={{ fontSize: 'clamp(0.875rem, 2vw, 1rem)' }}>
               {isSuccess 
-                ? "Tu locker se abrirá en unos momentos" 
+                ? "Tu módulo se abrirá en unos momentos"
                 : "Ingresá el código de 6 caracteres que recibiste por email"
               }
             </p>
@@ -112,7 +112,7 @@ export function TokenEntryPage({
                   ¡Verificación Exitosa!
                 </h2>
                 <p className="text-[#2E2E2E]" style={{ fontSize: '1rem' }}>
-                  Retirá tu pedido del locker que se está abriendo.
+                  Retirá tu pedido del módulo que se está abriendo.
                 </p>
               </motion.div>
             ) : (

@@ -212,7 +212,7 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
                 <div className="relative rounded-2xl overflow-hidden shadow-2xl">
                   <ImageWithFallback
                     src="https://firebasestorage.googleapis.com/v0/b/heymarket-35d03.firebasestorage.app/o/images%2Fmodelo-hey-point.png?alt=media&token=2e1816bc-d0a4-450a-95ec-1d9d13b10570"
-                    alt="HeyPoint! smart locker system"
+                    alt="HeyPoint! stand con módulos de retiro"
                     className="w-full h-[500px] object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>

@@ -557,7 +557,7 @@ export function MyOrdersPage({
                     {order.pickupToken}
                   </div>
                   <p className="text-[#2E2E2E]" style={{ fontSize: "0.75rem" }}>
-                    Usá este token para desbloquear todos los lockers de este
+                    Usá este token para desbloquear todos los módulos de este
                     pedido
                   </p>
                 </div>
@@ -687,7 +687,7 @@ export function MyOrdersPage({
                 className="text-[#1C2335] cursor-pointer"
                 style={{ fontSize: "0.938rem", fontWeight: 600 }}
               >
-                Todos los productos
+                Agrupar por productos
               </Label>
               <Switch
                 id="view-toggle"
@@ -700,7 +700,7 @@ export function MyOrdersPage({
                 className="text-[#1C2335] cursor-pointer"
                 style={{ fontSize: "0.938rem", fontWeight: 600 }}
               >
-                Agrupar por locker
+                Agrupar por módulos
               </Label>
               <LayoutGrid
                 className={`w-5 h-5 transition-colors ${
@@ -853,7 +853,7 @@ export function MyOrdersPage({
               className="text-center text-[#2E2E2E]"
               style={{ fontSize: "0.938rem" }}
             >
-              Mostrá este código en cualquier locker de HeyPoint! para retirar
+              Mostrá este código en cualquier módulo de HeyPoint! para retirar
               tu pedido
             </DialogDescription>
           </DialogHeader>
@@ -896,7 +896,7 @@ export function MyOrdersPage({
                   style={{ fontSize: "0.938rem" }}
                 >
                   Información completa de tu pedido incluyendo productos,
-                  ubicaciones de lockers y token de retiro
+                  ubicaciones de módulos y token de retiro
                 </DialogDescription>
               </DialogHeader>
 

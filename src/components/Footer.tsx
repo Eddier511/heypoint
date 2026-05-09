@@ -59,7 +59,7 @@ export function Footer({ onNavigate }: FooterProps) {
               />
             </div>
             <p className="text-gray-400" style={{ fontSize: "0.938rem" }}>
-              Smart shopping, redefined.
+              Comprá fácil. Retirá rápido.
             </p>
           </div>
 
