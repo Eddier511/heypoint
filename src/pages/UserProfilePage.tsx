@@ -571,7 +571,7 @@ export function UserProfilePage({
                             className="text-[#1C2335] mb-2 block"
                             style={{ fontSize: "0.875rem", fontWeight: 600 }}
                           >
-                            Nombre y Apellido{" "}
+                            Nombre completo{" "}
                             <span className="text-red-500">*</span>
                           </Label>
                           <div className="relative">

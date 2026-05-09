@@ -966,7 +966,7 @@ export default function AuthModal({
                         <form onSubmit={handleSignup} className="space-y-6">
                           <div>
                             <Label className="text-[#1C2335] mb-2 block font-semibold">
-                              Nombre y Apellido
+                              Nombre completo
                             </Label>
                             <div className="relative">
                               <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
