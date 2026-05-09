@@ -1,5 +1,5 @@
 // src/components/AuthModal.tsx
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import {
   X,
@@ -193,6 +193,8 @@ export default function AuthModal({
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
   const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
   const [forgotPasswordError, setForgotPasswordError] = useState("");
+
+  const birthDateInputRef = useRef<HTMLInputElement>(null);
 
   const [phone, setPhone] = useState("");
   const [phoneError, setPhoneError] = useState("");
@@ -1423,8 +1425,16 @@ export default function AuthModal({
                             Fecha de nacimiento
                           </Label>
                           <div className="relative min-w-0">
-                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <button
+                              type="button"
+                              tabIndex={-1}
+                              onClick={() => (birthDateInputRef.current as any)?.showPicker?.()}
+                              className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-gray-400 hover:text-[#FF6B00] transition-colors"
+                            >
+                              <Calendar className="w-5 h-5" />
+                            </button>
                             <Input
+                              ref={birthDateInputRef}
                               type="date"
                               value={birthDate}
                               min="1900-01-01"

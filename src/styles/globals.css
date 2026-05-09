@@ -254,10 +254,18 @@
   }
 }
 
-/* Hide native calendar picker icon in date inputs */
+/* Hide native calendar picker icon visually but keep it interactive.
+   Using opacity:0 instead of display:none — display:none removes the
+   element from layout and in newer Chrome/Safari this also prevents the
+   date picker from opening at all. opacity:0 keeps it functional. */
 input[type="date"]::-webkit-calendar-picker-indicator {
-  display: none;
-  -webkit-appearance: none;
+  opacity: 0;
+  cursor: pointer;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 2rem;
+  height: 100%;
 }
 
 input[type="date"]::-webkit-inner-spin-button,

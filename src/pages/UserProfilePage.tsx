@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { UnifiedHeader } from "../components/UnifiedHeader";
@@ -104,6 +104,8 @@ export function UserProfilePage({
   // UI states
   const [pageLoading, setPageLoading] = useState(true);
   const [pageError, setPageError] = useState<string>("");
+
+  const birthDateInputRef = useRef<HTMLInputElement>(null);
 
   // Profile
   const [profileData, setProfileData] = useState({
@@ -731,8 +733,16 @@ export function UserProfilePage({
                             <span className="text-red-500">*</span>
                           </Label>
                           <div className="relative">
-                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#2E2E2E]/50 pointer-events-none z-10" />
+                            <button
+                              type="button"
+                              tabIndex={-1}
+                              onClick={() => (birthDateInputRef.current as any)?.showPicker?.()}
+                              className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-[#2E2E2E]/50 hover:text-[#FF6B00] transition-colors"
+                            >
+                              <Calendar className="w-5 h-5" />
+                            </button>
                             <Input
+                              ref={birthDateInputRef}
                               type="date"
                               value={profileData.birthDate}
                               min="1900-01-01"
