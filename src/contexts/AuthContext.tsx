@@ -223,6 +223,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ fullName }),
       });
 
+      if (res.status === 409) {
+        let body: any = {};
+        try { body = await res.json(); } catch { /* ignore parse errors */ }
+        const err: any = new Error(
+          body?.message ||
+            "Ya existe una cuenta registrada con este correo. Iniciá sesión con el método que usaste originalmente.",
+        );
+        err.code = body?.error || "EMAIL_ALREADY_EXISTS_WITH_DIFFERENT_UID";
+        throw err;
+      }
+
       if (!res.ok) {
         const text = await res.text().catch(() => "");
         throw new Error(
@@ -297,7 +308,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const u = mapFirebaseUser(cred.user);
     if (isNewUser) {
-      await bootstrapCustomerProfile(cred.user, u.fullName);
+      try {
+        await bootstrapCustomerProfile(cred.user, u.fullName);
+      } catch (bootstrapErr: any) {
+        // If the backend rejected this signup because the email already
+        // belongs to a different account, we must sign the user back out
+        // so they are not left in a partially-authenticated state.
+        if (bootstrapErr?.code === "EMAIL_ALREADY_EXISTS_WITH_DIFFERENT_UID") {
+          console.warn(
+            "[AuthContext] duplicate email on Google signup — signing out",
+            { uid: cred.user.uid, email: cred.user.email },
+          );
+          await signOut(auth);
+          localStorage.removeItem(STORAGE_KEY);
+        }
+        throw bootstrapErr;
+      }
     }
     return { user: u, isNewUser };
   };

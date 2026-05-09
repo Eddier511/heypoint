@@ -91,10 +91,48 @@ function normalizeDigits(v: string) {
   return (v || "").replace(/\D/g, "");
 }
 
-function getFriendlyAuthError(error: any, fallback: string) {
-  const raw = String(error?.code || error?.message || "");
-  if (raw.includes("too-many-requests")) return TOO_MANY_REQUESTS_MESSAGE;
-  return error?.message || fallback;
+// Maps Firebase Auth error codes to friendly Spanish messages.
+// Never expose raw Firebase error strings to the user.
+const FIREBASE_ERROR_MAP: Record<string, string> = {
+  "auth/invalid-credential":
+    "El correo o la contraseña no son correctos.",
+  "auth/wrong-password":
+    "El correo o la contraseña no son correctos.",
+  "auth/user-not-found":
+    "El correo o la contraseña no son correctos.",
+  "auth/email-already-in-use":
+    "Ya existe una cuenta con este correo. Iniciá sesión.",
+  "auth/account-exists-with-different-credential":
+    "Ya existe una cuenta registrada con este correo. Iniciá sesión con el método que usaste originalmente.",
+  "auth/too-many-requests": TOO_MANY_REQUESTS_MESSAGE,
+  "auth/popup-closed-by-user": "",
+  "auth/cancelled-popup-request": "",
+  "auth/network-request-failed":
+    "Error de red. Revisá tu conexión e intentá de nuevo.",
+  "auth/user-disabled":
+    "Esta cuenta fue deshabilitada. Contactá soporte.",
+};
+
+function getFriendlyAuthError(error: any, fallback: string): string {
+  // 1. Check direct .code property (Firebase SDK errors)
+  const code = error?.code as string | undefined;
+  if (code && code in FIREBASE_ERROR_MAP) {
+    return FIREBASE_ERROR_MAP[code] || fallback;
+  }
+
+  // 2. Check if any known code appears inside the message string
+  //    (Firebase sometimes embeds the code in the message)
+  const raw = String(error?.message || "");
+  for (const [key, msg] of Object.entries(FIREBASE_ERROR_MAP)) {
+    if (raw.includes(key)) return msg || fallback;
+  }
+
+  // 3. If the message is already a friendly custom message (e.g. from
+  //    our own backend/bootstrap), return it as-is.
+  //    Heuristic: if it doesn't start with "Firebase:" it's ours.
+  if (raw && !raw.startsWith("Firebase:")) return raw;
+
+  return fallback;
 }
 
 /**
@@ -389,7 +427,10 @@ export default function AuthModal({
       onLoginSuccess(user);
       onClose();
     } catch (e: any) {
-      setGlobalError(e?.message || "No se pudo iniciar con Google.");
+      console.error("[handleGoogle]", e?.code, e?.message);
+      setGlobalError(
+        getFriendlyAuthError(e, "No se pudo iniciar con Google."),
+      );
     } finally {
       setLoading(false);
     }
@@ -432,8 +473,9 @@ export default function AuthModal({
       onLoginSuccess(u);
       onClose();
     } catch (e: any) {
+      console.error("[handleLogin]", e?.code, e?.message);
       setGlobalError(
-        e?.message || "No se pudo iniciar sesión. Revisá tus credenciales.",
+        getFriendlyAuthError(e, "No se pudo iniciar sesión. Revisá tus credenciales."),
       );
     } finally {
       setLoading(false);
