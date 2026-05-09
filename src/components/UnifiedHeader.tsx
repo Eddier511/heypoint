@@ -58,7 +58,7 @@ export function UnifiedHeader({
   userName: userNameProp = "User",
   isTransparent = true,
 }: UnifiedHeaderProps) {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, customerFullName, logout } = useAuth();
   const { openLoginModal, openSignupModal } = useModal();
   const { cartCount } = useCart();
   const hasPendingOrders = useHasPendingOrders();

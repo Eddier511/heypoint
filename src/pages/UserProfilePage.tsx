@@ -89,6 +89,7 @@ export function UserProfilePage({
     refreshEmailVerification,
     sendVerifyEmailPro,
     isGoogleUser,
+    hasPasswordProvider,
   } = useAuth();
   const { settings: storeSettings } = useStoreSettings();
   const globalPickupPoint =
@@ -874,7 +875,7 @@ export function UserProfilePage({
                     </div>
 
                     {/* Password section */}
-                    {isGoogleUser() ? (
+                    {!hasPasswordProvider() && isGoogleUser() ? (
                       <div className="mb-8 p-5 rounded-2xl bg-blue-50 border border-blue-100 flex items-start gap-3">
                         <svg className="w-5 h-5 mt-0.5 flex-shrink-0 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
@@ -888,8 +889,13 @@ export function UserProfilePage({
                           </p>
                         </div>
                       </div>
-                    ) : (
+                    ) : hasPasswordProvider() ? (
                     <div className="mb-8">
+                      {isGoogleUser() && (
+                        <p className="mb-4 text-sm text-blue-600">
+                          También podés iniciar sesión con Google.
+                        </p>
+                      )}
                       <h2
                         className="text-[#1C2335] mb-6 pb-3 border-b border-gray-200"
                         style={{
@@ -1109,7 +1115,7 @@ export function UserProfilePage({
                         )}
                       </div>
                     </div>
-                    )}
+                    ) : null}
 
                     {/* Actions */}
                     <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200">

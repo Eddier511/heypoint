@@ -87,8 +87,14 @@ interface AuthContextType {
   fetchMe: () => Promise<{ exists: boolean; profile: CustomerProfile | null }>;
   saveProfile: (payload: CustomerProfile) => Promise<any>;
 
+  // Firestore customer fullName — source of truth for display name.
+  // Loaded in the background after login; null until resolved.
+  customerFullName: string | null;
+  setCustomerFullName: (name: string | null) => void;
+
   // provider detection
   isGoogleUser: () => boolean;
+  hasPasswordProvider: () => boolean;
 
   // account ops
   changePassword: (
@@ -148,6 +154,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loadingAuth, setLoadingAuth] = useState(true);
   const [fbUser, setFbUser] = useState<FirebaseUser | null>(null);
 
+  // Firestore customer fullName — source of truth (loaded in background).
+  const [customerFullName, setCustomerFullName] = useState<string | null>(null);
+
   const user = useMemo(
     () => (fbUser ? mapFirebaseUser(fbUser) : null),
     [fbUser],
@@ -182,6 +191,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => unsub();
   }, [persistToken]);
+
+  // Load customer fullName from Firestore in the background whenever the
+  // Firebase user changes. This ensures the header always shows the
+  // HeyPoint customer name rather than the Firebase Auth displayName.
+  useEffect(() => {
+    if (!fbUser) {
+      setCustomerFullName(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const tok = await fbGetIdToken(fbUser, false);
+        if (cancelled || !tok) return;
+        const res = await fetch(apiUrl("/customers/me"), {
+          headers: { Authorization: `Bearer ${tok}` },
+        });
+        if (cancelled || !res.ok) return;
+        const data = await res.json();
+        const name: string | undefined =
+          data?.profile?.fullName || data?.fullName;
+        if (!cancelled && name) setCustomerFullName(name);
+      } catch {
+        // Non-critical — header falls back to Firebase displayName
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [fbUser]);
 
   // legacy
   const login = (_userData: User) => {
@@ -477,6 +516,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const hasPasswordProvider = useCallback(() => {
+    return (
+      auth.currentUser?.providerData?.some(
+        (p) => p.providerId === "password",
+      ) ?? false
+    );
+  }, []);
+
   const changePassword = async (
     currentPassword: string,
     newPassword: string,
@@ -536,7 +583,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         fetchMe,
         saveProfile,
 
+        customerFullName,
+        setCustomerFullName,
         isGoogleUser,
+        hasPasswordProvider,
         changePassword,
         updateDisplayName,
       }}
