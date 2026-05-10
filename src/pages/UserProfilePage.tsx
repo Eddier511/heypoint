@@ -674,18 +674,31 @@ export function UserProfilePage({
                                 </button>
                               )}
 
-                              <button
-                                type="button"
-                                onClick={() => setShowChangeEmailModal(true)}
-                                className="text-[#FF6B00] hover:text-[#e56000] transition-colors inline-flex items-center gap-1"
-                                style={{
-                                  fontSize: "0.813rem",
-                                  fontWeight: 600,
-                                }}
-                              >
-                                <RefreshCw className="w-3.5 h-3.5" />
-                                Cambiar correo
-                              </button>
+                              {/* "Cambiar correo" — only for accounts with a password provider.
+                                  Google-only accounts cannot change their email here; it is
+                                  controlled by Google. Linked accounts (password + Google) keep
+                                  the action available. */}
+                              {hasPasswordProvider() ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setShowChangeEmailModal(true)}
+                                  className="text-[#FF6B00] hover:text-[#e56000] transition-colors inline-flex items-center gap-1"
+                                  style={{
+                                    fontSize: "0.813rem",
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  <RefreshCw className="w-3.5 h-3.5" />
+                                  Cambiar correo
+                                </button>
+                              ) : (
+                                <span
+                                  className="text-[#2E2E2E]/50 inline-flex items-center gap-1"
+                                  style={{ fontSize: "0.813rem" }}
+                                >
+                                  Tu correo está gestionado por Google.
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
