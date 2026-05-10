@@ -19,6 +19,7 @@ import {
   Clock,
   RefreshCw,
   ExternalLink,
+  AlertCircle,
 } from "lucide-react";
 
 import { Button } from "./ui/button";
@@ -88,6 +89,32 @@ function getMaxBirthDate(): string {
 
 function normalizeDigits(v: string) {
   return (v || "").replace(/\D/g, "");
+}
+
+const SUGGESTED_DOMAINS = ["gmail.com", "hotmail.com", "outlook.com", "yahoo.com"];
+
+function getEmailSuggestions(value: string): string[] {
+  if (!value || value.length < 2) return [];
+
+  const atIdx = value.indexOf("@");
+
+  if (atIdx === -1) {
+    // No "@" yet — suggest all domains
+    return SUGGESTED_DOMAINS.map((d) => `${value}@${d}`);
+  }
+
+  const local = value.slice(0, atIdx);
+  if (!local) return [];
+
+  const domainTyped = value.slice(atIdx + 1).toLowerCase();
+
+  // Already has a complete domain (e.g. foo@gmail.com) — no suggestions
+  if (/^[^.]+\.[a-z]{2,}$/.test(domainTyped)) return [];
+
+  // Filter to domains starting with what's typed after @
+  return SUGGESTED_DOMAINS.filter((d) => d.startsWith(domainTyped)).map(
+    (d) => `${local}@${d}`,
+  );
 }
 
 // Maps Firebase Auth error codes to friendly Spanish messages.
@@ -251,6 +278,10 @@ export default function AuthModal({
   const [profileTermsError, setProfileTermsError] = useState("");
 
   const shouldReduceMotion = useReducedMotion();
+
+  // Email suggestion visibility
+  const [showLoginSuggestions, setShowLoginSuggestions] = useState(false);
+  const [showSignupSuggestions, setShowSignupSuggestions] = useState(false);
 
   const pickupPoint =
     storeSettings?.pickupPoint?.address ||
@@ -763,6 +794,22 @@ export default function AuthModal({
   };
 
   // =========================
+  // Derived UI values
+  // =========================
+
+  // Inline suggestion lists (computed per render — no memoization needed for this simple case)
+  const loginSuggestions = showLoginSuggestions ? getEmailSuggestions(loginEmail) : [];
+  const signupSuggestions = showSignupSuggestions ? getEmailSuggestions(signUpEmail) : [];
+
+  // Button readiness — drives disabled state + visual style
+  const loginFormReady = !!loginEmail.trim() && !!loginPassword.trim();
+  const signupFormReady =
+    !!signUpFullName.trim() &&
+    !!signUpEmail.trim() &&
+    strengthInfo.strength !== "weak" &&
+    signUpTermsAccepted;
+
+  // =========================
   // UI (la tuya, igual)
   // =========================
   return (
@@ -795,14 +842,6 @@ export default function AuthModal({
                 >
                   <X className="w-5 h-5" />
                 </button>
-              )}
-
-              {!!globalError && (
-                <div className="px-6 md:px-8 pt-5">
-                  <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    {globalError}
-                  </div>
-                </div>
               )}
 
               {/* STEP 1: FORM */}
@@ -884,16 +923,49 @@ export default function AuthModal({
                               Correo electrónico
                             </Label>
                             <div className="relative">
-                              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                               <Input
                                 type="email"
                                 value={loginEmail}
-                                onChange={(e) => setLoginEmail(e.target.value)}
+                                onChange={(e) => {
+                                  setLoginEmail(e.target.value);
+                                  setShowLoginSuggestions(true);
+                                }}
+                                onFocus={() => setShowLoginSuggestions(true)}
+                                onBlur={() =>
+                                  setTimeout(
+                                    () => setShowLoginSuggestions(false),
+                                    150,
+                                  )
+                                }
                                 placeholder="tu.email@ejemplo.com"
                                 className="pl-12 pr-4 py-6 rounded-2xl border-2 border-gray-200 focus:border-[#FF6B00] focus:ring-2 focus:ring-[#FF6B00]/20"
                                 required
                               />
                             </div>
+                            {loginSuggestions.length > 0 && (
+                              <div className="mt-1 rounded-2xl border border-gray-100 bg-white shadow-md overflow-hidden">
+                                {loginSuggestions.map((s) => (
+                                  <button
+                                    key={s}
+                                    type="button"
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      setLoginEmail(s);
+                                      setShowLoginSuggestions(false);
+                                    }}
+                                    className="w-full text-left px-4 py-2.5 text-sm hover:bg-[#FFF4E6] transition-colors"
+                                  >
+                                    <span className="text-gray-500">
+                                      {s.split("@")[0]}
+                                    </span>
+                                    <span className="font-semibold text-[#FF6B00]">
+                                      @{s.split("@")[1]}
+                                    </span>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
 
                           <div>
@@ -936,10 +1008,22 @@ export default function AuthModal({
                             </button>
                           </div>
 
+                          {/* Contextual error — login */}
+                          {!!globalError && (
+                            <div className="flex items-start gap-2.5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
+                              <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                              <p className="text-sm text-red-700 font-medium leading-snug">{globalError}</p>
+                            </div>
+                          )}
+
                           <Button
                             type="submit"
-                            disabled={loading}
-                            className="w-full bg-[#FF6B00] hover:bg-[#e56000] text-white py-6 rounded-2xl shadow-lg"
+                            disabled={loading || !loginFormReady}
+                            className={`w-full py-6 rounded-2xl transition-all ${
+                              loginFormReady && !loading
+                                ? "bg-[#FF6B00] hover:bg-[#e56000] text-white shadow-lg"
+                                : "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
+                            }`}
                             style={{ fontWeight: 600 }}
                           >
                             {loading ? "Ingresando..." : "Iniciar sesión"}
@@ -988,14 +1072,22 @@ export default function AuthModal({
                               Correo electrónico
                             </Label>
                             <div className="relative">
-                              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                               <Input
                                 type="email"
                                 value={signUpEmail}
                                 onChange={(e) => {
                                   setSignUpEmail(e.target.value);
                                   setEmailError("");
+                                  setShowSignupSuggestions(true);
                                 }}
+                                onFocus={() => setShowSignupSuggestions(true)}
+                                onBlur={() =>
+                                  setTimeout(
+                                    () => setShowSignupSuggestions(false),
+                                    150,
+                                  )
+                                }
                                 placeholder="tu.email@ejemplo.com"
                                 className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-colors ${
                                   emailError
@@ -1005,6 +1097,29 @@ export default function AuthModal({
                                 required
                               />
                             </div>
+                            {signupSuggestions.length > 0 && (
+                              <div className="mt-1 rounded-2xl border border-gray-100 bg-white shadow-md overflow-hidden">
+                                {signupSuggestions.map((s) => (
+                                  <button
+                                    key={s}
+                                    type="button"
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      setSignUpEmail(s);
+                                      setShowSignupSuggestions(false);
+                                    }}
+                                    className="w-full text-left px-4 py-2.5 text-sm hover:bg-[#FFF4E6] transition-colors"
+                                  >
+                                    <span className="text-gray-500">
+                                      {s.split("@")[0]}
+                                    </span>
+                                    <span className="font-semibold text-[#FF6B00]">
+                                      @{s.split("@")[1]}
+                                    </span>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                             {emailError && (
                               <p className="text-red-500 mt-2 text-sm font-medium">
                                 {emailError}
@@ -1205,10 +1320,22 @@ export default function AuthModal({
                             )}
                           </div>
 
+                          {/* Contextual error — signup */}
+                          {!!globalError && (
+                            <div className="flex items-start gap-2.5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
+                              <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                              <p className="text-sm text-red-700 font-medium leading-snug">{globalError}</p>
+                            </div>
+                          )}
+
                           <Button
                             type="submit"
-                            disabled={loading}
-                            className="w-full bg-[#FF6B00] hover:bg-[#e56000] text-white py-6 rounded-2xl shadow-lg"
+                            disabled={loading || !signupFormReady}
+                            className={`w-full py-6 rounded-2xl transition-all ${
+                              signupFormReady && !loading
+                                ? "bg-[#FF6B00] hover:bg-[#e56000] text-white shadow-lg"
+                                : "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
+                            }`}
                             style={{ fontWeight: 600 }}
                           >
                             {loading ? "Creando..." : "Crear cuenta"}
@@ -1407,6 +1534,14 @@ export default function AuthModal({
                           </p>
 
                           <div className="mt-5 flex flex-col gap-3">
+                            {/* Contextual error — verifyEmail */}
+                            {!!globalError && (
+                              <div className="flex items-start gap-2.5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
+                                <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                                <p className="text-sm text-red-700 font-medium leading-snug">{globalError}</p>
+                              </div>
+                            )}
+
                             <Button
                               type="button"
                               onClick={handleCheckVerified}
@@ -1735,6 +1870,14 @@ export default function AuthModal({
                                 {profileTermsError}
                               </p>
                             )}
+                          </div>
+                        )}
+
+                        {/* Contextual error — completeProfile */}
+                        {!!globalError && (
+                          <div className="flex items-start gap-2.5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
+                            <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                            <p className="text-sm text-red-700 font-medium leading-snug">{globalError}</p>
                           </div>
                         )}
 
