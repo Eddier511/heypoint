@@ -24,6 +24,7 @@ import { UnifiedHeader } from "./components/UnifiedHeader";
 import { BackToTopButton } from "./components/BackToTopButton";
 import { SmartSearchBar } from "./components/SmartSearchBar";
 import { Footer } from "./components/Footer";
+import { CookieBanner } from "./components/CookieBanner";
 import { ShopPage } from "./pages/ShopPage";
 import { useCategories } from "./hooks/useCategories";
 
@@ -82,6 +83,11 @@ const PrivacyPage = lazy(() =>
     default: module.PrivacyPage,
   })),
 );
+const CookiesPage = lazy(() =>
+  import("./pages/CookiesPage").then((module) => ({
+    default: module.CookiesPage,
+  })),
+);
 
 type Page =
   | "home"
@@ -96,7 +102,8 @@ type Page =
   | "success"
   | "orders"
   | "terms"
-  | "privacy";
+  | "privacy"
+  | "cookies";
 
 /**
  * ✅ Product actualizado para buscador/Firestore
@@ -183,6 +190,8 @@ function pageToPath(page: Page) {
       return "/terminos";
     case "privacy":
       return "/privacidad";
+    case "cookies":
+      return "/cookies";
     // productDetails y success no tienen ruta estable en este MVP
     default:
       return "/";
@@ -202,6 +211,7 @@ function pathToPage(pathname: string): Page {
   if (p.startsWith("/account") || p.startsWith("/profile")) return "profile";
   if (p.startsWith("/terminos")) return "terms";
   if (p.startsWith("/privacidad")) return "privacy";
+  if (p.startsWith("/cookies")) return "cookies";
 
   return "home";
 }
@@ -214,6 +224,7 @@ export default function App() {
           <Toaster position="top-right" />
           <ModalRoot />
           <GlobalModalBridge />
+          <CookieBanner />
           <AppContent />
         </CartProvider>
       </ModalProvider>
@@ -674,6 +685,12 @@ function AppContent() {
     return (
       <Suspense fallback={<PageFallback />}>
         <PrivacyPage onNavigate={handleNavigation} />
+      </Suspense>
+    );
+  if (currentPage === "cookies")
+    return (
+      <Suspense fallback={<PageFallback />}>
+        <CookiesPage onNavigate={handleNavigation} />
       </Suspense>
     );
 

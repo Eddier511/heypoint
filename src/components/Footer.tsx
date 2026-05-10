@@ -18,6 +18,7 @@ export function Footer({ onNavigate }: FooterProps) {
     { id: "contact", label: "Contacto" },
     { id: "terms", label: "Términos y Condiciones" },
     { id: "privacy", label: "Política de Privacidad" },
+    { id: "cookies", label: "Política de Cookies" },
   ];
 
   const socialLinks = [
@@ -132,6 +133,13 @@ export function Footer({ onNavigate }: FooterProps) {
                 style={{ fontSize: "0.875rem" }}
               >
                 Privacidad
+              </button>
+              <button
+                onClick={() => handleNavigation("cookies")}
+                className="text-gray-400 hover:text-[#FF6B00] transition-colors"
+                style={{ fontSize: "0.875rem" }}
+              >
+                Cookies
               </button>
             </div>
           </div>
