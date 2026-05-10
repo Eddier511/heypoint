@@ -689,6 +689,30 @@ function AppContent() {
 
       <BackToTopButton />
 
+      {/* Shimmer keyframe — used by hero title gradient text */}
+      <style>{`
+        @keyframes hpShimmer {
+          0%   { background-position: 200% center; }
+          100% { background-position: -200% center; }
+        }
+        .hp-shimmer-text {
+          background: linear-gradient(
+            90deg,
+            #FF8534 0%,
+            #FF9A52 38%,
+            #FFB07A 50%,
+            #FF9A52 62%,
+            #FF8534 100%
+          );
+          background-size: 240% 100%;
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          animation: hpShimmer 9s ease-in-out 1 forwards;
+          animation-delay: 0.6s;
+        }
+      `}</style>
+
       {/* Hero Section */}
       <section className="relative min-h-[100svh] md:h-[100vh] flex items-center justify-center overflow-hidden bg-[#FFF4E6]">
         <div className="absolute inset-0 z-0">
@@ -709,16 +733,31 @@ function AppContent() {
             />
           </div>
 
-          {/* 3) Overlay arriba de todo (siempre igual) */}
-          <div className="absolute inset-0 bg-black/40" />
+          {/* 3) Base overlay — even darkening, slightly reduced to let vignette do the heavy lifting */}
+          <div className="absolute inset-0 bg-black/35" />
+          {/* 4) Radial vignette — edges darker, center bright (cinematic depth) */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(ellipse at 60% 50%, transparent 20%, rgba(0,0,0,0.52) 100%)",
+            }}
+          />
+          {/* 5) Bottom gradient — anchors the CTA, grounds the image */}
+          <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/38 to-transparent" />
         </div>
 
         <div className="container mx-auto px-6 relative z-10 text-center max-w-5xl py-20">
           <div className="space-y-8">
             <h1 className="text-white text-5xl md:text-7xl mb-6 font-[Inter] font-bold text-[48px]">
-              Comprá online.
-              <br />
-              Retirá sin intermediarios.
+              {/* Animated orange gradient — runs 2× on load then settles */}
+              <span className="hp-shimmer-text block">
+                Comprá online.
+              </span>
+              {/* Solid white for hierarchy — anchors the tagline */}
+              <span className="block text-white">
+                Retirá sin intermediarios.
+              </span>
             </h1>
 
             <p className="text-white/95 max-w-2xl mx-auto text-lg md:text-xl">
@@ -759,7 +798,7 @@ function AppContent() {
                   onClick={scrollToHowItWorks}
                   variant="outline"
                   aria-label="Ir a Cómo comprar"
-                  className="w-full h-14 px-8 bg-white/10 hover:bg-white/20 border-2 border-white/40 hover:border-white/60 text-white rounded-full backdrop-blur-sm transition-colors duration-200 flex items-center justify-center gap-2"
+                  className="w-full h-14 px-8 bg-white/10 hover:bg-[#FF6B00]/20 border-2 border-white/40 hover:border-[#FF6B00]/60 text-white hover:text-white rounded-full backdrop-blur-sm transition-all duration-200 flex items-center justify-center gap-2"
                 >
                   <div>
                     <ChevronDown className="w-4 h-4" />

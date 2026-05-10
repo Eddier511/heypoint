@@ -29,6 +29,14 @@ interface SmartSearchBarProps {
 const DEFAULT_IMG =
   "https://images.unsplash.com/photo-1580915411954-282cb1b0d780?auto=format&fit=crop&w=1200&q=80";
 
+// Rotating placeholder examples — cycle every 3.5 s, pause while user is typing
+const SEARCH_PLACEHOLDERS = [
+  "Buscar snacks…",
+  "Buscar bebidas…",
+  "Buscar auriculares…",
+  "Buscar café…",
+];
+
 function toNumber(v: any) {
   const n =
     typeof v === "string"
@@ -57,6 +65,11 @@ export function SmartSearchBar({
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+
+  // Premium UX: focus ring + rotating placeholder
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const [placeholderIdx, setPlaceholderIdx] = useState(0);
+  const [placeholderFading, setPlaceholderFading] = useState(false);
 
   const [dropdownPosition, setDropdownPosition] = useState({
     top: 0,
@@ -228,6 +241,20 @@ export function SmartSearchBar({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isMobileSearchMode]);
 
+  // Rotating placeholder — fades out → swaps text → fades in, every 3.5 s
+  // Paused automatically when query is non-empty (dependency on `query`)
+  useEffect(() => {
+    if (query.length > 0) return;
+    const id = setInterval(() => {
+      setPlaceholderFading(true);
+      setTimeout(() => {
+        setPlaceholderIdx((i) => (i + 1) % SEARCH_PLACEHOLDERS.length);
+        setPlaceholderFading(false);
+      }, 200);
+    }, 3500);
+    return () => clearInterval(id);
+  }, [query]);
+
   const handleProductSelect = (product: Product) => {
     setIsOpen(false);
     setIsMobileSearchMode(false);
@@ -380,7 +407,7 @@ export function SmartSearchBar({
                 }}
                 onFocus={handleInputFocus}
                 onKeyDown={handleKeyDown}
-                placeholder={placeholder}
+                placeholder={SEARCH_PLACEHOLDERS[placeholderIdx]}
                 className="w-full h-14 pl-14 pr-14
              outline-none rounded-full
              bg-transparent
@@ -526,12 +553,31 @@ export function SmartSearchBar({
   return (
     <div ref={searchRef} className={`relative w-full ${className}`}>
       <div ref={inputContainerRef} className="relative z-[9999]">
-        <div className="relative bg-white/95 backdrop-blur-sm rounded-full shadow-[0_4px_16px_rgba(0,0,0,0.1)]">
+        <div
+          className={`relative bg-white/95 backdrop-blur-sm rounded-full transition-all duration-300 ${
+            isInputFocused
+              ? "shadow-[0_4px_24px_rgba(255,107,0,0.22),0_0_0_2px_rgba(255,107,0,0.18)]"
+              : "shadow-[0_4px_16px_rgba(0,0,0,0.10)]"
+          }`}
+        >
           <Search
-            className="absolute left-5 top-1/2 -translate-y-1/2 text-[#2E2E2E]/50"
+            className={`absolute left-5 top-1/2 -translate-y-1/2 transition-colors duration-200 ${
+              isInputFocused ? "text-[#FF6B00]" : "text-[#2E2E2E]/50"
+            }`}
             style={{ width: "20px", height: "20px" }}
             aria-hidden="true"
           />
+
+          {/* Rotating placeholder overlay — hidden while user is typing */}
+          {query.length === 0 && (
+            <span
+              aria-hidden="true"
+              className="absolute left-14 top-1/2 -translate-y-1/2 pointer-events-none select-none text-[#2E2E2E]/40 text-base transition-opacity duration-200"
+              style={{ opacity: placeholderFading ? 0 : 1 }}
+            >
+              {SEARCH_PLACEHOLDERS[placeholderIdx]}
+            </span>
+          )}
 
           <input
             ref={inputRef}
@@ -541,9 +587,10 @@ export function SmartSearchBar({
               setQuery(e.target.value);
               setIsOpen(true);
             }}
-            onFocus={handleInputFocus}
+            onFocus={() => { handleInputFocus(); setIsInputFocused(true); }}
+            onBlur={() => setIsInputFocused(false)}
             onKeyDown={handleKeyDown}
-            placeholder={placeholder}
+            placeholder=""
             aria-label="Buscar productos"
             className="
     w-full h-14 pl-14 pr-14
