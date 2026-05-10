@@ -312,9 +312,9 @@ export function UserProfilePage({
       newErrors.dni = "El DNI debe tener entre 7 y 15 dígitos";
     }
 
-    const uf = (profileData.apartmentNumber || "").trim();
-    if (uf && !/^\d{1,3}$/.test(uf)) {
-      newErrors.apartmentNumber = "Ingresá un número válido (máx. 3 dígitos)";
+    const uf = normalizeDigits(profileData.apartmentNumber || "").slice(0, 3);
+    if (!uf || !/^\d{1,3}$/.test(uf)) {
+      newErrors.apartmentNumber = "Ingresá un número de UF válido (máx. 3 dígitos)";
     }
 
     // Password validation if user wants to change it
@@ -843,7 +843,7 @@ export function UserProfilePage({
                             className="text-[#1C2335] mb-2 block"
                             style={{ fontSize: "0.875rem", fontWeight: 600 }}
                           >
-                            UF
+                            UF <span className="text-red-500">*</span>
                           </Label>
                           <div className="relative">
                             <Home className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#2E2E2E]/50 pointer-events-none z-10" />
