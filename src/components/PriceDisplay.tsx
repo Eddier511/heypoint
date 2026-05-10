@@ -104,11 +104,11 @@ export function PriceDisplay({
       {isOnSale && showSaleChip && (
         <Badge
           variant="default"
-          className="bg-[#FF6B00] text-white hover:bg-[#FF6B00] px-2 py-0.5 text-xs uppercase"
+          className="bg-[#EF4444] text-white hover:bg-[#EF4444] px-2 py-0.5 text-xs uppercase"
           style={{
             fontSize: "0.688rem",
-            fontWeight: 600,
-            letterSpacing: "0.05em"
+            fontWeight: 700,
+            letterSpacing: "0.05em",
           }}
         >
           OFERTA

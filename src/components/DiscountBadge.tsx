@@ -7,46 +7,48 @@ interface DiscountBadgeProps {
   className?: string;
 }
 
-export function DiscountBadge({ 
-  originalPrice, 
-  currentPrice, 
-  size = "md", 
-  className = "" 
+export function DiscountBadge({
+  originalPrice,
+  currentPrice,
+  size = "md",
+  className = "",
 }: DiscountBadgeProps) {
-  // Calcular porcentaje de descuento
-  const discountPercentage = Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
+  const discountPercentage = Math.round(
+    ((originalPrice - currentPrice) / originalPrice) * 100,
+  );
 
-  // Configuración de tamaños
+  // Pill shape (not circular) for percentage — needs horizontal space for "−XX%"
   const sizeStyles = {
     sm: "h-7 px-3 text-xs",
     md: "h-8 px-4 text-sm",
-    lg: "h-10 px-5 text-base"
+    lg: "h-10 px-5 text-base",
   };
 
   return (
     <motion.div
       className={`
-        bg-[#FF6B00]
+        bg-[#EF4444]
         ${sizeStyles[size]}
         text-white
         rounded-full
         border-2 border-white
         flex items-center justify-center
+        select-none
         ${className}
       `}
       style={{
         fontWeight: 700,
-        boxShadow: "0px 2px 6px rgba(0, 0, 0, 0.15)",
-        minHeight: size === "sm" ? "28px" : size === "md" ? "32px" : "40px"
+        boxShadow: "0 3px 10px rgba(239,68,68,0.35)",
+        minHeight: size === "sm" ? "28px" : size === "md" ? "32px" : "40px",
       }}
       animate={{
         scale: [1, 1.05, 1],
       }}
       transition={{
-        duration: 1.2,
+        duration: 1.4,
         repeat: Infinity,
         ease: "easeOut",
-        repeatDelay: 2
+        repeatDelay: 3,
       }}
     >
       -{discountPercentage}%

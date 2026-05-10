@@ -225,7 +225,7 @@ function OrderCard({
               </h3>
 
               {order.status === "pending" ? (
-                <Badge className="bg-gradient-to-r from-[#FF6B00] to-[#FF8534] text-white border-none px-3 py-1.5 rounded-full">
+                <Badge className="bg-[#FEF3C7] text-[#92400E] border border-[#FCD34D] px-3 py-1.5 rounded-full">
                   <Clock className="w-3.5 h-3.5 mr-1.5" />
                   <span style={{ fontSize: "0.813rem", fontWeight: 600 }}>
                     Pendiente de retiro
@@ -1041,46 +1041,11 @@ export function MyOrdersPage({
             </p>
           </motion.div>
 
-          {/* View Toggle — segmented control */}
+          {/* Tabs — primary navigation */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="flex items-center justify-center mb-8"
-          >
-            <div className="inline-flex bg-white rounded-2xl shadow-md p-1 border border-gray-100">
-              <button
-                type="button"
-                onClick={() => setGroupByLocker(false)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                  !groupByLocker
-                    ? "bg-[#FF6B00] text-white shadow-sm"
-                    : "text-[#2E2E2E]/60 hover:text-[#1C2335]"
-                }`}
-              >
-                <List className="w-4 h-4 flex-shrink-0" />
-                Agrupar por productos
-              </button>
-              <button
-                type="button"
-                onClick={() => setGroupByLocker(true)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                  groupByLocker
-                    ? "bg-[#FF6B00] text-white shadow-sm"
-                    : "text-[#2E2E2E]/60 hover:text-[#1C2335]"
-                }`}
-              >
-                <LayoutGrid className="w-4 h-4 flex-shrink-0" />
-                Agrupar por módulos
-              </button>
-            </div>
-          </motion.div>
-
-          {/* Tabs */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
           >
             <Tabs
               value={activeTab}
@@ -1114,6 +1079,36 @@ export function MyOrdersPage({
                   Completados
                 </TabsTrigger>
               </TabsList>
+
+              {/* View grouping — secondary filter */}
+              <div className="flex justify-end mb-5">
+                <div className="inline-flex bg-gray-100 rounded-xl p-0.5 gap-px">
+                  <button
+                    type="button"
+                    onClick={() => setGroupByLocker(false)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      !groupByLocker
+                        ? "bg-white text-[#1C2335] shadow-sm"
+                        : "text-gray-400 hover:text-gray-600"
+                    }`}
+                  >
+                    <List className="w-3.5 h-3.5 flex-shrink-0" />
+                    Por productos
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setGroupByLocker(true)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      groupByLocker
+                        ? "bg-white text-[#1C2335] shadow-sm"
+                        : "text-gray-400 hover:text-gray-600"
+                    }`}
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5 flex-shrink-0" />
+                    Por módulos
+                  </button>
+                </div>
+              </div>
 
               {/* Pending */}
               <TabsContent value="pending" className="mt-0">
@@ -1246,7 +1241,7 @@ export function MyOrdersPage({
                 </div>
               </div>
               <p className="text-[#FFF4E6]" style={{ fontSize: "0.938rem" }}>
-                Mostrá este código en cualquier locker de HeyPoint! para retirar
+                Mostrá este código en cualquier módulo de HeyPoint! para retirar
                 tu pedido
               </p>
             </div>
@@ -1296,7 +1291,7 @@ export function MyOrdersPage({
                   </div>
 
                   {selectedOrder.status === "pending" ? (
-                    <Badge className="bg-[#FF6B00] text-white border-none px-4 py-2">
+                    <Badge className="bg-[#FEF3C7] text-[#92400E] border border-[#FCD34D] px-4 py-2">
                       Pendiente de retiro
                     </Badge>
                   ) : (

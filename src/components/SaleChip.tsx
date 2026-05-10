@@ -1,24 +1,33 @@
 import { motion } from "motion/react";
 
 interface SaleChipProps {
-  variant?: "orange" | "red" | "gradient";
+  variant?: "red" | "orange" | "gradient";
   size?: "sm" | "md" | "lg";
   className?: string;
 }
 
-export function SaleChip({ variant = "orange", size = "md", className = "" }: SaleChipProps) {
-  // Configuración de variantes
+export function SaleChip({
+  variant = "red",
+  size = "md",
+  className = "",
+}: SaleChipProps) {
   const variantStyles = {
+    red: "bg-[#EF4444]",
     orange: "bg-[#FF6B00]",
-    red: "bg-[#E53935]",
-    gradient: "bg-gradient-to-r from-[#FF6B00] to-[#FF8C2A]"
+    gradient: "bg-gradient-to-br from-[#EF4444] to-[#DC2626]",
   };
 
-  // Configuración de tamaños
+  // Equal width + height → perfect circle
   const sizeStyles = {
-    sm: "h-7 px-3 text-xs",
-    md: "h-8 px-4 text-sm",
-    lg: "h-10 px-5 text-base"
+    sm: "w-8 h-8 text-[0.6rem]",
+    md: "w-10 h-10 text-[0.688rem]",
+    lg: "w-11 h-11 text-xs",
+  };
+
+  const shadowByVariant = {
+    red: "0 3px 10px rgba(239,68,68,0.35)",
+    orange: "0 3px 10px rgba(255,107,0,0.30)",
+    gradient: "0 3px 10px rgba(239,68,68,0.35)",
   };
 
   return (
@@ -30,21 +39,24 @@ export function SaleChip({ variant = "orange", size = "md", className = "" }: Sa
         rounded-full
         border-2 border-white
         flex items-center justify-center
+        select-none
         ${className}
       `}
       style={{
-        fontWeight: 700,
-        boxShadow: "0px 2px 6px rgba(0, 0, 0, 0.15)",
-        minHeight: size === "sm" ? "28px" : size === "md" ? "32px" : "40px"
+        fontWeight: 800,
+        letterSpacing: "0.05em",
+        lineHeight: 1,
+        boxShadow: shadowByVariant[variant],
       }}
       animate={{
-        scale: [1, 1.1, 1],
+        scale: [1, 1.07, 1],
+        rotate: [0, -3, 3, 0],
       }}
       transition={{
-        duration: 1.2,
+        duration: 1.5,
         repeat: Infinity,
         ease: "easeOut",
-        repeatDelay: 2
+        repeatDelay: 3.5,
       }}
     >
       SALE

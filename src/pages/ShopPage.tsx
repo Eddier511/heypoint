@@ -736,7 +736,7 @@ export function ShopPage({
                                       />
                                       {hasDiscount && (
                                         <div className="absolute top-3 right-3">
-                                          <SaleChip variant="orange" size="lg" />
+                                          <SaleChip variant="red" size="lg" />
                                         </div>
                                       )}
                                     </div>
@@ -763,23 +763,26 @@ export function ShopPage({
                                     size="md"
                                     showSaleChip={false}
                                   />
-                                  {hasDiscount && (
-                                    <span
-                                      className="text-[#2E2E2E] block mt-1"
-                                      style={{
-                                        fontSize: "0.75rem",
-                                        fontWeight: 600,
-                                      }}
-                                    >
-                                      ¡Ahorrás{" "}
-                                      {formatPrecioARS(
-                                        getPrecioFinalConIVA(
-                                          product.originalPrice!,
-                                        ) - getPrecioFinalConIVA(product.price),
-                                      )}
-                                      !
-                                    </span>
-                                  )}
+                                  {/* Reserved height — keeps all cards equal regardless of discount */}
+                                  <div className="min-h-[1.125rem] mt-1">
+                                    {hasDiscount && (
+                                      <span
+                                        className="text-[#EF4444]"
+                                        style={{
+                                          fontSize: "0.75rem",
+                                          fontWeight: 700,
+                                        }}
+                                      >
+                                        ¡Ahorrás{" "}
+                                        {formatPrecioARS(
+                                          getPrecioFinalConIVA(
+                                            product.originalPrice!,
+                                          ) - getPrecioFinalConIVA(product.price),
+                                        )}
+                                        !
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
 
                                 <div className="mb-2 min-h-[14px]">
@@ -858,7 +861,7 @@ export function ShopPage({
                               />
                               {hasDiscount && (
                                 <div className="absolute top-3 right-3">
-                                  <SaleChip variant="orange" size="lg" />
+                                  <SaleChip variant="red" size="lg" />
                                 </div>
                               )}
                             </div>
@@ -877,17 +880,23 @@ export function ShopPage({
                                   size="lg"
                                   showSaleChip={false}
                                 />
-                                {hasDiscount && (
-                                  <span className="text-[#2E2E2E] block mt-1 text-xs">
-                                    ¡Ahorrás{" "}
-                                    {formatPrecioARS(
-                                      getPrecioFinalConIVA(
-                                        product.originalPrice!,
-                                      ) - getPrecioFinalConIVA(product.price),
-                                    )}
-                                    !
-                                  </span>
-                                )}
+                                {/* Reserved height — keeps all cards equal regardless of discount */}
+                                <div className="min-h-[1.125rem] mt-1">
+                                  {hasDiscount && (
+                                    <span
+                                      className="text-[#EF4444] text-xs"
+                                      style={{ fontWeight: 700 }}
+                                    >
+                                      ¡Ahorrás{" "}
+                                      {formatPrecioARS(
+                                        getPrecioFinalConIVA(
+                                          product.originalPrice!,
+                                        ) - getPrecioFinalConIVA(product.price),
+                                      )}
+                                      !
+                                    </span>
+                                  )}
+                                </div>
                               </div>
 
                               <div className="mb-2 min-h-[14px]">
@@ -1059,7 +1068,7 @@ export function ShopPage({
                                       badge === "Sale" ? (
                                         <SaleChip
                                           key={index}
-                                          variant="orange"
+                                          variant="red"
                                           size="md"
                                         />
                                       ) : (
@@ -1101,23 +1110,26 @@ export function ShopPage({
                                     size="md"
                                     showSaleChip={false}
                                   />
-                                  {hasDiscount && (
-                                    <span
-                                      className="text-[#2E2E2E] block mt-1"
-                                      style={{
-                                        fontSize: "0.75rem",
-                                        fontWeight: 600,
-                                      }}
-                                    >
-                                      ¡Ahorrás{" "}
-                                      {formatPrecioARS(
-                                        getPrecioFinalConIVA(
-                                          product.originalPrice!,
-                                        ) - getPrecioFinalConIVA(product.price),
-                                      )}
-                                      !
-                                    </span>
-                                  )}
+                                  {/* Reserved height — keeps all cards equal regardless of discount */}
+                                  <div className="min-h-[1.125rem] mt-1">
+                                    {hasDiscount && (
+                                      <span
+                                        className="text-[#EF4444]"
+                                        style={{
+                                          fontSize: "0.75rem",
+                                          fontWeight: 700,
+                                        }}
+                                      >
+                                        ¡Ahorrás{" "}
+                                        {formatPrecioARS(
+                                          getPrecioFinalConIVA(
+                                            product.originalPrice!,
+                                          ) - getPrecioFinalConIVA(product.price),
+                                        )}
+                                        !
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
 
                                 <div className="mb-2 min-h-[14px]">
