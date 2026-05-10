@@ -54,6 +54,8 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
     email: "",
     subject: "",
     message: "",
+    // honeypot — invisible to real users, filled only by bots
+    website: "",
   });
 
   // ✅ NUEVO: estados UX
@@ -78,6 +80,7 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
       email: formData.email.trim(),
       subject: formData.subject.trim(),
       message: formData.message.trim(),
+      website: formData.website, // honeypot — backend rejects if non-empty
     };
 
     // validación mínima (rápida)
@@ -110,7 +113,7 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
       });
 
       // limpiar form
-      setFormData({ name: "", email: "", subject: "", message: "" });
+      setFormData({ name: "", email: "", subject: "", message: "", website: "" });
     } catch (err: any) {
       console.error("[contact] submit failed:", err);
       toast.error("No se pudo enviar", {
@@ -174,6 +177,27 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
 
                   {/* ✅ CAMBIO: agregar onSubmit */}
                   <form className="space-y-6" onSubmit={handleSubmit}>
+                    {/* Honeypot anti-spam — invisible to real users, do not remove */}
+                    <input
+                      type="text"
+                      name="website"
+                      value={formData.website}
+                      onChange={(e) =>
+                        setFormData({ ...formData, website: e.target.value })
+                      }
+                      tabIndex={-1}
+                      autoComplete="off"
+                      aria-hidden="true"
+                      style={{
+                        position: "absolute",
+                        left: "-9999px",
+                        top: "-9999px",
+                        width: "1px",
+                        height: "1px",
+                        opacity: 0,
+                        pointerEvents: "none",
+                      }}
+                    />
                     <div className="grid md:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <Label
