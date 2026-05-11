@@ -106,6 +106,8 @@ interface LockerGroup {
   subtotal: number;
 }
 
+type UiOrderStatus = "pending" | "completed";
+
 interface Order {
   id: string;
   orderId: string;
@@ -113,7 +115,7 @@ interface Order {
   lockers: LockerGroup[];
   total: number;
   pickupToken: string;
-  status: "pending" | "completed";
+  status: UiOrderStatus;
   purchaseDate: string;
   completedDate?: string;
 }
@@ -121,7 +123,7 @@ interface Order {
 /** =========================
  * API DTO (what backend returns)
  * ========================= */
-type ApiOrderStatus = "pending" | "completed";
+type ApiOrderStatus = string;
 
 type ApiOrderItem = {
   id: string | number;
@@ -158,6 +160,24 @@ type ApiOrdersMeResponse = { orders: ApiOrder[] } | ApiOrder[]; // por si tu end
 function normalizeOrdersResponse(data: ApiOrdersMeResponse): ApiOrder[] {
   if (Array.isArray(data)) return data;
   return data?.orders || [];
+}
+
+function toUiOrderStatus(status?: string): UiOrderStatus {
+  switch (String(status || "").trim().toLowerCase()) {
+    case "picked_up":
+    case "completed":
+    case "complete":
+    case "cancelled":
+    case "canceled":
+    case "expired":
+      return "completed";
+    case "pending":
+    case "pending_pickup":
+    case "ready_for_pickup":
+      return "pending";
+    default:
+      return "completed";
+  }
 }
 
 function buildLockersFromItems(items: OrderItem[]): LockerGroup[] {
@@ -621,7 +641,7 @@ export function MyOrdersPage({
             lockers: finalLockers,
             total: o.total,
             pickupToken: o.pickupToken || "",
-            status: o.status,
+            status: toUiOrderStatus(o.status),
             purchaseDate: o.purchaseDate,
             completedDate: o.completedDate,
           };
