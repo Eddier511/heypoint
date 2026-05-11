@@ -9,6 +9,8 @@ import {
   LayoutGrid,
   Hash,
   List,
+  AlertTriangle,
+  Headphones,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
@@ -115,6 +117,10 @@ interface Order {
   lockers: LockerGroup[];
   total: number;
   pickupToken: string;
+  pickupTokenExpiresAt?: string;
+  token?: {
+    expiresAt?: string;
+  };
   status: UiOrderStatus;
   purchaseDate: string;
   completedDate?: string;
@@ -149,6 +155,10 @@ type ApiOrder = {
   completedDate?: string;
   total: number;
   pickupToken?: string;
+  pickupTokenExpiresAt?: string;
+  token?: {
+    expiresAt?: string;
+  };
 
   // Optional shapes (depending on your backend)
   lockers?: ApiLockerGroup[];
@@ -178,6 +188,30 @@ function toUiOrderStatus(status?: string): UiOrderStatus {
     default:
       return "completed";
   }
+}
+
+function getPickupTokenExpiration(order: Pick<Order, "pickupTokenExpiresAt" | "token">) {
+  return order.pickupTokenExpiresAt || order.token?.expiresAt || "";
+}
+
+function isPickupTokenExpired(order: Pick<Order, "pickupTokenExpiresAt" | "token">) {
+  const value = getPickupTokenExpiration(order);
+  if (!value) return false;
+  const date = new Date(value);
+  return !Number.isNaN(date.getTime()) && date.getTime() < Date.now();
+}
+
+function formatExpirationDate(value?: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("es-AR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
 }
 
 function buildLockersFromItems(items: OrderItem[]): LockerGroup[] {
@@ -214,6 +248,7 @@ interface OrderCardProps {
   groupByLocker: boolean;
   onViewDetails: (order: Order) => void;
   onShowToken: (token: string) => void;
+  onNavigate?: (page: string) => void;
 }
 
 function OrderCard({
@@ -221,13 +256,19 @@ function OrderCard({
   groupByLocker,
   onViewDetails,
   onShowToken,
+  onNavigate,
 }: OrderCardProps) {
   const isCompleted = order.status === "completed";
+  const isExpiredPending =
+    order.status === "pending" && isPickupTokenExpired(order);
+  const expirationLabel = formatExpirationDate(getPickupTokenExpiration(order));
 
   return (
     <Card
       className={`border-none shadow-lg rounded-3xl overflow-hidden transition-all ${
-        isCompleted
+        isExpiredPending
+          ? "bg-gradient-to-br from-red-50 to-white ring-2 ring-red-200"
+          : isCompleted
           ? "bg-gradient-to-br from-green-50 to-white"
           : "bg-white hover:shadow-xl"
       }`}
@@ -244,7 +285,14 @@ function OrderCard({
                 {order.orderId}
               </h3>
 
-              {order.status === "pending" ? (
+              {isExpiredPending ? (
+                <Badge className="bg-red-100 text-red-700 border border-red-300 px-3 py-1.5 rounded-full">
+                  <AlertTriangle className="w-3.5 h-3.5 mr-1.5" />
+                  <span style={{ fontSize: "0.813rem", fontWeight: 600 }}>
+                    Código vencido
+                  </span>
+                </Badge>
+              ) : order.status === "pending" ? (
                 <Badge className="bg-[#FEF3C7] text-[#92400E] border border-[#FCD34D] px-3 py-1.5 rounded-full">
                   <Clock className="w-3.5 h-3.5 mr-1.5" />
                   <span style={{ fontSize: "0.813rem", fontWeight: 600 }}>
@@ -281,6 +329,20 @@ function OrderCard({
                   <span>
                     <span style={{ fontWeight: 600 }}>Completado:</span>{" "}
                     {order.completedDate}
+                  </span>
+                </div>
+              )}
+              {expirationLabel && order.status === "pending" && (
+                <div
+                  className={`flex items-center gap-2 ${
+                    isExpiredPending ? "text-red-700" : "text-gray-600"
+                  }`}
+                  style={{ fontSize: "0.875rem" }}
+                >
+                  <Clock className="w-4 h-4 flex-shrink-0" />
+                  <span>
+                    <span style={{ fontWeight: 600 }}>Disponible hasta:</span>{" "}
+                    {expirationLabel}
                   </span>
                 </div>
               )}
@@ -470,23 +532,43 @@ function OrderCard({
 
         {/* Pickup Token */}
         {order.status === "pending" && order.pickupToken && (
-          <div className="bg-gradient-to-r from-[#FF6B00]/10 to-[#FF6B00]/5 rounded-2xl p-4 mb-4 border-2 border-[#FF6B00]/20">
+          <div
+            className={`rounded-2xl p-4 mb-4 border-2 ${
+              isExpiredPending
+                ? "bg-red-50 border-red-200"
+                : "bg-gradient-to-r from-[#FF6B00]/10 to-[#FF6B00]/5 border-[#FF6B00]/20"
+            }`}
+          >
             <div className="flex items-start gap-3">
-              <Hash className="w-6 h-6 text-[#FF6B00] flex-shrink-0 mt-0.5" />
+              {isExpiredPending ? (
+                <AlertTriangle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+              ) : (
+                <Hash className="w-6 h-6 text-[#FF6B00] flex-shrink-0 mt-0.5" />
+              )}
               <div className="flex-1">
                 <div
                   className="text-[#1C2335] mb-1"
                   style={{ fontSize: "0.938rem", fontWeight: 700 }}
                 >
-                  Token de retiro
+                  {isExpiredPending ? "Código vencido" : "Token de retiro"}
                 </div>
-                <div
-                  className="text-[#FF6B00] tracking-wider mb-2"
-                  style={{ fontSize: "1.5rem", fontWeight: 700 }}
+                {!isExpiredPending && (
+                  <div
+                    className="text-[#FF6B00] tracking-wider mb-2"
+                    style={{ fontSize: "1.5rem", fontWeight: 700 }}
+                  >
+                    {order.pickupToken}
+                  </div>
+                )}
+                {isExpiredPending && (
+                  <p className="text-red-700" style={{ fontSize: "0.75rem" }}>
+                    El período de retiro finalizó. Contactá soporte para solicitar asistencia.
+                  </p>
+                )}
+                <p
+                  className={isExpiredPending ? "hidden" : "text-[#2E2E2E]"}
+                  style={{ fontSize: "0.75rem" }}
                 >
-                  {order.pickupToken}
-                </div>
-                <p className="text-[#2E2E2E]" style={{ fontSize: "0.75rem" }}>
                   Usá este token para desbloquear todos los módulos de este
                   pedido
                 </p>
@@ -507,7 +589,16 @@ function OrderCard({
             Ver detalles
           </Button>
 
-          {order.status === "pending" ? (
+          {isExpiredPending ? (
+            <Button
+              onClick={() => onNavigate?.("contact")}
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white py-5 rounded-full shadow-lg hover:shadow-xl transition-all"
+              style={{ fontSize: "0.938rem", fontWeight: 600 }}
+            >
+              <Headphones className="w-4 h-4 mr-2" />
+              Contactar soporte
+            </Button>
+          ) : order.status === "pending" ? (
             <Button
               onClick={() => onShowToken(order.pickupToken)}
               className="flex-1 bg-[#FF6B00] hover:bg-[#e56000] text-white py-5 rounded-full shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02] active:scale-[0.98]"
@@ -641,6 +732,8 @@ export function MyOrdersPage({
             lockers: finalLockers,
             total: o.total,
             pickupToken: o.pickupToken || "",
+            pickupTokenExpiresAt: o.pickupTokenExpiresAt || o.token?.expiresAt || "",
+            token: o.token,
             status: toUiOrderStatus(o.status),
             purchaseDate: o.purchaseDate,
             completedDate: o.completedDate,
@@ -1172,6 +1265,7 @@ export function MyOrdersPage({
                           groupByLocker={groupByLocker}
                           onViewDetails={handleViewDetails}
                           onShowToken={handleShowToken}
+                          onNavigate={onNavigate}
                         />
                       </motion.div>
                     ))}
@@ -1221,6 +1315,7 @@ export function MyOrdersPage({
                           groupByLocker={groupByLocker}
                           onViewDetails={handleViewDetails}
                           onShowToken={handleShowToken}
+                          onNavigate={onNavigate}
                         />
                       </motion.div>
                     ))}
