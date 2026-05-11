@@ -663,6 +663,7 @@ function AppContent() {
           userName={userName}
           pickupCode={lastOrder?.pickupToken ?? pickupCodeGenerated}
           orderId={lastOrder?.orderId}
+          orderDocId={lastOrder?.id}
           onClearCart={clearCart}
         />
       </Suspense>

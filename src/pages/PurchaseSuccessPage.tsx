@@ -18,6 +18,7 @@ import {
   Navigation,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { api } from "../lib/api";
 
 interface PurchaseSuccessPageProps {
   onNavigate?: (page: string) => void;
@@ -25,6 +26,7 @@ interface PurchaseSuccessPageProps {
   userName?: string;
   pickupCode?: string;
   orderId?: string;
+  orderDocId?: string;
   isLoggedIn?: boolean;
   onClearCart?: () => void;
 }
@@ -35,6 +37,7 @@ export function PurchaseSuccessPage({
   userName = "John",
   pickupCode = "A3X9K2",
   orderId,
+  orderDocId,
   isLoggedIn = true,
   onClearCart,
 }: PurchaseSuccessPageProps) {
@@ -45,6 +48,8 @@ export function PurchaseSuccessPage({
   const [copied, setCopied] = useState(false);
   const [resendDisabled, setResendDisabled] = useState(false);
   const [resendCountdown, setResendCountdown] = useState(0);
+  const [isResendingEmail, setIsResendingEmail] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
 
   // CRITICAL: Scroll to top immediately when page loads
   useEffect(() => {
@@ -113,10 +118,34 @@ export function PurchaseSuccessPage({
     }
   };
 
-  const handleResendEmail = () => {
-    if (resendDisabled) return;
+  const handleResendEmail = async () => {
+    if (resendDisabled || isResendingEmail) return;
+
+    setIsResendingEmail(true);
+    setResendMessage("");
+    try {
+      if (orderDocId) {
+        const { data } = await api.post(
+          `/orders/${encodeURIComponent(orderDocId)}/resend-pickup-email`,
+        );
+        setResendMessage(
+          data?.message || "Si el pedido está activo, reenviamos el código a tu email.",
+        );
+      } else {
+        setResendMessage(
+          "No pudimos reenviar el correo desde esta pantalla. Revisá Mis Pedidos.",
+        );
+      }
+    } catch (error) {
+      console.error("[PurchaseSuccessPage] resend pickup email failed", error);
+      setResendMessage("No pudimos reenviar el correo. Intentá nuevamente en unos minutos.");
+      setIsResendingEmail(false);
+      return;
+    }
+
     setResendDisabled(true);
     setResendCountdown(60);
+    setIsResendingEmail(false);
     resendIntervalRef.current = setInterval(() => {
       setResendCountdown((prev) => {
         if (prev <= 1) {
@@ -399,14 +428,24 @@ export function PurchaseSuccessPage({
                   </p>
                   <button
                     onClick={handleResendEmail}
-                    disabled={resendDisabled}
+                    disabled={resendDisabled || isResendingEmail}
                     className="text-[#FF6B00] hover:text-[#e56000] disabled:text-[#2E2E2E]/35 disabled:cursor-not-allowed transition-colors"
                     style={{ fontSize: "0.875rem", fontWeight: 600 }}
                   >
-                    {resendDisabled
+                    {isResendingEmail
+                      ? "Reenviando..."
+                      : resendDisabled
                       ? `Reenviar correo (${resendCountdown}s)`
                       : "¿No recibiste el código? Reenviar correo"}
                   </button>
+                  {resendMessage && (
+                    <p
+                      className="text-[#2E2E2E]/60 mt-2"
+                      style={{ fontSize: "0.8125rem" }}
+                    >
+                      {resendMessage}
+                    </p>
+                  )}
                 </div>
               </div>
             </Card>
