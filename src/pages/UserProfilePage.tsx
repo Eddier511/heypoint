@@ -231,7 +231,7 @@ export function UserProfilePage({
 
         const next = {
           fullName: api.fullName || currentUser?.displayName || "",
-          email: api.email || currentUser?.email || "",
+          email: currentUser?.email || api.email || "",
           emailVerified: verified,
           phone: api.phone || "",
           birthDate: isoToDisplay(api.birthDate || ""),
@@ -447,20 +447,22 @@ export function UserProfilePage({
   };
 
   const handleEmailChanged = async (newEmail: string) => {
+    // Firebase has already verified and applied the new email at this point.
+    // Mark it as verified immediately; do NOT send another verification email.
     setProfileData((prev) => ({
       ...prev,
       email: newEmail,
-      emailVerified: false, // ✅ al cambiar email, queda NO verificado
+      emailVerified: true,
     }));
     setOriginalData((prev) => ({
       ...prev,
       email: newEmail,
-      emailVerified: false,
+      emailVerified: true,
     }));
     setShowChangeEmailModal(false);
 
-    // opcional: disparar verificación automáticamente
-    await handleResendVerification();
+    // Reload Firebase Auth state so token + currentUser reflect the new email
+    await refreshVerifiedState();
   };
 
   return (

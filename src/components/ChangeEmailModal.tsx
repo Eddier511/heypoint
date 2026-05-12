@@ -44,6 +44,11 @@ export function ChangeEmailModal({
   const [countdown, setCountdown] = useState(0);
   const [isResendEnabled, setIsResendEnabled] = useState(false);
 
+  // Polling timeout — after ~4 min stop spinning and let user check manually
+  const [pollingTimedOut, setPollingTimedOut] = useState(false);
+  const [manualCheckLoading, setManualCheckLoading] = useState(false);
+  const [manualCheckFailed, setManualCheckFailed] = useState(false);
+
   // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -54,6 +59,9 @@ export function ChangeEmailModal({
       setIsLoading(false);
       setCountdown(0);
       setIsResendEnabled(false);
+      setPollingTimedOut(false);
+      setManualCheckLoading(false);
+      setManualCheckFailed(false);
     }
   }, [isOpen]);
 
@@ -67,33 +75,28 @@ export function ChangeEmailModal({
     }
   }, [countdown, step]);
 
-  // Simulate email verification (in real app, this would be detected via polling or websocket)
+  // Poll for email change confirmation (stops after ~4 min to avoid eternal spinner)
   useEffect(() => {
     if (step !== "waitingVerification") return;
 
     let cancelled = false;
     const auth = getAuth();
+    // 4 minutes = 96 ticks × 2500ms
+    let ticks = 0;
+    const MAX_TICKS = 96;
 
-    const tick = async () => {
+    const checkEmailChanged = async () => {
       try {
         const u = auth.currentUser;
         if (!u) return;
-
-        // reload para traer cambios después del click del email
         await reload(u);
-
-        // ✅ si el email ya cambió al nuevo, consideramos verificado y listo
         const current = (auth.currentUser?.email || "").toLowerCase();
         const target = (newEmail || "").toLowerCase();
-
         if (current && target && current === target) {
           if (cancelled) return;
-
           setStep("success");
-
           setTimeout(() => {
             if (cancelled) return;
-
             onEmailChanged(newEmail);
             toast.success("¡Correo electrónico actualizado!", {
               description: "Tu correo electrónico fue actualizado exitosamente",
@@ -101,13 +104,24 @@ export function ChangeEmailModal({
             });
             onClose();
           }, 1200);
+          return true; // signal: done
         }
       } catch {
-        // si falla reload, no rompemos el flujo; seguirá intentando
+        // reload failed — don't break the flow, keep trying
+      }
+      return false;
+    };
+
+    const tick = async () => {
+      const done = await checkEmailChanged();
+      if (done || cancelled) return;
+      ticks += 1;
+      if (ticks >= MAX_TICKS) {
+        if (!cancelled) setPollingTimedOut(true);
       }
     };
 
-    // primer check rápido y luego polling
+    // First check immediately, then every 2.5 s
     tick();
     const interval = setInterval(tick, 2500);
 
@@ -116,6 +130,36 @@ export function ChangeEmailModal({
       clearInterval(interval);
     };
   }, [step, newEmail, onEmailChanged, onClose]);
+
+  // Manual "Ya verifiqué" handler — one-shot reload check
+  const handleManualCheck = async () => {
+    setManualCheckLoading(true);
+    setManualCheckFailed(false);
+    const auth = getAuth();
+    try {
+      const u = auth.currentUser;
+      if (u) await reload(u);
+      const current = (auth.currentUser?.email || "").toLowerCase();
+      const target = (newEmail || "").toLowerCase();
+      if (current && target && current === target) {
+        setStep("success");
+        setTimeout(() => {
+          onEmailChanged(newEmail);
+          toast.success("¡Correo electrónico actualizado!", {
+            description: "Tu correo electrónico fue actualizado exitosamente",
+            duration: 3000,
+          });
+          onClose();
+        }, 1200);
+        return;
+      }
+      setManualCheckFailed(true);
+    } catch {
+      setManualCheckFailed(true);
+    } finally {
+      setManualCheckLoading(false);
+    }
+  };
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -469,16 +513,51 @@ export function ChangeEmailModal({
                 </ol>
               </div>
 
-              {/* Loading indicator */}
-              <div className="text-center py-4">
-                <Loader2 className="w-8 h-8 text-[#FF6B00] animate-spin mx-auto mb-3" />
-                <p
-                  className="text-[#2E2E2E]/60"
-                  style={{ fontSize: "0.875rem" }}
-                >
-                  Esperando verificación...
-                </p>
-              </div>
+              {/* Loading indicator / manual check */}
+              {!pollingTimedOut ? (
+                <div className="text-center py-4">
+                  <Loader2 className="w-8 h-8 text-[#FF6B00] animate-spin mx-auto mb-3" />
+                  <p
+                    className="text-[#2E2E2E]/60"
+                    style={{ fontSize: "0.875rem" }}
+                  >
+                    Esperando verificación...
+                  </p>
+                </div>
+              ) : (
+                <div className="text-center py-2 space-y-3">
+                  <p
+                    className="text-[#2E2E2E]/70"
+                    style={{ fontSize: "0.875rem" }}
+                  >
+                    ¿Ya hiciste clic en el enlace? Avisanos para continuar.
+                  </p>
+                  {manualCheckFailed && (
+                    <p
+                      className="text-red-500"
+                      style={{ fontSize: "0.813rem" }}
+                    >
+                      No detectamos el cambio todavía. ¿Ya hiciste clic en el enlace?
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleManualCheck}
+                    disabled={manualCheckLoading}
+                    className="w-full bg-[#FF6B00] hover:bg-[#e56000] disabled:opacity-50 text-white py-3 rounded-full font-semibold transition-all inline-flex items-center justify-center gap-2"
+                    style={{ fontSize: "0.938rem" }}
+                  >
+                    {manualCheckLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Verificando...
+                      </>
+                    ) : (
+                      "Ya verifiqué"
+                    )}
+                  </button>
+                </div>
+              )}
 
               {/* Resend Email */}
               <div className="text-center">

@@ -14,6 +14,7 @@ import {
 import { Button } from "./components/ui/button";
 import { Card } from "./components/ui/card";
 import { Toaster } from "./components/ui/sonner";
+import { toast } from "sonner";
 import ModalRoot from "./components/ModalRoot";
 import { GlobalModalBridge } from "./components/GlobalModalBridge";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -431,6 +432,79 @@ function AppContent() {
     fetchMe,
     openSignupModal,
   ]);
+
+  // ── Email-change callback (?emailChanged=1) ──────────────────────────────
+  // Firebase redirects here after the user clicks the verification link sent
+  // by verifyBeforeUpdateEmail(). We need to reload the Firebase Auth state
+  // so currentUser.email reflects the new email, refresh the ID token, and
+  // give the user clear feedback.
+  //
+  // Works in TWO scenarios:
+  //  A) Same browser — user clicked the link in the same browser where the
+  //     app was open. The modal (ChangeEmailModal) may or may not have auto-
+  //     detected the change. We normalise here regardless.
+  //  B) Different browser/device — no active Firebase session. We just show
+  //     a toast telling the user to log in with the new email.
+  useEffect(() => {
+    if (loadingAuth) return; // wait for auth to initialise
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("emailChanged") !== "1") return;
+
+    // Remove param from URL immediately so it doesn't re-fire on re-renders
+    const cleanUrl = new URL(window.location.href);
+    cleanUrl.searchParams.delete("emailChanged");
+    window.history.replaceState(
+      {},
+      "",
+      `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`,
+    );
+
+    let cancelled = false;
+
+    async function handleEmailChangedCallback() {
+      if (currentUser) {
+        try {
+          // Reload Firebase user so .email and .emailVerified are up-to-date
+          await refreshEmailVerification();
+          // Force-refresh the ID token so the backend gets the new email claim
+          await getAuthToken(true);
+        } catch (err) {
+          console.error("[App] emailChanged reload failed", err);
+        }
+
+        if (cancelled) return;
+
+        toast.success("¡Correo actualizado!", {
+          description:
+            "Tu correo electrónico fue actualizado correctamente.",
+          duration: 5000,
+        });
+
+        // Navigate to profile so the user sees their updated email
+        window.history.pushState({}, "", "/account");
+        setCurrentPage("profile");
+      } else {
+        // Different browser / no active session
+        toast.success("Correo actualizado", {
+          description:
+            "Tu correo fue verificado. Iniciá sesión con tu nuevo correo.",
+          duration: 8000,
+        });
+      }
+    }
+
+    handleEmailChangedCallback();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    loadingAuth,
+    currentUser,
+    refreshEmailVerification,
+    getAuthToken,
+  ]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     window.scrollTo(0, 0);
