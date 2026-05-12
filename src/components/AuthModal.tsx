@@ -29,6 +29,13 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 
 import { useAuth } from "../contexts/AuthContext";
 import { useStoreSettings } from "../hooks/useStoreSettings";
+import {
+  isoToDisplay as _isoToDisplay,
+  displayToIso,
+  maskDateInput,
+  isValidDisplayDate,
+  validateAge16,
+} from "../lib/dateUtils";
 
 type SignUpStep = "form" | "creating" | "verifyEmail" | "completeProfile";
 
@@ -71,21 +78,6 @@ function validateEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-function validateAge16(dateStr: string): boolean {
-  if (!dateStr) return false;
-  const today = new Date();
-  const birth = new Date(dateStr);
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age -= 1;
-  return age >= 16;
-}
-
-function getMaxBirthDate(): string {
-  const d = new Date();
-  d.setFullYear(d.getFullYear() - 16);
-  return d.toISOString().split("T")[0];
-}
 
 function normalizeDigits(v: string) {
   return (v || "").replace(/\D/g, "");
@@ -257,8 +249,6 @@ export default function AuthModal({
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
   const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
   const [forgotPasswordError, setForgotPasswordError] = useState("");
-
-  const birthDateInputRef = useRef<HTMLInputElement>(null);
 
   const [phone, setPhone] = useState("");
   const [phoneError, setPhoneError] = useState("");
@@ -711,7 +701,10 @@ export default function AuthModal({
     if (!birthDate) {
       setBirthDateError("La fecha de nacimiento es requerida");
       hasError = true;
-    } else if (!validateAge16(birthDate)) {
+    } else if (!isValidDisplayDate(birthDate)) {
+      setBirthDateError("Fecha inválida. Usá el formato dd/mm/aaaa");
+      hasError = true;
+    } else if (!validateAge16(displayToIso(birthDate))) {
       setBirthDateError("Debés tener al menos 16 años");
       hasError = true;
     }
@@ -742,7 +735,7 @@ export default function AuthModal({
         fullName: pendingFullName || "User",
         phone: phoneDigits,
         dni: dniTrim,
-        birthDate,
+        birthDate: displayToIso(birthDate),
         apartmentNumber: uf,
         pickupPoint,
         termsAccepted: true,
@@ -1729,22 +1722,17 @@ export default function AuthModal({
                             Fecha de nacimiento
                           </Label>
                           <div className="relative min-w-0">
-                            <button
-                              type="button"
-                              tabIndex={-1}
-                              onClick={() => (birthDateInputRef.current as any)?.showPicker?.()}
-                              className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-gray-400 hover:text-[#FF6B00] transition-colors"
-                            >
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-gray-400 pointer-events-none">
                               <Calendar className="w-5 h-5" />
-                            </button>
+                            </span>
                             <Input
-                              ref={birthDateInputRef}
-                              type="date"
+                              type="text"
+                              inputMode="numeric"
                               value={birthDate}
-                              min="1900-01-01"
-                              max={getMaxBirthDate()}
+                              placeholder="dd/mm/aaaa"
+                              maxLength={10}
                               onChange={(e) => {
-                                setBirthDate(e.target.value);
+                                setBirthDate(maskDateInput(e.target.value));
                                 setBirthDateError("");
                                 setStep2Dirty(true);
                               }}

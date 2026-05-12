@@ -28,6 +28,13 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "../contexts/AuthContext";
+import {
+  isoToDisplay,
+  displayToIso,
+  maskDateInput,
+  isValidDisplayDate,
+  validateAge16,
+} from "../lib/dateUtils";
 
 type ApiProfile = {
   uid?: string;
@@ -60,22 +67,6 @@ function normalizeDigits(v: string) {
   return (v || "").replace(/\D/g, "");
 }
 
-function validateAge16(dateStr: string): boolean {
-  if (!dateStr) return false;
-  const today = new Date();
-  const birth = new Date(dateStr);
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age -= 1;
-  return age >= 16;
-}
-
-function getMaxBirthDate(): string {
-  const d = new Date();
-  d.setFullYear(d.getFullYear() - 16);
-  return d.toISOString().split("T")[0];
-}
-
 export function UserProfilePage({
   onNavigate,
   isLoggedIn = true,
@@ -104,8 +95,6 @@ export function UserProfilePage({
   // UI states
   const [pageLoading, setPageLoading] = useState(true);
   const [pageError, setPageError] = useState<string>("");
-
-  const birthDateInputRef = useRef<HTMLInputElement>(null);
 
   // Profile
   const [profileData, setProfileData] = useState({
@@ -245,7 +234,7 @@ export function UserProfilePage({
           email: api.email || currentUser?.email || "",
           emailVerified: verified,
           phone: api.phone || "",
-          birthDate: api.birthDate || "",
+          birthDate: isoToDisplay(api.birthDate || ""),
           dni: api.dni || "",
           pickupPoint: globalPickupPoint,
           apartmentNumber: api.apartmentNumber || "",
@@ -301,7 +290,9 @@ export function UserProfilePage({
 
     if (!profileData.birthDate) {
       newErrors.birthDate = "La fecha de nacimiento es requerida";
-    } else if (!validateAge16(profileData.birthDate)) {
+    } else if (!isValidDisplayDate(profileData.birthDate)) {
+      newErrors.birthDate = "Fecha inválida. Usá el formato dd/mm/aaaa";
+    } else if (!validateAge16(displayToIso(profileData.birthDate))) {
       newErrors.birthDate = "Debes tener al menos 16 años";
     }
 
@@ -348,7 +339,9 @@ export function UserProfilePage({
         ? normalizeDigits(String(value)).slice(0, 3)
         : field === "phone" || field === "dni"
           ? normalizeDigits(String(value))
-          : value;
+          : field === "birthDate"
+            ? maskDateInput(String(value))
+            : value;
     setProfileData((prev) => ({ ...prev, [field]: nextValue }));
     if (errors[field as string]) {
       setErrors((prev) => {
@@ -390,7 +383,7 @@ export function UserProfilePage({
         fullName: (profileData.fullName || "").trim(), // ✅ NUEVO
         phone: normalizeDigits(profileData.phone),
         dni: (profileData.dni || "").trim(),
-        birthDate: profileData.birthDate,
+        birthDate: displayToIso(profileData.birthDate),
         apartmentNumber: (profileData.apartmentNumber || "").trim(),
         pickupPoint: globalPickupPoint,
       };
@@ -751,20 +744,15 @@ export function UserProfilePage({
                             <span className="text-red-500">*</span>
                           </Label>
                           <div className="relative">
-                            <button
-                              type="button"
-                              tabIndex={-1}
-                              onClick={() => (birthDateInputRef.current as any)?.showPicker?.()}
-                              className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-[#2E2E2E]/50 hover:text-[#FF6B00] transition-colors"
-                            >
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-[#2E2E2E]/50 pointer-events-none">
                               <Calendar className="w-5 h-5" />
-                            </button>
+                            </span>
                             <Input
-                              ref={birthDateInputRef}
-                              type="date"
+                              type="text"
+                              inputMode="numeric"
                               value={profileData.birthDate}
-                              min="1900-01-01"
-                              max={getMaxBirthDate()}
+                              placeholder="dd/mm/aaaa"
+                              maxLength={10}
                               onChange={(e) =>
                                 handleInputChange("birthDate", e.target.value)
                               }
