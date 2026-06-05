@@ -211,6 +211,7 @@ export default function AuthModal({
     sendResetPassword,
     refreshEmailVerification,
     sendVerifyEmailPro, // ✅ ESTA ES LA CLAVE
+    getAuthToken,
     getIdToken,
   } = useAuth();
   const { settings: storeSettings } = useStoreSettings();
@@ -284,7 +285,7 @@ export default function AuthModal({
 
     for (let i = 0; i < retries; i++) {
       try {
-        const tok = await getIdToken();
+        const tok = (await getAuthToken(true)) || (await getIdToken());
         if (tok) return tok;
       } catch (e) {
         lastErr = e;
@@ -324,7 +325,7 @@ export default function AuthModal({
     setApartmentNumberError("");
 
     // ✅ si Google ya autenticó y el padre cerró el modal, volvemos a Paso 2 automáticamente
-    if (pendingProfile) {
+    if (pendingProfile && sessionUser?.emailVerified !== false) {
       const email = sessionUser?.email || savedEmail || "";
       const name = sessionUser?.fullName || savedName || "";
       setPendingEmail(email);
@@ -450,8 +451,8 @@ export default function AuthModal({
       // ✅ Si ES nuevo y ya está verificado: completar perfil
       if (isNewUser) {
         localStorage.setItem(PENDING_PROFILE_KEY, "1");
-        onLoginSuccess(user);
-        onClose();
+        setSignUpStep("completeProfile");
+        setStep2Dirty(false);
         return;
       }
 
