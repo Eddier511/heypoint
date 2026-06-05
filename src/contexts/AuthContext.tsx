@@ -106,6 +106,15 @@ interface AuthContextType {
 
 const STORAGE_KEY = "heypoint_id_token";
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AUTH_ONBOARDING_KEYS = [
+  "heypoint_pending_profile",
+  "heypoint_pending_email",
+  "heypoint_pending_name",
+];
+
+function clearAuthOnboardingStorage() {
+  AUTH_ONBOARDING_KEYS.forEach((key) => localStorage.removeItem(key));
+}
 
 function isTooManyRequestsError(error: any) {
   return String(error?.code || error?.message || "").includes(
@@ -379,7 +388,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
   const logout = async () => {
     await signOut(auth);
+    setFbUser(null);
+    setCustomerFullName(null);
     localStorage.removeItem(STORAGE_KEY);
+    clearAuthOnboardingStorage();
     window.dispatchEvent(new CustomEvent("heypoint:logout"));
   };
 

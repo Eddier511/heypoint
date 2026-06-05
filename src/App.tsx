@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useEffect, useMemo } from "react";
+import { lazy, Suspense, useState, useEffect, useMemo, useRef } from "react";
 import {
   ShoppingBag,
   CreditCard,
@@ -284,9 +284,10 @@ function AppContent() {
     fetchMe,
     getAuthToken,
   } = useAuth();
-  const { openLoginModal, openSignupModal, closeAllModals, openedAt } =
+  const { loginOpen, signupOpen, openLoginModal, openSignupModal, closeAllModals, openedAt } =
     useModal();
   const { clearCart } = useCart();
+  const promptedIncompleteProfileUidRef = useRef<string | null>(null);
 
   const userName = user?.fullName || "User";
   const userEmail = user?.email || "";
@@ -366,17 +367,77 @@ function AppContent() {
   useEffect(() => {
     const handleLogout = () => {
       if (loadingAuth) return;
-      // ✅ si el usuario está en carrito, no lo saqués de ahí
-      setCurrentPage((prev) => (prev === "cart" ? "cart" : "home"));
+      // Logout must leave protected/account states cleanly.
+      localStorage.removeItem("heypoint_pending_profile");
+      localStorage.removeItem("heypoint_pending_email");
+      localStorage.removeItem("heypoint_pending_name");
+      promptedIncompleteProfileUidRef.current = null;
+      closeAllModals();
+      setCurrentPage("home");
+      if (window.location.pathname !== "/") {
+        window.history.pushState({}, "", "/");
+      }
 
-      // ✅ opcional: si querés que el logout te lleve siempre a "/"
-      // pero respetando carrito (lo dejamos suave)
-      // if (window.location.pathname !== "/") window.history.pushState({}, "", "/");
     };
 
     window.addEventListener("heypoint:logout", handleLogout);
     return () => window.removeEventListener("heypoint:logout", handleLogout);
-  }, [loadingAuth]);
+  }, [loadingAuth, closeAllModals]);
+
+  useEffect(() => {
+    if (loadingAuth || currentUser) return;
+    if (currentPage !== "profile" && currentPage !== "orders") return;
+
+    closeAllModals();
+    setCurrentPage("home");
+    if (window.location.pathname !== "/") {
+      window.history.replaceState({}, "", "/");
+    }
+  }, [loadingAuth, currentUser, currentPage, closeAllModals]);
+
+  useEffect(() => {
+    if (loadingAuth || !currentUser) return;
+    if (loginOpen || signupOpen) return;
+    if (currentUser.emailVerified === false) return;
+    if (localStorage.getItem("heypoint_pending_profile") === "1") return;
+    if (promptedIncompleteProfileUidRef.current === currentUser.uid) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("verified") === "1") return;
+
+    let cancelled = false;
+
+    async function promptIncompleteProfileAfterLogin() {
+      try {
+        const me = await fetchMe();
+        const profile = me.profile;
+        if (cancelled || profile?.profileComplete !== false) return;
+
+        promptedIncompleteProfileUidRef.current = currentUser.uid;
+        localStorage.setItem("heypoint_pending_profile", "1");
+        localStorage.setItem(
+          "heypoint_pending_email",
+          profile.email || currentUser.email || "",
+        );
+        localStorage.setItem(
+          "heypoint_pending_name",
+          profile.fullName || currentUser.displayName || "",
+        );
+        openSignupModal();
+      } catch (error) {
+        console.error("[App] incomplete profile check after login failed", {
+          uid: currentUser.uid,
+          email: currentUser.email,
+          error,
+        });
+      }
+    }
+
+    promptIncompleteProfileAfterLogin();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loadingAuth, currentUser, fetchMe, openSignupModal, loginOpen, signupOpen]);
 
   useEffect(() => {
     if (loadingAuth || !currentUser) return;
@@ -393,6 +454,7 @@ function AppContent() {
         const profile = me.profile;
 
         if (!cancelled && verified && profile?.profileComplete === false) {
+          promptedIncompleteProfileUidRef.current = currentUser.uid;
           localStorage.setItem("heypoint_pending_profile", "1");
           localStorage.setItem(
             "heypoint_pending_email",
