@@ -30,6 +30,10 @@ import {
   formatServiceChargeDisplayLabel,
   formatServiceChargeRuleLabel,
 } from "../utils/serviceCharge";
+import {
+  computeTaxBreakdownFromSubtotalWithoutTax,
+  formatVatRate,
+} from "../utils/taxBreakdown";
 import { motion } from "motion/react";
 import { useCart } from "../contexts/CartContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -102,9 +106,15 @@ export function CheckoutPage({
     onNavigate?.("shop");
   };
 
+  const subtotalSinIVA = cartItems.reduce(
+    (sum, item) => sum + Number(item.price || 0) * item.quantity,
+    0,
+  );
+  const taxBreakdown = computeTaxBreakdownFromSubtotalWithoutTax(subtotalSinIVA, ivaPct);
+
   // Subtotal: precios finales con IVA ya incluido
   const subtotalProductos = cartItems.reduce((sum, item) => {
-    const precioConIVA = getPrecioFinalConIVA(item.price);
+    const precioConIVA = getPrecioFinalConIVA(item.price, ivaPct);
     return sum + precioConIVA * item.quantity;
   }, 0);
 
@@ -168,13 +178,14 @@ export function CheckoutPage({
         id: item.productId,
         name: item.name,
         quantity: item.quantity,
-        unitPrice: getPrecioFinalConIVA(item.price),
+        unitPrice: getPrecioFinalConIVA(item.price, ivaPct),
         image: item.image ?? "",
       }));
 
       const { data } = await api.post("/orders", {
         items: orderItems,
         subtotal: subtotalProductos,
+        ...taxBreakdown,
         serviceCharge: cargoServicio,
         serviceChargeLabel: reglaCargoLabel,
         total: totalAPagar,
@@ -391,14 +402,14 @@ export function CheckoutPage({
                           <span className="text-[#2E2E2E] text-sm">
                             {item.quantity}{" "}
                             {item.quantity === 1 ? "unidad" : "unidades"} ×{" "}
-                            {formatPrecioARS(getPrecioFinalConIVA(item.price))}
+                            {formatPrecioARS(getPrecioFinalConIVA(item.price, ivaPct))}
                           </span>
                           <span
                             className="text-[#FF6B00]"
                             style={{ fontSize: "1rem", fontWeight: 700 }}
                           >
                             {formatPrecioARS(
-                              getPrecioFinalConIVA(item.price) * item.quantity,
+                              getPrecioFinalConIVA(item.price, ivaPct) * item.quantity,
                             )}
                           </span>
                         </div>
@@ -422,17 +433,33 @@ export function CheckoutPage({
                       className="text-[#2E2E2E]"
                       style={{ fontSize: "0.938rem" }}
                     >
-                      Subtotal de productos
+                      Subtotal sin IVA
                     </span>
                     <span
                       className="text-[#1C2335]"
                       style={{ fontSize: "0.938rem", fontWeight: 600 }}
                     >
-                      {formatPrecioARS(subtotalProductos)}
+                      {formatPrecioARS(taxBreakdown.subtotalWithoutTax)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#2E2E2E]" style={{ fontSize: "0.938rem" }}>
+                      IVA contenido ({formatVatRate(ivaPct)}%)
+                    </span>
+                    <span className="text-[#1C2335]" style={{ fontSize: "0.938rem", fontWeight: 600 }}>
+                      {formatPrecioARS(taxBreakdown.vatAmount)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#2E2E2E]" style={{ fontSize: "0.938rem" }}>
+                      Subtotal con IVA
+                    </span>
+                    <span className="text-[#1C2335]" style={{ fontSize: "0.938rem", fontWeight: 600 }}>
+                      {formatPrecioARS(taxBreakdown.subtotalWithTax)}
                     </span>
                   </div>
                   <p className="text-xs text-[#666666]">
-                    Precios con IVA incluido ({ivaPct}%).
+                    {taxBreakdown.taxTransparencyLabel}
                   </p>
 
                   <div className="flex justify-between items-center">

@@ -32,6 +32,10 @@ import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { UnifiedHeader } from "../components/UnifiedHeader";
 import { Footer } from "../components/Footer";
 import { formatPrecioARS } from "../utils/priceUtils";
+import {
+  formatVatRate,
+  normalizeOrderTaxBreakdown,
+} from "../utils/taxBreakdown";
 import { motion, AnimatePresence } from "motion/react";
 
 /** =========================
@@ -116,6 +120,11 @@ interface Order {
   items: OrderItem[];
   lockers: LockerGroup[];
   subtotal?: number;
+  vatRate?: number;
+  subtotalWithoutTax?: number;
+  vatAmount?: number;
+  subtotalWithTax?: number;
+  taxTransparencyLabel?: string;
   serviceCharge?: number;
   serviceChargeLabel?: string;
   total: number;
@@ -157,6 +166,11 @@ type ApiOrder = {
   purchaseDate: string;
   completedDate?: string;
   subtotal?: number;
+  vatRate?: number;
+  subtotalWithoutTax?: number;
+  vatAmount?: number;
+  subtotalWithTax?: number;
+  taxTransparencyLabel?: string;
   serviceCharge?: number;
   serviceChargeLabel?: string;
   total: number;
@@ -272,6 +286,10 @@ function getOrderServiceCharge(order: Order) {
 function getOrderServiceChargeLabel(order: Order) {
   const label = String(order.serviceChargeLabel || "").trim();
   return label ? `Cargo por servicio (${label})` : "Cargo por servicio";
+}
+
+function getOrderTaxBreakdown(order: Order) {
+  return normalizeOrderTaxBreakdown(order, getOrderSubtotal(order), order.vatRate ?? 21);
 }
 
 function OrderCard({
@@ -754,6 +772,11 @@ export function MyOrdersPage({
             items: uiItems,
             lockers: finalLockers,
             subtotal: o.subtotal,
+            vatRate: o.vatRate,
+            subtotalWithoutTax: o.subtotalWithoutTax,
+            vatAmount: o.vatAmount,
+            subtotalWithTax: o.subtotalWithTax,
+            taxTransparencyLabel: o.taxTransparencyLabel,
             serviceCharge: o.serviceCharge,
             serviceChargeLabel: o.serviceChargeLabel,
             total: o.total,
@@ -1532,11 +1555,34 @@ export function MyOrdersPage({
                     className="flex items-center justify-between text-[#2E2E2E]"
                     style={{ fontSize: "1rem" }}
                   >
-                    <span>Subtotal de productos</span>
+                    <span>Subtotal sin IVA</span>
                     <span style={{ fontWeight: 600 }}>
-                      {formatPrecioARS(getOrderSubtotal(selectedOrder))}
+                      {formatPrecioARS(getOrderTaxBreakdown(selectedOrder).subtotalWithoutTax)}
                     </span>
                   </div>
+                  <div
+                    className="flex items-center justify-between text-[#2E2E2E]"
+                    style={{ fontSize: "1rem" }}
+                  >
+                    <span>
+                      IVA contenido ({formatVatRate(getOrderTaxBreakdown(selectedOrder).vatRate)}%)
+                    </span>
+                    <span style={{ fontWeight: 600 }}>
+                      {formatPrecioARS(getOrderTaxBreakdown(selectedOrder).vatAmount)}
+                    </span>
+                  </div>
+                  <div
+                    className="flex items-center justify-between text-[#2E2E2E]"
+                    style={{ fontSize: "1rem" }}
+                  >
+                    <span>Subtotal con IVA</span>
+                    <span style={{ fontWeight: 600 }}>
+                      {formatPrecioARS(getOrderTaxBreakdown(selectedOrder).subtotalWithTax)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#666666]">
+                    {getOrderTaxBreakdown(selectedOrder).taxTransparencyLabel}
+                  </p>
                   <div
                     className="flex items-center justify-between text-[#2E2E2E]"
                     style={{ fontSize: "1rem" }}
