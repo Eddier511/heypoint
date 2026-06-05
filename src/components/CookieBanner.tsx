@@ -56,7 +56,7 @@ export function CookieBanner() {
               </span>
               <p className="text-sm text-gray-300 leading-relaxed">
                 Usamos cookies para mejorar tu experiencia, mantener tu sesión
-                segura y optimizar el funcionamiento de HeyPoint.
+                segura y optimizar el funcionamiento de Hey!Point.
               </p>
             </div>
 

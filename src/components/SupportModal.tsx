@@ -29,7 +29,7 @@ export function SupportModal({
   const storeUrl = "https://www.heypoint.com.ar";
 
   const handleWhatsAppClick = () => {
-    const message = encodeURIComponent("¡Hola! Necesito ayuda con HeyPoint!.");
+    const message = encodeURIComponent("¡Hola! Necesito ayuda con Hey!Point.");
     window.open(`https://wa.me/${phoneNumber}?text=${message}`, "_blank");
   };
 
@@ -41,7 +41,7 @@ export function SupportModal({
   const faqs: FaqItem[] = [
     {
       icon: UserPlus,
-      question: "¿Cómo crear una cuenta en HeyPoint!?",
+      question: "¿Cómo crear una cuenta en Hey!Point?",
       answer: (
         <>
           Lo podés hacer ingresando a nuestra tienda web en{" "}
@@ -59,7 +59,7 @@ export function SupportModal({
     },
     {
       icon: Zap,
-      question: "¿Cómo funciona HeyPoint!?",
+      question: "¿Cómo funciona Hey!Point?",
       answer: (
         <>
           ¡En tres simples pasos!
@@ -69,7 +69,7 @@ export function SupportModal({
             </li>
             <li>Pagá con tu billetera virtual vía Mercado Pago.</li>
             <li>
-              Acercate a tu HeyPoint!, ingresá el código que recibiste por mail
+              Acercate a tu Hey!Point, ingresá el código que recibiste por mail
               y retirás tu compra.
             </li>
           </ol>

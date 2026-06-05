@@ -499,7 +499,7 @@ export function ChangeEmailModal({
                     >
                       2
                     </span>
-                    <span>Buscá el email de HeyPoint!</span>
+                    <span>Buscá el email de Hey!Point</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span
@@ -627,3 +627,4 @@ export function ChangeEmailModal({
     </Dialog>
   );
 }
+

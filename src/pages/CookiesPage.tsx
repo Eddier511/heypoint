@@ -10,12 +10,12 @@ interface CookiesPageProps {
 
 export function CookiesPage({ onNavigate }: CookiesPageProps) {
   useEffect(() => {
-    document.title = "Política de Cookies | Hey Point!";
+    document.title = "Política de Cookies | Hey!Point";
     const meta = document.querySelector('meta[name="description"]');
     if (meta) {
       meta.setAttribute(
         "content",
-        "Política de Cookies de Hey Point! — cómo usamos cookies para mantener tu sesión segura, recordar preferencias y mejorar la plataforma.",
+        "Política de Cookies de Hey!Point — cómo usamos cookies para mantener tu sesión segura, recordar preferencias y mejorar la plataforma.",
       );
     }
     window.scrollTo(0, 0);
@@ -60,7 +60,7 @@ export function CookiesPage({ onNavigate }: CookiesPageProps) {
               {/* Intro */}
               <h2 className="text-[#2E2E2E] mb-4">Introducción</h2>
               <p className="text-[#2E2E2E]/80 mb-8">
-                En Hey Point! usamos cookies y tecnologías similares para mejorar
+                En Hey!Point usamos cookies y tecnologías similares para mejorar
                 tu experiencia, mantener tu sesión segura, recordar tus
                 preferencias y analizar el rendimiento de la plataforma. Esta
                 política explica qué son, cómo las usamos y qué podés hacer con
@@ -87,7 +87,7 @@ export function CookiesPage({ onNavigate }: CookiesPageProps) {
                 Son imprescindibles para que la plataforma funcione. Incluyen las
                 cookies de sesión, autenticación, seguridad del login y
                 funcionamiento básico del carrito de compras. Sin estas cookies,
-                HeyPoint! no puede operar correctamente.
+                Hey!Point no puede operar correctamente.
               </p>
 
               <h3 className="text-[#2E2E2E] mb-2">Cookies de preferencias</h3>
@@ -130,7 +130,7 @@ export function CookiesPage({ onNavigate }: CookiesPageProps) {
 
               {/* 3 */}
               <h2 className="text-[#2E2E2E] mb-4">
-                3. ¿Para qué usamos cookies en HeyPoint?
+                3. ¿Para qué usamos cookies en Hey!Point?
               </h2>
               <ul className="list-disc pl-6 mb-8 text-[#2E2E2E]/80 space-y-2">
                 <li>Mantener tu sesión iniciada de forma segura.</li>
@@ -147,7 +147,7 @@ export function CookiesPage({ onNavigate }: CookiesPageProps) {
                   plataforma.
                 </li>
                 <li>
-                  Entender cómo se usa HeyPoint! para seguir mejorando la
+                  Entender cómo se usa Hey!Point para seguir mejorando la
                   experiencia.
                 </li>
               </ul>
@@ -166,7 +166,7 @@ export function CookiesPage({ onNavigate }: CookiesPageProps) {
               </ul>
               <p className="text-[#2E2E2E]/80 mb-8">
                 Tené en cuenta que si deshabilitás las cookies necesarias, algunas
-                funciones de HeyPoint! —como el login, el carrito o el proceso de
+                funciones de Hey!Point —como el login, el carrito o el proceso de
                 pago— pueden dejar de funcionar correctamente.
               </p>
 
@@ -175,7 +175,7 @@ export function CookiesPage({ onNavigate }: CookiesPageProps) {
                 5. Cambios en esta política
               </h2>
               <p className="text-[#2E2E2E]/80 mb-8">
-                A medida que HeyPoint! evoluciona, es posible que actualicemos
+                A medida que Hey!Point evoluciona, es posible que actualicemos
                 esta política para reflejar nuevas tecnologías, integraciones o
                 cambios en la legislación aplicable. Publicaremos la fecha de la
                 última actualización en esta página. Te recomendamos revisarla
@@ -186,7 +186,7 @@ export function CookiesPage({ onNavigate }: CookiesPageProps) {
               <h2 className="text-[#2E2E2E] mb-4">6. Contacto</h2>
               <p className="text-[#2E2E2E]/80">
                 Si tenés preguntas sobre esta política o sobre el uso de cookies
-                en HeyPoint!, podés comunicarte con nosotros a través de nuestra{" "}
+                en Hey!Point, podés comunicarte con nosotros a través de nuestra{" "}
                 <button
                   type="button"
                   onClick={() => onNavigate("contact")}
@@ -206,3 +206,4 @@ export function CookiesPage({ onNavigate }: CookiesPageProps) {
     </div>
   );
 }
+

@@ -147,7 +147,7 @@ export function GlobalSearchModal({
       id: "page-1",
       type: "page",
       title: "Inicio",
-      subtitle: "Página principal de HeyPoint",
+      subtitle: "Página principal de Hey!Point",
       path: "home"
     },
     {
@@ -168,7 +168,7 @@ export function GlobalSearchModal({
       id: "page-4",
       type: "page",
       title: "Sobre Nosotros",
-      subtitle: "Conocé más sobre HeyPoint",
+      subtitle: "Conocé más sobre Hey!Point",
       path: "about"
     },
     {
@@ -338,7 +338,7 @@ export function GlobalSearchModal({
                 Global Search
               </h2>
               <p id="search-modal-description" className="sr-only">
-                Search for products, categories, and pages across HeyPoint
+                Search for products, categories, and pages across Hey!Point
               </p>
 
               {/* Search Header */}

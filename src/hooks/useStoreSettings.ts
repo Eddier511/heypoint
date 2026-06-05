@@ -24,7 +24,7 @@ const DEFAULTS: StoreSettings = {
     { id: "2", min: 15001, max: 999999, fee: 350 },
   ],
   pickupPoint: {
-    name: "HeyPoint - Punto de Retiro",
+    name: "Hey!Point - Punto de Retiro",
     address: "Vilanova Haedo",
     status: "Activo",
   },

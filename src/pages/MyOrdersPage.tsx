@@ -1390,7 +1390,7 @@ export function MyOrdersPage({
               className="text-center text-[#2E2E2E]"
               style={{ fontSize: "0.938rem" }}
             >
-              Mostrá este código en cualquier módulo de HeyPoint! para retirar
+              Mostrá este código en cualquier módulo de Hey!Point para retirar
               tu pedido
             </DialogDescription>
           </DialogHeader>
@@ -1405,7 +1405,7 @@ export function MyOrdersPage({
                 </div>
               </div>
               <p className="text-[#FFF4E6]" style={{ fontSize: "0.938rem" }}>
-                Mostrá este código en cualquier módulo de HeyPoint! para retirar
+                Mostrá este código en cualquier módulo de Hey!Point para retirar
                 tu pedido
               </p>
             </div>
@@ -1617,3 +1617,5 @@ export function MyOrdersPage({
     </div>
   );
 }
+
+

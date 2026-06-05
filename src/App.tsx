@@ -519,7 +519,7 @@ function AppContent() {
   /** =========================
    * Home categories
    * ========================= */
-  const PLACEHOLDER_IMG = "https://placehold.co/600x400?text=HeyPoint";
+  const PLACEHOLDER_IMG = "https://placehold.co/600x400?text=Hey!Point";
 
 
   const {
@@ -576,7 +576,7 @@ function AppContent() {
       icon: <Clock className="w-7 h-7 sm:w-8 sm:h-8" />,
       title: "Disponible 24/7",
       description:
-        "Hey Point! Se encuentra funcionando las 24 hs con productos personalizados para tu comunidad.",
+        "Hey!Point Se encuentra funcionando las 24 hs con productos personalizados para tu comunidad.",
     },
     {
       icon: <CreditCard className="w-7 h-7 sm:w-8 sm:h-8" />,
@@ -815,7 +815,7 @@ function AppContent() {
           <div className="absolute inset-0">
             <ImageWithFallback
               src={HERO_SRC}
-              alt="HeyPoint! Estación inteligente automatizada"
+              alt="Hey!Point Estación inteligente automatizada"
               className="block w-full h-full object-cover object-center"
               loading="eager"
               decoding="async"
@@ -1078,10 +1078,10 @@ function AppContent() {
         <div className="container mx-auto px-6 max-w-6xl">
           <div className="text-center mb-12 md:mb-16">
             <h2 className="text-[#1C2335] text-3xl md:text-5xl mb-4 font-bold">
-              ¿Por qué HeyPoint?
+              ¿Por qué Hey!Point?
             </h2>
             <p className="text-[#2E2E2E] max-w-2xl mx-auto text-lg md:text-xl">
-              Hey Point es una plataforma que permite al cliente comprar
+              Hey!Point es una plataforma que permite al cliente comprar
               productos online y retirarlos en un stand físico usando un token
               digital, sin intermediarios. Es una solución pensada para pequeñas
               comunidades y resuelve olvidos de último momento.
@@ -1126,7 +1126,7 @@ function AppContent() {
             </div>
 
             <h2 className="text-white text-3xl md:text-5xl mb-6 font-bold">
-              Encontrá el HeyPoint más cercano
+              Encontrá el Hey!Point más cercano
             </h2>
             <p className="text-white/90 text-lg md:text-xl max-w-2xl mx-auto mb-10">
               Descubrí la forma más inteligente de hacer tus compras. Rápido,
@@ -1165,3 +1165,5 @@ function AppContent() {
  *   RewriteRule ^ index.html [L]
  * </IfModule>
  */
+
+

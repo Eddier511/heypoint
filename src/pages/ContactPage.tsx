@@ -17,12 +17,12 @@ interface ContactPageProps {
 
 const faqs = [
   {
-    question: "¿Qué es Hey Point?",
-    answer: `Hey Point! es un mini-market autónomo pensado para edificios, oficinas, gimnasios y comunidades que necesitan un punto de abastecimiento interno.
+    question: "¿Qué es Hey!Point?",
+    answer: `Hey!Point es un mini-market autónomo pensado para edificios, oficinas, gimnasios y comunidades que necesitan un punto de abastecimiento interno.
 Funciona sin intermediarios y se adapta a las necesidades reales de consumo de cada lugar.`,
   },
   {
-    question: "¿Cómo funciona Hey Point!?",
+    question: "¿Cómo funciona Hey!Point?",
     answer: `Comprás desde la tienda web, pagás online y retirás tus productos en el stand.
 Elegís los productos en la tienda web.
 Pagás de forma rápida con Mercado Pago.
@@ -40,7 +40,7 @@ Es un proceso rápido, seguro y sin contacto.`,
   },
   {
     question: "¿Mis datos y mis medios de pago están seguros?",
-    answer: `Sí. Hey Point! no almacena ni accede a datos de tarjetas.
+    answer: `Sí. Hey!Point no almacena ni accede a datos de tarjetas.
 Los pagos se procesan directamente a través de Mercado Pago, que se encarga de la seguridad y encriptación de la información.
 Solo utilizamos los datos necesarios para gestionar tu compra y generar el código token.`,
   },
@@ -355,7 +355,7 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
         </section>
 
         {/* FAQ Section */}
-        <section className="py-16 bg-white">
+        <section id="preguntas-frecuentes" className="py-16 bg-white">
           <div className="container mx-auto px-6 max-w-4xl">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -424,3 +424,5 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
     </div>
   );
 }
+
+

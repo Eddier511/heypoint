@@ -239,7 +239,7 @@ export function ShopPage({
     const catIdToName = new Map<string, string>();
     for (const c of apiCats) catIdToName.set(c.id, c.name);
 
-    const PLACEHOLDER_IMG = "https://placehold.co/600x400?text=HeyPoint";
+    const PLACEHOLDER_IMG = "https://placehold.co/600x400?text=Hey!Point";
 
     const mappedProducts: Product[] = apiProducts.map((p) => {
       const base = Number(p.basePrice || 0);
@@ -400,7 +400,7 @@ export function ShopPage({
   const shouldShowOffersSection =
     isCatalogLoading || productosEnOferta.length > 0;
 
-  const PLACEHOLDER_IMG = "https://placehold.co/600x400?text=HeyPoint";
+  const PLACEHOLDER_IMG = "https://placehold.co/600x400?text=Hey!Point";
   const categoryShelfItems = useMemo(
     () =>
       apiCats.map((c) => ({
@@ -1267,3 +1267,4 @@ export function ShopPage({
     </div>
   );
 }
+

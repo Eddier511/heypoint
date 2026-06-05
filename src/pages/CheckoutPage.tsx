@@ -490,7 +490,7 @@ export function CheckoutPage({
                             </h4>
                             <p className="text-[#2E2E2E] text-xs leading-relaxed">
                               Este cargo cubre el uso de la plataforma digital
-                              HeyPoint!, incluyendo el sistema de pagos seguros,
+                              Hey!Point, incluyendo el sistema de pagos seguros,
                               tecnología de casilleros inteligentes y
                               mantenimiento de la infraestructura.
                             </p>
@@ -638,7 +638,7 @@ export function CheckoutPage({
                           </span>{" "}
                           y{" "}
                           <span style={{ fontWeight: 600 }}>ID de pedido</span>{" "}
-                          para retirar en tu HeyPoint.
+                          para retirar en tu Hey!Point.
                         </p>
                       </div>
                     </div>
@@ -694,3 +694,5 @@ export function CheckoutPage({
     </div>
   );
 }
+
+

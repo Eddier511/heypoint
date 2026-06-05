@@ -1,4 +1,4 @@
-import { Instagram } from "lucide-react";
+import { Facebook, Instagram } from "lucide-react";
 
 interface FooterProps {
   onNavigate?: (page: string) => void;
@@ -6,16 +6,25 @@ interface FooterProps {
 
 export function Footer({ onNavigate }: FooterProps) {
   const handleNavigation = (page: string) => {
+    const [targetPage, hash] = page.split("#");
     if (onNavigate) {
-      onNavigate(page);
-      // Only scroll to top after navigation is triggered
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      onNavigate(targetPage);
+      if (hash) {
+        window.history.pushState({}, "", `/contacto#${hash}`);
+        window.setTimeout(() => {
+          document.getElementById(hash)?.scrollIntoView({ behavior: "smooth" });
+        }, 80);
+      } else {
+        // Only scroll to top after navigation is triggered
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
     }
   };
 
   const footerLinks = [
-    { id: "business", label: "El Modelo HeyPoint" },
+    { id: "business", label: "El Modelo Hey!Point" },
     { id: "contact", label: "Contacto" },
+    { id: "contact#preguntas-frecuentes", label: "Preguntas Frecuentes" },
     { id: "terms", label: "Términos y Condiciones" },
     { id: "privacy", label: "Política de Privacidad" },
     { id: "cookies", label: "Política de Cookies" },
@@ -25,7 +34,7 @@ export function Footer({ onNavigate }: FooterProps) {
     {
       name: "Instagram",
       icon: <Instagram className="w-5 h-5" />,
-      url: "https://instagram.com/heypoint",
+      url: "https://www.instagram.com/heypoint.ar/",
     },
     {
       name: "TikTok",
@@ -34,7 +43,12 @@ export function Footer({ onNavigate }: FooterProps) {
           <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" />
         </svg>
       ),
-      url: "https://tiktok.com/@heypoint",
+      url: null,
+    },
+    {
+      name: "Facebook",
+      icon: <Facebook className="w-5 h-5" />,
+      url: null,
     },
   ];
 
@@ -46,12 +60,12 @@ export function Footer({ onNavigate }: FooterProps) {
           {/* Logo and Tagline */}
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2">
-              {/* Logo - TEMPORAL: Reemplazar con logo real de HeyPoint! */}
+              {/* Logo - TEMPORAL: Reemplazar con logo real de Hey!Point */}
               <img
                 src={
                   "https://firebasestorage.googleapis.com/v0/b/heymarket-35d03.firebasestorage.app/o/images%2FHeypoint-header-logo-100x60-white.svg?alt=media&token=9402edf6-17bc-463a-b233-2999af7158c5"
                 }
-                alt="HeyPoint! Logo"
+                alt="Hey!Point Logo"
                 width={100}
                 height={60}
                 loading="lazy"
@@ -93,18 +107,29 @@ export function Footer({ onNavigate }: FooterProps) {
               Seguinos
             </h3>
             <div className="flex items-center gap-3">
-              {socialLinks.map((social) => (
-                <a
-                  key={social.name}
-                  href={social.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 bg-white/10 hover:bg-[#FF6B00] rounded-full flex items-center justify-center transition-all hover:scale-110"
-                  aria-label={social.name}
-                >
-                  {social.icon}
-                </a>
-              ))}
+              {socialLinks.map((social) =>
+                social.url ? (
+                  <a
+                    key={social.name}
+                    href={social.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-10 h-10 bg-white/10 hover:bg-[#FF6B00] rounded-full flex items-center justify-center transition-all hover:scale-110"
+                    aria-label={social.name}
+                  >
+                    {social.icon}
+                  </a>
+                ) : (
+                  <span
+                    key={social.name}
+                    className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white/70"
+                    aria-label={`${social.name} próximamente`}
+                    role="img"
+                  >
+                    {social.icon}
+                  </span>
+                ),
+              )}
             </div>
           </div>
         </div>
@@ -117,7 +142,7 @@ export function Footer({ onNavigate }: FooterProps) {
               className="text-gray-400 text-center md:text-left"
               style={{ fontSize: "0.875rem" }}
             >
-              © 2025 HeyPoint! Todos los derechos reservados.
+              © 2025 Hey!Point Todos los derechos reservados.
             </p>
             <div className="flex items-center gap-6">
               <button
@@ -148,3 +173,5 @@ export function Footer({ onNavigate }: FooterProps) {
     </footer>
   );
 }
+
+

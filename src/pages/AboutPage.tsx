@@ -66,7 +66,7 @@ export function AboutPage({ onNavigate }: AboutPageProps) {
                 className="text-[#1C2335] mb-6"
                 style={{ fontSize: "3rem", fontWeight: 700 }}
               >
-                Sobre HeyPoint!
+                Sobre Hey!Point
               </h1>
               <p
                 className="text-[#2E2E2E] max-w-3xl mx-auto"
@@ -271,3 +271,4 @@ export function AboutPage({ onNavigate }: AboutPageProps) {
     </div>
   );
 }
+

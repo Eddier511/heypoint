@@ -74,13 +74,13 @@ export function OurCompanyPage({ onNavigate }: OurCompanyPageProps) {
               transition={{ duration: 0.6 }}
             >
               <div className="inline-block mb-6 px-6 py-2 bg-[#FF6B00] rounded-full">
-                <span className="text-white" style={{ fontSize: '0.875rem', fontWeight: 600 }}>About HeyPoint!</span>
+                <span className="text-white" style={{ fontSize: '0.875rem', fontWeight: 600 }}>About Hey!Point</span>
               </div>
               <h1 className="text-white mb-6" style={{ fontSize: '3.5rem', fontWeight: 700, lineHeight: '1.1' }}>
                 Revolutionizing Retail Through Technology
               </h1>
               <p className="text-gray-300 max-w-3xl mx-auto mb-8" style={{ fontSize: '1.25rem', lineHeight: '1.7' }}>
-                HeyPoint! is pioneering the future of convenience retail with our innovative smart mini-store system that combines technology, accessibility, and quality.
+                Hey!Point is pioneering the future of convenience retail with our innovative smart mini-store system that combines technology, accessibility, and quality.
               </p>
             </motion.div>
           </div>
@@ -101,7 +101,7 @@ export function OurCompanyPage({ onNavigate }: OurCompanyPageProps) {
                 </h2>
                 <div className="space-y-4 text-[#2E2E2E]" style={{ fontSize: '1rem', lineHeight: '1.7' }}>
                   <p>
-                    HeyPoint! was founded with a simple yet ambitious goal: to transform the way people access everyday essentials. We recognized that traditional retail was no longer meeting the needs of modern, busy lifestyles.
+                    Hey!Point was founded with a simple yet ambitious goal: to transform the way people access everyday essentials. We recognized that traditional retail was no longer meeting the needs of modern, busy lifestyles.
                   </p>
                   <p>
                     Our smart mini-store system leverages IoT technology, secure payment systems, and intelligent inventory management to create unmanned retail spaces that are always open, always stocked, and always convenient.
@@ -122,7 +122,7 @@ export function OurCompanyPage({ onNavigate }: OurCompanyPageProps) {
                 <div className="relative rounded-3xl overflow-hidden shadow-2xl">
                   <ImageWithFallback
                     src="https://images.unsplash.com/photo-1758721321642-485c02d07009?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhdXRvbWF0ZWQlMjByZXRhaWwlMjBraW9za3xlbnwxfHx8fDE3NjIzMTI5Mzd8MA&ixlib=rb-4.1.0&q=80&w=1080"
-                    alt="HeyPoint! technology"
+                    alt="Hey!Point technology"
                     className="w-full h-[450px] object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#1C2335]/60 to-transparent"></div>
@@ -275,7 +275,7 @@ export function OurCompanyPage({ onNavigate }: OurCompanyPageProps) {
                 Partner With Us
               </h2>
               <p className="text-[#2E2E2E] mb-8 max-w-2xl mx-auto" style={{ fontSize: '1.125rem', lineHeight: '1.7' }}>
-                Interested in bringing HeyPoint! to your location? We're always looking for new partnerships to expand our network and serve more communities.
+                Interested in bringing Hey!Point to your location? We're always looking for new partnerships to expand our network and serve more communities.
               </p>
               <Button 
                 onClick={() => onNavigate?.("contact")}

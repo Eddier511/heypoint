@@ -280,7 +280,7 @@ export function ShoppingCartPage({
                                 className="text-[#5C3A1E] text-xs sm:text-sm"
                                 style={{ fontWeight: 500 }}
                               >
-                                Disponible para retiro en tu HeyPoint más
+                                Disponible para retiro en tu Hey!Point más
                                 cercano
                               </span>
                             </div>
@@ -404,7 +404,7 @@ export function ShoppingCartPage({
                                 </h4>
                                 <p className="text-[#2E2E2E] text-xs leading-relaxed">
                                   Este cargo cubre el uso de la plataforma
-                                  digital HeyPoint!, incluyendo el sistema de
+                                  digital Hey!Point, incluyendo el sistema de
                                   pagos seguros, tecnología de casilleros
                                   inteligentes y mantenimiento de la
                                   infraestructura.
@@ -546,7 +546,7 @@ export function ShoppingCartPage({
                                 </span>{" "}
                                 te permitirá{" "}
                                 <span className="font-semibold">
-                                  desbloquear tu pedido en el stand de HeyPoint
+                                  desbloquear tu pedido en el stand de Hey!Point
                                 </span>{" "}
                                 y retirar tus productos.
                               </p>
@@ -573,3 +573,4 @@ export function ShoppingCartPage({
     </div>
   );
 }
+

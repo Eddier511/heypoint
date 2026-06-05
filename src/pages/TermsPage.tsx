@@ -11,12 +11,12 @@ interface TermsPageProps {
 export function TermsPage({ onNavigate }: TermsPageProps) {
   // Set page title for SEO
   useEffect(() => {
-    document.title = "Términos y Privacidad | Hey Point!";
+    document.title = "Términos y Privacidad | Hey!Point";
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) {
       metaDescription.setAttribute(
         "content",
-        "Términos y Condiciones de uso y Política de Privacidad de Hey Point!. Conocé cómo funciona el servicio y cómo protegemos tus datos."
+        "Términos y Condiciones de uso y Política de Privacidad de Hey!Point. Conocé cómo funciona el servicio y cómo protegemos tus datos."
       );
     }
     
@@ -60,12 +60,12 @@ export function TermsPage({ onNavigate }: TermsPageProps) {
               {/* Section 1 */}
               <h2 className="text-[#2E2E2E] mb-4">1. Aceptación de los Términos</h2>
               <p className="text-[#2E2E2E]/80 mb-6">
-                Bienvenido a Hey Point!. Al acceder y utilizar nuestro sistema de mini-tiendas inteligentes, 
+                Bienvenido a Hey!Point. Al acceder y utilizar nuestro sistema de mini-tiendas inteligentes, 
                 usted acepta estar sujeto a estos Términos y Condiciones. Si no está de acuerdo con 
                 alguna parte de estos términos, por favor no utilice nuestros servicios.
               </p>
               <p className="text-[#2E2E2E]/80 mb-8">
-                Hey Point! se reserva el derecho de actualizar, cambiar o reemplazar cualquier parte de estos 
+                Hey!Point se reserva el derecho de actualizar, cambiar o reemplazar cualquier parte de estos 
                 Términos y Condiciones mediante la publicación de actualizaciones en nuestro sitio web. Es su 
                 responsabilidad revisar estos términos periódicamente para estar al tanto de los cambios.
               </p>
@@ -73,7 +73,7 @@ export function TermsPage({ onNavigate }: TermsPageProps) {
               {/* Section 2 */}
               <h2 className="text-[#2E2E2E] mb-4">2. Descripción del Servicio</h2>
               <p className="text-[#2E2E2E]/80 mb-6">
-                Hey Point! es un sistema de mini-tiendas inteligentes que permite a los usuarios:
+                Hey!Point es un sistema de mini-tiendas inteligentes que permite a los usuarios:
               </p>
               <ul className="list-disc pl-6 mb-8 text-[#2E2E2E]/80 space-y-2">
                 <li>Navegar y comprar productos a través de nuestra plataforma digital</li>
@@ -89,7 +89,7 @@ export function TermsPage({ onNavigate }: TermsPageProps) {
               {/* Section 3 */}
               <h2 className="text-[#2E2E2E] mb-4">3. Registro y Cuenta de Usuario</h2>
               <p className="text-[#2E2E2E]/80 mb-6">
-                Para utilizar los servicios de Hey Point!, debe:
+                Para utilizar los servicios de Hey!Point, debe:
               </p>
               <ul className="list-disc pl-6 mb-8 text-[#2E2E2E]/80 space-y-2">
                 <li>Crear una cuenta proporcionando información precisa y completa</li>
@@ -99,14 +99,14 @@ export function TermsPage({ onNavigate }: TermsPageProps) {
                 <li>Actualizar su información personal cuando sea necesario</li>
               </ul>
               <p className="text-[#2E2E2E]/80 mb-8">
-                Usted es responsable de todas las actividades que ocurran bajo su cuenta. Hey Point! no será 
+                Usted es responsable de todas las actividades que ocurran bajo su cuenta. Hey!Point no será 
                 responsable por pérdidas o daños derivados del uso no autorizado de su cuenta.
               </p>
 
               {/* Section 4 */}
               <h2 className="text-[#2E2E2E] mb-4">4. Proceso de Compra y Pago</h2>
               <p className="text-[#2E2E2E]/80 mb-6">
-                <strong>4.1 Pedidos:</strong> Al realizar un pedido a través de Hey Point!, usted acepta:
+                <strong>4.1 Pedidos:</strong> Al realizar un pedido a través de Hey!Point, usted acepta:
               </p>
               <ul className="list-disc pl-6 mb-6 text-[#2E2E2E]/80 space-y-2">
                 <li>Proporcionar información de pago válida y autorizada</li>
@@ -115,7 +115,7 @@ export function TermsPage({ onNavigate }: TermsPageProps) {
               </ul>
               <p className="text-[#2E2E2E]/80 mb-6">
                 <strong>4.2 Precios:</strong> Todos los precios están expresados en la moneda local y pueden 
-                estar sujetos a cambios sin previo aviso. Hey Point! se reserva el derecho de corregir errores 
+                estar sujetos a cambios sin previo aviso. Hey!Point se reserva el derecho de corregir errores 
                 de precio antes de confirmar su pedido.
               </p>
               <p className="text-[#2E2E2E]/80 mb-6">
@@ -133,7 +133,7 @@ export function TermsPage({ onNavigate }: TermsPageProps) {
               <h2 className="text-[#2E2E2E] mb-4">5. Recogida de Productos</h2>
               <p className="text-[#2E2E2E]/80 mb-6">
                 <strong>5.1 Plazo de Recogida:</strong> Los productos deben ser recogidos dentro de las 48 horas 
-                posteriores a la confirmación del pedido. Después de este período, Hey Point! se reserva el derecho 
+                posteriores a la confirmación del pedido. Después de este período, Hey!Point se reserva el derecho 
                 de cancelar el pedido y procesar un reembolso.
               </p>
               <p className="text-[#2E2E2E]/80 mb-6">
@@ -146,7 +146,7 @@ export function TermsPage({ onNavigate }: TermsPageProps) {
               </p>
               <p className="text-[#2E2E2E]/80 mb-8">
                 <strong>5.4 Productos Perecederos:</strong> Los productos alimenticios o perecederos deben ser 
-                recogidos lo antes posible. Hey Point! no se hace responsable por el deterioro de productos no 
+                recogidos lo antes posible. Hey!Point no se hace responsable por el deterioro de productos no 
                 recogidos a tiempo.
               </p>
 
@@ -181,7 +181,7 @@ export function TermsPage({ onNavigate }: TermsPageProps) {
                 <li>No intentar acceder a casilleros que no le corresponden</li>
                 <li>No dañar, alterar o interferir con el funcionamiento de los casilleros</li>
                 <li>No realizar actividades fraudulentas o engañosas</li>
-                <li>Respetar las instalaciones y el equipo de Hey Point!</li>
+                <li>Respetar las instalaciones y el equipo de Hey!Point</li>
                 <li>No utilizar el servicio para actividades comerciales no autorizadas</li>
               </ul>
               <p className="text-[#2E2E2E]/80 mb-8">
@@ -192,20 +192,20 @@ export function TermsPage({ onNavigate }: TermsPageProps) {
               {/* Section 8 */}
               <h2 className="text-[#2E2E2E] mb-4">8. Propiedad Intelectual</h2>
               <p className="text-[#2E2E2E]/80 mb-6">
-                Todo el contenido disponible en Hey Point!, incluyendo pero no limitado a textos, gráficos, 
+                Todo el contenido disponible en Hey!Point, incluyendo pero no limitado a textos, gráficos, 
                 logos, iconos, imágenes, clips de audio, descargas digitales y compilaciones de datos, es 
-                propiedad de Hey Point! o de sus proveedores de contenido y está protegido por leyes de 
+                propiedad de Hey!Point o de sus proveedores de contenido y está protegido por leyes de 
                 propiedad intelectual.
               </p>
               <p className="text-[#2E2E2E]/80 mb-8">
                 No está permitido reproducir, distribuir, modificar, crear trabajos derivados, mostrar públicamente 
-                o utilizar de cualquier manera el contenido sin el consentimiento previo por escrito de Hey Point!.
+                o utilizar de cualquier manera el contenido sin el consentimiento previo por escrito de Hey!Point.
               </p>
 
               {/* Section 9 */}
               <h2 className="text-[#2E2E2E] mb-4">9. Limitación de Responsabilidad</h2>
               <p className="text-[#2E2E2E]/80 mb-6">
-                Hey Point! no será responsable por:
+                Hey!Point no será responsable por:
               </p>
               <ul className="list-disc pl-6 mb-6 text-[#2E2E2E]/80 space-y-2">
                 <li>Daños indirectos, incidentales, especiales o consecuentes</li>
@@ -215,7 +215,7 @@ export function TermsPage({ onNavigate }: TermsPageProps) {
                 <li>Productos dejados en casilleros más allá del plazo de recogida</li>
               </ul>
               <p className="text-[#2E2E2E]/80 mb-8">
-                En ningún caso la responsabilidad total de Hey Point! excederá el monto pagado por el producto 
+                En ningún caso la responsabilidad total de Hey!Point excederá el monto pagado por el producto 
                 o servicio en cuestión.
               </p>
 
@@ -228,7 +228,7 @@ export function TermsPage({ onNavigate }: TermsPageProps) {
               {/* Section 11 */}
               <h2 className="text-[#2E2E2E] mb-4">11. Modificaciones del Servicio</h2>
               <p className="text-[#2E2E2E]/80 mb-8">
-                Hey Point! se reserva el derecho de modificar o discontinuar, temporal o permanentemente, el 
+                Hey!Point se reserva el derecho de modificar o discontinuar, temporal o permanentemente, el 
                 servicio (o cualquier parte del mismo) con o sin previo aviso. No seremos responsables ante 
                 usted o terceros por cualquier modificación, suspensión o discontinuación del servicio.
               </p>
@@ -240,7 +240,7 @@ export function TermsPage({ onNavigate }: TermsPageProps) {
                 nuestro servicio al cliente o a través de la configuración de su cuenta.
               </p>
               <p className="text-[#2E2E2E]/80 mb-8">
-                <strong>12.2 Por Hey Point!:</strong> Nos reservamos el derecho de suspender o terminar su cuenta 
+                <strong>12.2 Por Hey!Point:</strong> Nos reservamos el derecho de suspender o terminar su cuenta 
                 si determina que ha violado estos términos, ha cometido fraude o ha utilizado el servicio de 
                 manera inapropiada.
               </p>
@@ -249,7 +249,7 @@ export function TermsPage({ onNavigate }: TermsPageProps) {
               <h2 className="text-[#2E2E2E] mb-4">13. Ley Aplicable y Jurisdicción</h2>
               <p className="text-[#2E2E2E]/80 mb-8">
                 Estos Términos y Condiciones se regirán e interpretarán de acuerdo con las leyes aplicables en 
-                la jurisdicción donde opera Hey Point!. Cualquier disputa relacionada con estos términos estará 
+                la jurisdicción donde opera Hey!Point. Cualquier disputa relacionada con estos términos estará 
                 sujeta a la jurisdicción exclusiva de los tribunales competentes de dicha jurisdicción.
               </p>
 
@@ -259,27 +259,27 @@ export function TermsPage({ onNavigate }: TermsPageProps) {
                 Si tiene preguntas, comentarios o inquietudes sobre estos Términos y Condiciones, puede contactarnos:
               </p>
               <ul className="list-none mb-8 text-[#2E2E2E]/80 space-y-2">
-                <li><strong>Email:</strong> legal@heypoint.com</li>
-                <li><strong>Teléfono:</strong> +1 (555) 123-4567</li>
-                <li><strong>Dirección:</strong> Hey Point! HQ, 123 Innovation Drive, Tech City</li>
+                <li><strong>Email:</strong> <a className="text-[#FF6B00] underline" href="mailto:heypoint.ar@gmail.com">heypoint.ar@gmail.com</a></li>
+                <li><strong>Teléfono:</strong> <a className="text-[#FF6B00] underline" href="tel:+5491131475522">+54 9 11 3147 5522</a></li>
+                <li><strong>Dirección postal:</strong> Cacique Coliqueo 1020, El Palomar, CP 1685</li>
               </ul>
 
               {/* Section 15 */}
               <h2 className="text-[#2E2E2E] mb-4">15. Disposiciones Generales</h2>
               <p className="text-[#2E2E2E]/80 mb-6">
                 <strong>15.1 Integridad del Acuerdo:</strong> Estos Términos y Condiciones, junto con nuestra 
-                Política de Privacidad, constituyen el acuerdo completo entre usted y Hey Point!.
+                Política de Privacidad, constituyen el acuerdo completo entre usted y Hey!Point.
               </p>
               <p className="text-[#2E2E2E]/80 mb-6">
                 <strong>15.2 Divisibilidad:</strong> Si alguna disposición de estos términos se considera inválida 
                 o inaplicable, las disposiciones restantes continuarán en pleno vigor y efecto.
               </p>
               <p className="text-[#2E2E2E]/80 mb-6">
-                <strong>15.3 Renuncia:</strong> El hecho de que Hey Point! no haga cumplir alguna disposición de 
+                <strong>15.3 Renuncia:</strong> El hecho de que Hey!Point no haga cumplir alguna disposición de 
                 estos términos no constituirá una renuncia a dicha disposición o a cualquier otra disposición.
               </p>
               <p className="text-[#2E2E2E]/80">
-                Al utilizar los servicios de Hey Point!, usted reconoce que ha leído, entendido y aceptado estar 
+                Al utilizar los servicios de Hey!Point, usted reconoce que ha leído, entendido y aceptado estar 
                 sujeto a estos Términos y Condiciones.
               </p>
                           {/* Divider */}
@@ -288,7 +288,7 @@ export function TermsPage({ onNavigate }: TermsPageProps) {
               {/* Privacy Policy */}
               <h2 id="politica-privacidad" className="text-[#2E2E2E] mb-4">Política de Privacidad</h2>
               <p className="text-[#2E2E2E]/80 mb-8">
-                Esta Política describe qué datos recopilamos, para qué los usamos y cuáles son tus derechos al utilizar Hey Point!.
+                Esta Política describe qué datos recopilamos, para qué los usamos y cuáles son tus derechos al utilizar Hey!Point.
               </p>
 
               <h3 className="text-[#2E2E2E] mb-3">1. Información que recopilamos</h3>
@@ -352,7 +352,7 @@ export function TermsPage({ onNavigate }: TermsPageProps) {
 
               <h3 className="text-[#2E2E2E] mb-3">3. Cómo compartimos su información</h3>
               <p className="text-[#2E2E2E]/80 mb-4">
-                Hey Point! no vende su información personal. Solo la compartimos en las siguientes situaciones:
+                Hey!Point no vende su información personal. Solo la compartimos en las siguientes situaciones:
               </p>
               <h4 className="text-[#2E2E2E] mb-2">3.1 Proveedores de servicios</h4>
               <ul className="list-disc pl-6 mb-6 text-[#2E2E2E]/80 space-y-2">
@@ -363,7 +363,7 @@ export function TermsPage({ onNavigate }: TermsPageProps) {
                 <li>Proveedores de seguridad y prevención de fraudes.</li>
               </ul>
               <p className="text-[#2E2E2E]/80 mb-6">
-                Todos los proveedores están contractualmente obligados a usar su información únicamente para prestar servicios a Hey Point!.
+                Todos los proveedores están contractualmente obligados a usar su información únicamente para prestar servicios a Hey!Point.
               </p>
 
               <h4 className="text-[#2E2E2E] mb-2">3.2 Cumplimiento legal</h4>
@@ -471,7 +471,7 @@ export function TermsPage({ onNavigate }: TermsPageProps) {
 
               <h3 className="text-[#2E2E2E] mb-3">Consentimiento</h3>
               <p className="text-[#2E2E2E]/80">
-                Al utilizar Hey Point!, usted confirma que ha leído y entendido esta Política de Privacidad y acepta el tratamiento de sus datos según lo aquí establecido.
+                Al utilizar Hey!Point, usted confirma que ha leído y entendido esta Política de Privacidad y acepta el tratamiento de sus datos según lo aquí establecido.
               </p>
             </div>
           </motion.div>
@@ -483,3 +483,6 @@ export function TermsPage({ onNavigate }: TermsPageProps) {
     </div>
   );
 }
+
+
+

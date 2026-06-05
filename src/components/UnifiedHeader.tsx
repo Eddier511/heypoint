@@ -241,7 +241,7 @@ export function UnifiedHeader({
                     ? "https://firebasestorage.googleapis.com/v0/b/heymarket-35d03.firebasestorage.app/o/images%2FHeypoint-header-logo-100x60-orange.svg?alt=media&token=9ee36f7e-ee0d-4dba-9d7b-3af1688b8f94"
                     : "https://firebasestorage.googleapis.com/v0/b/heymarket-35d03.firebasestorage.app/o/images%2FHeypoint-header-logo-100x60-white.svg?alt=media&token=9402edf6-17bc-463a-b233-2999af7158c5"
                 }
-                alt="HeyPoint! Logo"
+                alt="Hey!Point Logo"
                 width={100}
                 height={60}
                 decoding="async"
@@ -288,7 +288,7 @@ export function UnifiedHeader({
                 }`}
                 style={{ fontSize: "0.938rem", fontWeight: 500 }}
               >
-                El Modelo HeyPoint
+                El Modelo Hey!Point
               </button>
 
               <button
@@ -495,7 +495,7 @@ export function UnifiedHeader({
                 <div className="p-5 flex items-center justify-between">
                   <img
                     src="https://firebasestorage.googleapis.com/v0/b/heymarket-35d03.firebasestorage.app/o/images%2FHeypoint-header-logo-100x60-orange.svg?alt=media&token=9ee36f7e-ee0d-4dba-9d7b-3af1688b8f94"
-                    alt="HeyPoint"
+                    alt="Hey!Point"
                     width={100}
                     height={60}
                     loading="lazy"
@@ -642,7 +642,7 @@ export function UnifiedHeader({
                     style={{ fontSize: "0.98rem", fontWeight: 700 }}
                   >
                     <Info className="w-5 h-5" />
-                    El Modelo HeyPoint
+                    El Modelo Hey!Point
                   </button>
 
                   <button
@@ -686,7 +686,7 @@ export function UnifiedHeader({
                 </div>
 
                 <div className="mt-6 text-center text-xs text-[#2E2E2E]/50">
-                  © {new Date().getFullYear()} HeyPoint
+                  © {new Date().getFullYear()} Hey!Point
                 </div>
               </div>
             </motion.aside>
@@ -730,3 +730,5 @@ export function UnifiedHeader({
     </>
   );
 }
+
+

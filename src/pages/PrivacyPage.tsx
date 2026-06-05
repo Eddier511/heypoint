@@ -11,12 +11,12 @@ interface PrivacyPageProps {
 export function PrivacyPage({ onNavigate }: PrivacyPageProps) {
   // Set page title for SEO
   useEffect(() => {
-    document.title = "Privacy Policy | Hey Point!";
+    document.title = "Privacy Policy | Hey!Point";
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) {
       metaDescription.setAttribute(
         "content",
-        "Privacy Policy for Hey Point! smart mini-store system. Learn how we collect, use, protect and manage your personal information."
+        "Privacy Policy for Hey!Point smart mini-store system. Learn how we collect, use, protect and manage your personal information."
       );
     }
     
@@ -61,12 +61,12 @@ export function PrivacyPage({ onNavigate }: PrivacyPageProps) {
               {/* Introduction */}
               <h2 className="text-[#2E2E2E] mb-4">Introducción</h2>
               <p className="text-[#2E2E2E]/80 mb-6">
-                En Hey Point!, valoramos y respetamos su privacidad. Esta Política de Privacidad describe cómo 
+                En Hey!Point, valoramos y respetamos su privacidad. Esta Política de Privacidad describe cómo 
                 recopilamos, usamos, compartimos y protegemos su información personal cuando utiliza nuestros 
                 servicios de mini-tiendas inteligentes.
               </p>
               <p className="text-[#2E2E2E]/80 mb-8">
-                Al utilizar los servicios de Hey Point!, usted acepta las prácticas descritas en esta política. 
+                Al utilizar los servicios de Hey!Point, usted acepta las prácticas descritas en esta política. 
                 Si no está de acuerdo con esta política, por favor no utilice nuestros servicios.
               </p>
 
@@ -161,7 +161,7 @@ export function PrivacyPage({ onNavigate }: PrivacyPageProps) {
               {/* Section 3 */}
               <h2 className="text-[#2E2E2E] mb-4">3. Compartir su Información</h2>
               <p className="text-[#2E2E2E]/80 mb-6">
-                Hey Point! no vende su información personal a terceros. Sin embargo, podemos compartir su información 
+                Hey!Point no vende su información personal a terceros. Sin embargo, podemos compartir su información 
                 en las siguientes circunstancias:
               </p>
 
@@ -177,7 +177,7 @@ export function PrivacyPage({ onNavigate }: PrivacyPageProps) {
               </ul>
               <p className="text-[#2E2E2E]/80 mb-6">
                 Estos proveedores están contractualmente obligados a proteger su información y solo pueden usarla 
-                para proporcionar servicios a Hey Point!.
+                para proporcionar servicios a Hey!Point.
               </p>
 
               <p className="text-[#2E2E2E]/80 mb-6">
@@ -279,7 +279,7 @@ export function PrivacyPage({ onNavigate }: PrivacyPageProps) {
               </ul>
 
               <p className="text-[#2E2E2E]/80 mb-8">
-                Para ejercer cualquiera de estos derechos, contáctenos en privacy@heypoint.com
+                Para ejercer cualquiera de estos derechos, contáctenos en heypoint.ar@gmail.com
               </p>
 
               {/* Section 6 */}
@@ -306,7 +306,7 @@ export function PrivacyPage({ onNavigate }: PrivacyPageProps) {
               </p>
               <p className="text-[#2E2E2E]/80 mb-8">
                 Si usted es padre o tutor y cree que su hijo nos ha proporcionado información personal, contáctenos 
-                inmediatamente en privacy@heypoint.com
+                inmediatamente en heypoint.ar@gmail.com
               </p>
 
               {/* Section 8 */}
@@ -368,13 +368,10 @@ export function PrivacyPage({ onNavigate }: PrivacyPageProps) {
                 de privacidad, puede contactarnos:
               </p>
               <ul className="list-none mb-6 text-[#2E2E2E]/80 space-y-2">
-                <li><strong>Email:</strong> privacy@heypoint.com</li>
-                <li><strong>Email de Protección de Datos:</strong> dpo@heypoint.com</li>
-                <li><strong>Teléfono:</strong> +1 (555) 123-4567</li>
-                <li><strong>Dirección Postal:</strong></li>
-                <li className="pl-6">Hey Point! Privacy Team</li>
-                <li className="pl-6">123 Innovation Drive</li>
-                <li className="pl-6">Tech City, TC 12345</li>
+                <li><strong>Email general:</strong> <a className="text-[#FF6B00] underline" href="mailto:heypoint.ar@gmail.com">heypoint.ar@gmail.com</a></li>
+                <li><strong>Protección de datos:</strong> <a className="text-[#FF6B00] underline" href="mailto:heypoint.ar@gmail.com">heypoint.ar@gmail.com</a></li>
+                <li><strong>Teléfono:</strong> <a className="text-[#FF6B00] underline" href="tel:+5491131475522">+54 9 11 3147 5522</a></li>
+                <li><strong>Dirección postal:</strong> Cacique Coliqueo 1020, El Palomar, CP 1685</li>
               </ul>
 
               <p className="text-[#2E2E2E]/80 mb-8">
@@ -395,7 +392,7 @@ export function PrivacyPage({ onNavigate }: PrivacyPageProps) {
                   Su Consentimiento
                 </p>
                 <p className="text-[#2E2E2E]/80 mt-2">
-                  Al utilizar los servicios de Hey Point!, usted reconoce que ha leído y entendido esta Política de 
+                  Al utilizar los servicios de Hey!Point, usted reconoce que ha leído y entendido esta Política de 
                   Privacidad y acepta el tratamiento de su información personal como se describe en esta política.
                 </p>
               </div>
@@ -409,3 +406,5 @@ export function PrivacyPage({ onNavigate }: PrivacyPageProps) {
     </div>
   );
 }
+
+

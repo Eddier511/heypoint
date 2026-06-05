@@ -835,7 +835,7 @@ export function UserProfilePage({
                             className="mt-2 text-[#2E2E2E]/60"
                             style={{ fontSize: "0.813rem" }}
                           >
-                            Este punto de retiro es administrado por HeyPoint!.
+                            Este punto de retiro es administrado por Hey!Point.
                             No podés editarlo desde acá.
                           </p>
                         </div>
@@ -1178,3 +1178,4 @@ export function UserProfilePage({
     </div>
   );
 }
+

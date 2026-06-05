@@ -101,7 +101,7 @@ export function EmptyCartModal({ isOpen, onClose, onSignIn, onSignUp }: EmptyCar
                   className="text-[#2E2E2E]/70 mb-8 max-w-sm mx-auto leading-relaxed"
                   style={{ fontSize: 'clamp(0.938rem, 2.5vw, 1.063rem)' }}
                 >
-                  Iniciá sesión o creá una cuenta para empezar a comprar en HeyPoint!
+                  Iniciá sesión o creá una cuenta para empezar a comprar en Hey!Point
                 </motion.p>
 
                 {/* CTA Buttons */}

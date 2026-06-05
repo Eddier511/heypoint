@@ -373,7 +373,7 @@ export function PurchaseSuccessPage({
                     <span style={{ fontWeight: 700 }}>Guardá este código.</span>
                     <br />
                     Lo vas a usar para desbloquear los módulos del stand de
-                    HeyPoint!
+                    Hey!Point
                   </p>
                   <p
                     className="text-white/70"
@@ -492,7 +492,7 @@ export function PurchaseSuccessPage({
                   className="text-[#1C2335] mb-3"
                   style={{ fontSize: "1.0625rem", fontWeight: 600 }}
                 >
-                  Acercate a tu HeyPoint!
+                  Acercate a tu Hey!Point
                 </h3>
                 <p
                   className="text-[#2E2E2E]/65"
@@ -619,3 +619,4 @@ export function PurchaseSuccessPage({
     </div>
   );
 }
+

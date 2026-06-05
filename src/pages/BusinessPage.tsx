@@ -188,7 +188,7 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
                     opacity: 0.95,
                   }}
                 >
-                  HeyPoint! es un ecosistema de mini-tiendas inteligentes que
+                  Hey!Point es un ecosistema de mini-tiendas inteligentes que
                   transforma espacios comunes en puntos de conveniencia sin
                   fricciones. Un modelo escalable, flexible y probado.
                 </p>
@@ -203,7 +203,7 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
                     onClick={() => onNavigate?.("contact")}
                   >
                     <Users className="w-5 h-5" />
-                    Quiero HeyPoint! en mi espacio
+                    Quiero Hey!Point en mi espacio
                   </Button>
                 </div>
               </div>
@@ -212,7 +212,7 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
                 <div className="relative rounded-2xl overflow-hidden shadow-2xl">
                   <ImageWithFallback
                     src="https://firebasestorage.googleapis.com/v0/b/heymarket-35d03.firebasestorage.app/o/images%2Fmodelo-hey-point.png?alt=media&token=2e1816bc-d0a4-450a-95ec-1d9d13b10570"
-                    alt="HeyPoint! stand con módulos de retiro"
+                    alt="Hey!Point stand con módulos de retiro"
                     className="w-full h-[500px] object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
@@ -237,7 +237,7 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
                 style={{ fontSize: "1.125rem", lineHeight: "1.7" }}
               >
                 Hoy las personas necesitan soluciones rápidas, seguras y
-                disponibles en cualquier momento. HeyPoint acerca productos
+                disponibles en cualquier momento. Hey!Point acerca productos
                 esenciales directamente a tu edificio, para resolver compras de
                 último momento sin salir de casa.
               </p>
@@ -277,7 +277,7 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
                 className="text-[#1C2335] mb-4"
                 style={{ fontSize: "2.5rem", fontWeight: 700 }}
               >
-                La solución HeyPoint
+                La solución Hey!Point
               </h2>
               <p
                 className="text-[#2E2E2E] max-w-3xl mx-auto"
@@ -322,7 +322,7 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
                 className="text-[#1C2335] mb-4"
                 style={{ fontSize: "2.5rem", fontWeight: 700 }}
               >
-                ¿Dónde funciona HeyPoint!?
+                ¿Dónde funciona Hey!Point?
               </h2>
               <p
                 className="text-[#2E2E2E] max-w-3xl mx-auto"
@@ -519,7 +519,7 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
                   className="mb-6"
                   style={{ fontSize: "1.5rem", fontWeight: 600 }}
                 >
-                  ¿Por qué elegir HeyPoint!?
+                  ¿Por qué elegir Hey!Point?
                 </h3>
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
@@ -578,7 +578,7 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
                 className="mb-8"
                 style={{ fontSize: "1.25rem", lineHeight: "1.8" }}
               >
-                HeyPoint! es un proyecto 100% argentino que combina visión
+                Hey!Point es un proyecto 100% argentino que combina visión
                 estratégica, ingeniería de software de alto nivel y conocimiento
                 profundo del mercado local. Creemos en el talento nacional y en
                 construir soluciones tecnológicas que resuelvan problemas
@@ -619,3 +619,4 @@ export function BusinessPage({ onNavigate }: BusinessPageProps) {
     </div>
   );
 }
+

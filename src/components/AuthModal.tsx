@@ -842,7 +842,7 @@ export default function AuthModal({
                 <>
                   <div className="flex-shrink-0 bg-gradient-to-br from-[#FF6B00] to-[#e56000] text-white px-6 md:px-8 pt-6 pb-4">
                     <h2 className="font-bold text-2xl">
-                      ¡Bienvenido a HeyPoint!
+                      ¡Bienvenido a Hey!Point
                     </h2>
                     <p className="mt-2 text-[#FFF4E6]">
                       {activeTab === "login"
@@ -1935,3 +1935,5 @@ export default function AuthModal({
     </AnimatePresence>
   );
 }
+
+

@@ -57,7 +57,7 @@ interface ProductDetailsPageProps {
   onProductClick?: (product: UiProduct) => void;
 }
 
-const PLACEHOLDER_IMG = "https://placehold.co/600x400?text=HeyPoint";
+const PLACEHOLDER_IMG = "https://placehold.co/600x400?text=Hey!Point";
 
 function normalizeArray(raw: any): any[] {
   if (Array.isArray(raw)) return raw;
@@ -272,7 +272,7 @@ export function ProductDetailsPage({
   const handleShare = async () => {
     const shareData = {
       title: currentProduct.name,
-      text: `Mirá este producto en HeyPoint!: ${currentProduct.name} - ${formatPrecioARS(
+      text: `Mirá este producto en Hey!Point: ${currentProduct.name} - ${formatPrecioARS(
         getPrecioFinalConIVA(currentProduct.price, ivaPct),
       )}`,
       url: window.location.href,
@@ -523,3 +523,4 @@ export function ProductDetailsPage({
     </div>
   );
 }
+
