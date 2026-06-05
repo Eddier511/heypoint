@@ -25,6 +25,11 @@ import { InactivityExpirationModal } from "../components/InactivityExpirationMod
 import { useInactivityTimer } from "../hooks/useInactivityTimer";
 import { useStoreSettings } from "../hooks/useStoreSettings";
 import { formatPrecioARS, getPrecioFinalConIVA } from "../utils/priceUtils";
+import {
+  findServiceChargeRule,
+  formatServiceChargeDisplayLabel,
+  formatServiceChargeRuleLabel,
+} from "../utils/serviceCharge";
 import { motion } from "motion/react";
 import { useCart } from "../contexts/CartContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -105,36 +110,23 @@ export function CheckoutPage({
 
   // Buscar regla de cargo por servicio según subtotal
   const reglaCargoAplicada = useMemo(() => {
-    const rules = storeSettings?.serviceChargeRules ?? [];
-
-    return (
-      rules.find(
-        (rule) =>
-          subtotalProductos >= Number(rule.min) &&
-          subtotalProductos <= Number(rule.max),
-      ) || null
+    return findServiceChargeRule(
+      subtotalProductos,
+      storeSettings?.serviceChargeRules ?? [],
     );
   }, [storeSettings?.serviceChargeRules, subtotalProductos]);
 
   const cargoServicio = reglaCargoAplicada ? Number(reglaCargoAplicada.fee) : 0;
   const totalAPagar = subtotalProductos + cargoServicio;
 
-  const textoCargoServicio = useMemo(() => {
-    if (!reglaCargoAplicada) return "Cargo por servicio";
-
-    const min = Number(reglaCargoAplicada.min);
-    const max = Number(reglaCargoAplicada.max);
-
-    if (min === 0) {
-      return `Cargo por servicio (compras hasta ${formatPrecioARS(max)})`;
-    }
-
-    if (max >= 999000) {
-      return `Cargo por servicio (compras mayores a ${formatPrecioARS(min - 1)})`;
-    }
-
-    return `Cargo por servicio (${formatPrecioARS(min)} - ${formatPrecioARS(max)})`;
-  }, [reglaCargoAplicada]);
+  const reglaCargoLabel = useMemo(
+    () => formatServiceChargeRuleLabel(reglaCargoAplicada),
+    [reglaCargoAplicada],
+  );
+  const textoCargoServicio = useMemo(
+    () => formatServiceChargeDisplayLabel(reglaCargoAplicada),
+    [reglaCargoAplicada],
+  );
 
   const steps = [
     { number: 1, label: "Carrito", icon: ShoppingBag },
@@ -184,6 +176,7 @@ export function CheckoutPage({
         items: orderItems,
         subtotal: subtotalProductos,
         serviceCharge: cargoServicio,
+        serviceChargeLabel: reglaCargoLabel,
         total: totalAPagar,
       });
 
@@ -481,10 +474,7 @@ export function CheckoutPage({
                                   Regla aplicada:
                                 </p>
                                 <p className="text-xs font-medium text-[#1C2335]">
-                                  Desde{" "}
-                                  {formatPrecioARS(reglaCargoAplicada.min)}{" "}
-                                  hasta{" "}
-                                  {formatPrecioARS(reglaCargoAplicada.max)}
+                                  {reglaCargoLabel}
                                 </p>
                                 <p className="text-xs font-medium text-[#FF6B00]">
                                   Cargo fijo:{" "}

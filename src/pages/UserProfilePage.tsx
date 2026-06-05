@@ -722,7 +722,7 @@ export function UserProfilePage({
                                 handleInputChange("phone", e.target.value)
                               }
                               placeholder="11 2345 6789"
-                              className="flex-1 pl-3 pr-4 py-[22px] text-sm bg-transparent outline-none text-[#1C2335] placeholder:text-gray-400"
+                              className="flex-1 pl-3 pr-4 py-[22px] text-base bg-transparent outline-none text-[#1C2335] placeholder:text-gray-400"
                             />
                           </div>
                           {errors.phone && (

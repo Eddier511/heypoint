@@ -115,6 +115,9 @@ interface Order {
   orderId: string;
   items: OrderItem[];
   lockers: LockerGroup[];
+  subtotal?: number;
+  serviceCharge?: number;
+  serviceChargeLabel?: string;
   total: number;
   pickupToken: string;
   pickupTokenExpiresAt?: string;
@@ -153,6 +156,9 @@ type ApiOrder = {
   status: ApiOrderStatus;
   purchaseDate: string;
   completedDate?: string;
+  subtotal?: number;
+  serviceCharge?: number;
+  serviceChargeLabel?: string;
   total: number;
   pickupToken?: string;
   pickupTokenExpiresAt?: string;
@@ -249,6 +255,23 @@ interface OrderCardProps {
   onViewDetails: (order: Order) => void;
   onShowToken: (token: string) => void;
   onNavigate?: (page: string) => void;
+}
+
+function getOrderSubtotal(order: Order) {
+  return (
+    Number(order.subtotal) ||
+    order.lockers.reduce((sum, locker) => sum + Number(locker.subtotal || 0), 0)
+  );
+}
+
+function getOrderServiceCharge(order: Order) {
+  const subtotal = getOrderSubtotal(order);
+  return Number(order.serviceCharge ?? Math.max(0, Number(order.total || 0) - subtotal));
+}
+
+function getOrderServiceChargeLabel(order: Order) {
+  const label = String(order.serviceChargeLabel || "").trim();
+  return label ? `Cargo por servicio (${label})` : "Cargo por servicio";
 }
 
 function OrderCard({
@@ -730,6 +753,9 @@ export function MyOrdersPage({
             orderId: o.orderId,
             items: uiItems,
             lockers: finalLockers,
+            subtotal: o.subtotal,
+            serviceCharge: o.serviceCharge,
+            serviceChargeLabel: o.serviceChargeLabel,
             total: o.total,
             pickupToken: o.pickupToken || "",
             pickupTokenExpiresAt: o.pickupTokenExpiresAt || o.token?.expiresAt || "",
@@ -1450,7 +1476,7 @@ export function MyOrdersPage({
                             className="text-[#FF6B00]"
                             style={{ fontSize: "1rem", fontWeight: 700 }}
                           >
-                            ${locker.subtotal.toFixed(2)}
+                            {formatPrecioARS(locker.subtotal)}
                           </div>
                         </div>
 
@@ -1506,28 +1532,18 @@ export function MyOrdersPage({
                     className="flex items-center justify-between text-[#2E2E2E]"
                     style={{ fontSize: "1rem" }}
                   >
-                    <span>Subtotal</span>
+                    <span>Subtotal de productos</span>
                     <span style={{ fontWeight: 600 }}>
-                      {formatPrecioARS(
-                        selectedOrder.lockers.reduce(
-                          (sum, l) => sum + l.subtotal,
-                          0,
-                        ),
-                      )}
+                      {formatPrecioARS(getOrderSubtotal(selectedOrder))}
                     </span>
                   </div>
                   <div
                     className="flex items-center justify-between text-[#2E2E2E]"
                     style={{ fontSize: "1rem" }}
                   >
-                    <span>Cargo por servicio (1%)</span>
+                    <span>{getOrderServiceChargeLabel(selectedOrder)}</span>
                     <span style={{ fontWeight: 600 }}>
-                      {formatPrecioARS(
-                        selectedOrder.lockers.reduce(
-                          (sum, l) => sum + l.subtotal,
-                          0,
-                        ) * 0.01,
-                      )}
+                      {formatPrecioARS(getOrderServiceCharge(selectedOrder))}
                     </span>
                   </div>
                   <div className="flex items-center justify-between pt-3 border-t border-gray-200">

@@ -167,10 +167,17 @@
 
   html {
     font-size: var(--font-size);
+    width: 100%;
+    min-width: 100%;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
     @apply bg-background text-foreground;
+    width: 100%;
+    min-width: 100%;
+    overflow-x: hidden;
     font-family:
       "Inter",
       -apple-system,
@@ -185,6 +192,13 @@
       "Helvetica Neue",
       sans-serif;
   }
+
+  #root {
+    width: 100%;
+    min-width: 100%;
+    overflow-x: hidden;
+  }
+
 }
 
 /**
@@ -329,4 +343,14 @@ input::-ms-reveal {
   display: none;
   width: 0;
   height: 0;
+}
+
+/* iOS Safari auto-zooms focused form controls below 16px.
+   Keep this scoped to WebKit touch devices so compact desktop inputs stay intact. */
+@supports (-webkit-touch-callout: none) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }

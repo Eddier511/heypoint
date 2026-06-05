@@ -17,7 +17,7 @@ import {
   KeyRound,
   Navigation,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api";
 
 interface PurchaseSuccessPageProps {
@@ -50,6 +50,19 @@ export function PurchaseSuccessPage({
   const [resendCountdown, setResendCountdown] = useState(0);
   const [isResendingEmail, setIsResendingEmail] = useState(false);
   const [resendMessage, setResendMessage] = useState("");
+  const confettiPieces = useMemo(
+    () =>
+      Array.from({ length: 30 }, (_, i) => ({
+        id: i,
+        left: `${(i / 30) * 100}%`,
+        scale: 0.5 + ((i * 17) % 50) / 100,
+        rotate: (i * 47) % 360,
+        duration: 2 + ((i * 13) % 20) / 10,
+        delay: ((i * 7) % 5) / 10,
+        color: ["#FF6B00", "#FFB800", "#B6E322", "#FF8534"][i % 4],
+      })),
+    [],
+  );
 
   // CRITICAL: Scroll to top immediately when page loads
   useEffect(() => {
@@ -160,7 +173,7 @@ export function PurchaseSuccessPage({
   };
 
   return (
-    <div className="min-h-screen bg-[#FFF4E6]">
+    <div className="min-h-screen w-full min-w-0 overflow-x-hidden bg-[#FFF4E6]">
       <UnifiedHeader
         onNavigate={onNavigate}
         currentPage="success"
@@ -168,43 +181,37 @@ export function PurchaseSuccessPage({
         isTransparent={false}
       />
 
-      <div className="pt-20 lg:pt-24">
-        <div className="container mx-auto px-4 sm:px-6 py-12 max-w-4xl">
+      <div className="w-full min-w-0 overflow-x-hidden pt-20 lg:pt-24">
+        <div className="container mx-auto w-full max-w-4xl min-w-0 px-4 py-12 sm:px-6">
           {/* ── SECTION 1: Pedido Confirmado ── */}
           <div className="relative">
             {/* Confetti */}
             <AnimatePresence>
               {showConfetti && (
                 <>
-                  {[...Array(30)].map((_, i) => (
+                  {confettiPieces.map((piece) => (
                     <motion.div
-                      key={i}
+                      key={piece.id}
                       initial={{
                         y: -20,
-                        x: Math.random() * window.innerWidth,
                         opacity: 1,
-                        scale: Math.random() * 0.5 + 0.5,
+                        scale: piece.scale,
                       }}
                       animate={{
-                        y: window.innerHeight + 100,
-                        rotate: Math.random() * 360,
+                        y: "110vh",
+                        rotate: piece.rotate,
                         opacity: 0,
                       }}
                       exit={{ opacity: 0 }}
                       transition={{
-                        duration: Math.random() * 2 + 2,
+                        duration: piece.duration,
                         ease: "easeOut",
-                        delay: Math.random() * 0.5,
+                        delay: piece.delay,
                       }}
                       className="absolute w-3 h-3 rounded-full pointer-events-none z-50"
                       style={{
-                        backgroundColor: [
-                          "#FF6B00",
-                          "#FFB800",
-                          "#B6E322",
-                          "#FF8534",
-                        ][Math.floor(Math.random() * 4)],
-                        left: `${(i / 30) * 100}%`,
+                        backgroundColor: piece.color,
+                        left: piece.left,
                       }}
                     />
                   ))}
