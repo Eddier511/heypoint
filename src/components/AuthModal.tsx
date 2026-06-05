@@ -450,8 +450,8 @@ export default function AuthModal({
       // ✅ Si ES nuevo y ya está verificado: completar perfil
       if (isNewUser) {
         localStorage.setItem(PENDING_PROFILE_KEY, "1");
-        setSignUpStep("completeProfile");
-        setStep2Dirty(false);
+        onLoginSuccess(user);
+        onClose();
         return;
       }
 

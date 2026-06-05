@@ -235,6 +235,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   ): Promise<User> => {
     const cred = await signInWithEmailAndPassword(auth, email, password);
     await persistToken(false);
+    setFbUser(auth.currentUser);
     return mapFirebaseUser(cred.user);
   };
 
@@ -305,7 +306,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(cred.user, { displayName: fullName });
     await persistToken(false);
-    await bootstrapCustomerProfile(cred.user, fullName);
+    setFbUser(auth.currentUser);
+
+    try {
+      await bootstrapCustomerProfile(cred.user, fullName);
+    } catch (error) {
+      console.error(
+        "[AuthContext] signup customer bootstrap failed after Firebase signup",
+        {
+          uid: cred.user.uid,
+          email: cred.user.email || email,
+          error,
+        },
+      );
+    }
 
     const continueUrl = `${window.location.origin}/?verified=1`;
     let verificationEmailSent = false;
@@ -344,29 +358,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const isNewUser = !!info?.isNewUser;
 
     await persistToken(false);
+    setFbUser(auth.currentUser);
 
     const u = mapFirebaseUser(cred.user);
     if (isNewUser) {
       try {
         await bootstrapCustomerProfile(cred.user, u.fullName);
       } catch (bootstrapErr: any) {
-        // If the backend rejected this signup because the email already
-        // belongs to a different account, we must sign the user back out
-        // so they are not left in a partially-authenticated state.
-        if (bootstrapErr?.code === "EMAIL_ALREADY_EXISTS_WITH_DIFFERENT_UID") {
-          console.warn(
-            "[AuthContext] duplicate email on Google signup — signing out",
-            { uid: cred.user.uid, email: cred.user.email },
-          );
-          await signOut(auth);
-          localStorage.removeItem(STORAGE_KEY);
-        }
-        throw bootstrapErr;
+        console.error(
+          "[AuthContext] Google customer bootstrap failed after Firebase signup",
+          {
+            uid: cred.user.uid,
+            email: cred.user.email,
+            error: bootstrapErr,
+          },
+        );
       }
     }
     return { user: u, isNewUser };
   };
-
   const logout = async () => {
     await signOut(auth);
     localStorage.removeItem(STORAGE_KEY);
