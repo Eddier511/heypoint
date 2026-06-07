@@ -3,6 +3,7 @@ import { Button } from "../components/ui/button";
 import { UnifiedHeader } from "../components/UnifiedHeader";
 import { Footer } from "../components/Footer";
 import { TokenInput } from "../components/TokenInput";
+import { CheckoutStepper } from "../components/CheckoutStepper";
 import { BackToTopButton } from "../components/BackToTopButton";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -183,6 +184,9 @@ export function PurchaseSuccessPage({
 
       <div className="w-full min-w-0 overflow-x-hidden pt-20 lg:pt-24">
         <div className="container mx-auto w-full max-w-4xl min-w-0 px-4 py-12 sm:px-6">
+          <div className="mb-8 md:mb-10">
+            <CheckoutStepper currentStep={3} />
+          </div>
           {/* ── SECTION 1: Pedido Confirmado ── */}
           <div className="relative">
             {/* Confetti */}

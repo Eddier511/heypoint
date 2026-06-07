@@ -20,6 +20,7 @@ import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { UnifiedHeader } from "../components/UnifiedHeader";
 import { BackToTopButton } from "../components/BackToTopButton";
 import { Footer } from "../components/Footer";
+import { CheckoutStepper } from "../components/CheckoutStepper";
 import { ReservationTimer } from "../components/ReservationTimer";
 import { InactivityExpirationModal } from "../components/InactivityExpirationModal";
 import { useInactivityTimer } from "../hooks/useInactivityTimer";
@@ -296,43 +297,7 @@ export function CheckoutPage({
           </button>
 
           <div className="mb-8 md:mb-12">
-            <div className="flex items-center justify-center gap-2 sm:gap-4 max-w-3xl mx-auto">
-              {steps.map((step, index) => (
-                <div key={step.number} className="flex items-center flex-1">
-                  <div className="flex flex-col items-center flex-1">
-                    <div
-                      className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center mb-2 transition-all ${
-                        currentStep >= step.number
-                          ? "bg-[#FF6B00] text-white"
-                          : "bg-gray-200 text-gray-400"
-                      }`}
-                    >
-                      <step.icon className="w-5 h-5 sm:w-6 sm:h-6" />
-                    </div>
-                    <span
-                      className={`text-center text-xs sm:text-sm ${
-                        currentStep >= step.number
-                          ? "text-[#FF6B00]"
-                          : "text-gray-400"
-                      }`}
-                      style={{ fontWeight: 600 }}
-                    >
-                      {step.label}
-                    </span>
-                  </div>
-                  {index < steps.length - 1 && (
-                    <div
-                      className={`h-0.5 flex-1 mx-1 sm:mx-2 transition-all ${
-                        currentStep > step.number
-                          ? "bg-[#FF6B00]"
-                          : "bg-gray-200"
-                      }`}
-                      style={{ marginTop: "-30px" }}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
+            <CheckoutStepper currentStep={currentStep} />
           </div>
 
           <motion.div
