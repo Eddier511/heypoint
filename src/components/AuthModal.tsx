@@ -124,6 +124,8 @@ const FIREBASE_ERROR_MAP: Record<string, string> = {
   "auth/too-many-requests": TOO_MANY_REQUESTS_MESSAGE,
   "auth/popup-closed-by-user": "",
   "auth/cancelled-popup-request": "",
+  "auth/popup-blocked":
+    "Tu navegador bloqueó el popup de Google. Habilitá los popups para este sitio e intentá de nuevo.",
   "auth/network-request-failed":
     "Error de red. Revisá tu conexión e intentá de nuevo.",
   "auth/user-disabled":
@@ -134,14 +136,16 @@ function getFriendlyAuthError(error: any, fallback: string): string {
   // 1. Check direct .code property (Firebase SDK errors)
   const code = error?.code as string | undefined;
   if (code && code in FIREBASE_ERROR_MAP) {
-    return FIREBASE_ERROR_MAP[code] || fallback;
+    // "" in the map means "silent — no error to show"; preserve that intent
+    const mapped = FIREBASE_ERROR_MAP[code];
+    return mapped !== "" ? mapped : "";
   }
 
   // 2. Check if any known code appears inside the message string
   //    (Firebase sometimes embeds the code in the message)
   const raw = String(error?.message || "");
   for (const [key, msg] of Object.entries(FIREBASE_ERROR_MAP)) {
-    if (raw.includes(key)) return msg || fallback;
+    if (raw.includes(key)) return msg !== "" ? msg : "";
   }
 
   // 3. If the message is already a friendly custom message (e.g. from
@@ -412,6 +416,11 @@ export default function AuthModal({
 
   const openGmail = () => window.open("https://mail.google.com", "_blank");
 
+  const POPUP_SILENT_CODES = new Set([
+    "auth/popup-closed-by-user",
+    "auth/cancelled-popup-request",
+  ]);
+
   const handleGoogle = async () => {
     try {
       setGlobalError("");
@@ -459,7 +468,24 @@ export default function AuthModal({
       onLoginSuccess(user);
       onClose();
     } catch (e: any) {
-      console.error("[handleGoogle]", e?.code, e?.message);
+      const code: string = e?.code ?? "";
+
+      // Always reset loading first — guards against promise-hanging in some browsers
+      setLoading(false);
+
+      if (POPUP_SILENT_CODES.has(code)) {
+        // User dismissed the popup — silently reset, nothing to show
+        return;
+      }
+
+      if (code === "auth/popup-blocked") {
+        setGlobalError(
+          getFriendlyAuthError(e, "Tu navegador bloqueó el popup de Google. Habilitá los popups e intentá de nuevo."),
+        );
+        return;
+      }
+
+      console.error("[handleGoogle]", code, e?.message);
       setGlobalError(
         getFriendlyAuthError(e, "No se pudo iniciar con Google."),
       );
