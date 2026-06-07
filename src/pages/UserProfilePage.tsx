@@ -556,7 +556,11 @@ export function UserProfilePage({
                         Información Personal
                       </h2>
 
-                      <div className="grid md:grid-cols-2 gap-5 md:gap-6">
+                      {/* Datos de cuenta */}
+                      <p className="text-xs font-semibold text-[#2E2E2E]/45 uppercase tracking-wider mb-4">
+                        Datos de cuenta
+                      </p>
+                      <div className="grid md:grid-cols-2 gap-5 md:gap-6 mb-6">
                         {/* Full Name */}
                         <div>
                           <Label
@@ -703,12 +707,12 @@ export function UserProfilePage({
                           >
                             Teléfono <span className="text-red-500">*</span>
                           </Label>
-                          <div className={`flex items-center rounded-2xl border-2 transition-all overflow-hidden ${
+                          <div className={`flex items-stretch rounded-2xl border-2 transition-all overflow-hidden ${
                             errors.phone
                               ? "border-red-500 focus-within:border-red-500 focus-within:ring-4 focus-within:ring-red-500/20"
                               : "border-gray-300 focus-within:border-[#FF6B00] focus-within:ring-4 focus-within:ring-[#FF6B00]/20"
                           }`}>
-                            <span className="flex-shrink-0 pl-4 pr-3 text-sm font-semibold text-gray-500 select-none pointer-events-none border-r border-gray-200 py-[22px] bg-gray-50">
+                            <span className="flex-shrink-0 flex items-center pl-4 pr-3 text-sm font-medium text-gray-400 select-none pointer-events-none border-r border-gray-200">
                               +54
                             </span>
                             <input
@@ -719,7 +723,7 @@ export function UserProfilePage({
                                 handleInputChange("phone", e.target.value)
                               }
                               placeholder="11 2345 6789"
-                              className="flex-1 pl-3 pr-4 py-[22px] text-base bg-transparent outline-none text-[#1C2335] placeholder:text-gray-400"
+                              className="flex-1 pl-3 pr-4 py-3.5 text-base bg-transparent outline-none text-[#1C2335] placeholder:text-gray-400"
                             />
                           </div>
                           {errors.phone && (
@@ -732,6 +736,15 @@ export function UserProfilePage({
                             </p>
                           )}
                         </div>
+
+                      </div>
+
+                      {/* Datos de retiro */}
+                      <div className="rounded-2xl bg-[#FFF9F4] border border-orange-100 p-4 md:p-5">
+                        <p className="text-xs font-semibold text-[#2E2E2E]/45 uppercase tracking-wider mb-4">
+                          Datos de retiro
+                        </p>
+                        <div className="grid md:grid-cols-2 gap-5 md:gap-6">
 
                         {/* Birth date */}
                         <div>
@@ -863,23 +876,20 @@ export function UserProfilePage({
                             </p>
                           )}
                         </div>
-                      </div>
+                        </div>{/* end grid retiro */}
+                      </div>{/* end bloque retiro */}
                     </div>
 
                     {/* Password section */}
                     {!hasPasswordProvider() && isGoogleUser() ? (
-                      <div className="mb-8 p-5 rounded-2xl bg-blue-50 border border-blue-100 flex items-start gap-3">
-                        <svg className="w-5 h-5 mt-0.5 flex-shrink-0 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
+                      <div className="mb-8 px-4 py-3 rounded-xl bg-blue-50 border border-blue-100 flex items-center gap-2.5">
+                        <svg className="w-4 h-4 flex-shrink-0 text-blue-400" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
                         </svg>
-                        <div>
-                          <p className="text-blue-800 font-semibold" style={{ fontSize: "0.938rem" }}>
-                            Iniciás sesión con Google
-                          </p>
-                          <p className="text-blue-700 mt-1" style={{ fontSize: "0.875rem" }}>
-                            Tu cuenta no tiene contraseña. Para cambiarla, gestionala desde tu cuenta de Google.
-                          </p>
-                        </div>
+                        <p className="text-blue-700" style={{ fontSize: "0.875rem" }}>
+                          <span className="font-semibold">Iniciás sesión con Google.</span>{" "}
+                          La contraseña se gestiona desde tu cuenta de Google.
+                        </p>
                       </div>
                     ) : hasPasswordProvider() ? (
                     <div className="mb-8">
@@ -1110,11 +1120,11 @@ export function UserProfilePage({
                     ) : null}
 
                     {/* Actions */}
-                    <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200">
+                    <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-200">
                       <Button
                         onClick={handleSaveChanges}
                         disabled={!isModified || isSaving}
-                        className={`flex-1 sm:flex-none sm:ml-auto h-14 px-8 rounded-full transition-all shadow-lg
+                        className={`w-full sm:flex-none sm:ml-auto min-h-[52px] sm:h-14 px-8 rounded-full transition-all shadow-lg
                           ${
                             !isModified || isSaving
                               ? "bg-gray-300 text-gray-500 cursor-not-allowed hover:bg-gray-300"
@@ -1136,7 +1146,7 @@ export function UserProfilePage({
                         onClick={handleCancel}
                         disabled={!isModified || isSaving}
                         variant="ghost"
-                        className="sm:flex-none h-14 px-8 text-[#2E2E2E] hover:text-[#FF6B00] hover:bg-[#FFF4E6] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full sm:w-auto sm:flex-none min-h-[44px] sm:h-14 px-8 text-[#2E2E2E] hover:text-[#FF6B00] hover:bg-[#FFF4E6] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         style={{ fontSize: "1rem", fontWeight: 700 }}
                       >
                         Cancelar

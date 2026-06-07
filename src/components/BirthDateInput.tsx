@@ -105,26 +105,33 @@ export function BirthDateInput({
         <label className="mb-1.5 block text-xs font-semibold text-[#2E2E2E]/70">
           Mes
         </label>
-        <select
-          value={month}
-          onChange={(event) => {
-            const nextMonth = event.target.value;
-            setMonth(nextMonth);
-            emit(day, nextMonth, year);
-          }}
-          className={fieldClass}
-          aria-label="Mes de nacimiento"
-        >
-          <option value="">Mes</option>
-          {months.map((label, index) => {
-            const value = String(index + 1).padStart(2, "0");
-            return (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            );
-          })}
-        </select>
+        <div className="relative">
+          <select
+            value={month}
+            onChange={(event) => {
+              const nextMonth = event.target.value;
+              setMonth(nextMonth);
+              emit(day, nextMonth, year);
+            }}
+            className={`${fieldClass} appearance-none pr-8`}
+            aria-label="Mes de nacimiento"
+          >
+            <option value="">Mes</option>
+            {months.map((label, index) => {
+              const value = String(index + 1).padStart(2, "0");
+              return (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              );
+            })}
+          </select>
+          <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+            <svg className="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </div>
+        </div>
       </div>
 
       <div>
