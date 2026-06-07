@@ -3,6 +3,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   ReactNode,
 } from "react";
@@ -32,6 +33,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 // ✅ LocalStorage (MVP persist)
 // -----------------------------
 const CART_STORAGE_KEY = "heypoint_cart_v1";
+const CART_SYNC_DEBOUNCE_MS = 300;
 
 function readCartFromStorage(): CartItem[] {
   try {
@@ -136,6 +138,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
     readCartFromStorage(),
   );
   const [isProcessing, setIsProcessing] = useState(false);
+  const syncTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>(
+    {},
+  );
+  const syncSequenceRef = useRef<Record<string, number>>({});
+  const syncSnapshotsRef = useRef<Record<string, CartItem[]>>({});
+  const syncInFlightRef = useRef<Record<string, boolean>>({});
+  const syncLatestQuantityRef = useRef<Record<string, number>>({});
 
   const cartCount = useMemo(
     () => cartItems.reduce((total, item) => total + item.quantity, 0),
@@ -209,6 +218,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const handleLogout = () => {
       console.log("[CartContext] Logout detected - clearing cart");
+      Object.values(syncTimersRef.current).forEach(clearTimeout);
+      syncTimersRef.current = {};
+      syncSequenceRef.current = {};
+      syncSnapshotsRef.current = {};
+      syncInFlightRef.current = {};
+      syncLatestQuantityRef.current = {};
       setCartItems([]);
       clearCartStorage();
     };
@@ -216,6 +231,113 @@ export function CartProvider({ children }: { children: ReactNode }) {
     window.addEventListener("heypoint:logout", handleLogout);
     return () => window.removeEventListener("heypoint:logout", handleLogout);
   }, []);
+
+  useEffect(() => {
+    return () => {
+      Object.values(syncTimersRef.current).forEach(clearTimeout);
+    };
+  }, []);
+
+  const rollbackProductFromSnapshot = (
+    snapshot: CartItem[],
+    productId: string,
+  ) => {
+    const previousItem = snapshot.find((item) => item.productId === productId);
+
+    setCartItems((current) => {
+      if (!previousItem) {
+        return current.filter((item) => item.productId !== productId);
+      }
+
+      const exists = current.some((item) => item.productId === productId);
+      if (exists) {
+        return current.map((item) =>
+          item.productId === productId ? previousItem : item,
+        );
+      }
+
+      const previousIndex = snapshot.findIndex(
+        (item) => item.productId === productId,
+      );
+      const next = [...current];
+      next.splice(Math.max(previousIndex, 0), 0, previousItem);
+      return next;
+    });
+  };
+
+  const scheduleCartItemSync = (
+    productId: string,
+    quantity: number,
+    snapshot: CartItem[],
+  ) => {
+    if (!syncSnapshotsRef.current[productId]) {
+      syncSnapshotsRef.current[productId] = snapshot;
+    }
+
+    const sequence = (syncSequenceRef.current[productId] ?? 0) + 1;
+    syncSequenceRef.current[productId] = sequence;
+    syncLatestQuantityRef.current[productId] = quantity;
+
+    const existingTimer = syncTimersRef.current[productId];
+    if (existingTimer) clearTimeout(existingTimer);
+
+    const flushLatestQuantity = async () => {
+      if (syncInFlightRef.current[productId]) return;
+
+      const activeSequence = syncSequenceRef.current[productId];
+      const quantityToSend = syncLatestQuantityRef.current[productId];
+      syncInFlightRef.current[productId] = true;
+
+      try {
+        await apiFetch("/cart/set", {
+          method: "PATCH",
+          body: JSON.stringify({ productId, qty: quantityToSend }),
+        });
+
+        if (
+          syncSequenceRef.current[productId] === activeSequence &&
+          syncLatestQuantityRef.current[productId] === quantityToSend
+        ) {
+          delete syncSnapshotsRef.current[productId];
+          delete syncLatestQuantityRef.current[productId];
+        }
+      } catch (error) {
+        if (syncSequenceRef.current[productId] === activeSequence) {
+          console.error("Failed to update cart:", error);
+          rollbackProductFromSnapshot(
+            syncSnapshotsRef.current[productId] ?? snapshot,
+            productId,
+          );
+          delete syncSnapshotsRef.current[productId];
+          delete syncLatestQuantityRef.current[productId];
+          toast.error("Error al actualizar el carrito", {
+            description: "Restauramos la cantidad anterior. Intentá nuevamente.",
+            duration: 3000,
+          });
+        }
+      } finally {
+        syncInFlightRef.current[productId] = false;
+
+        if (
+          syncSequenceRef.current[productId] !== activeSequence &&
+          syncLatestQuantityRef.current[productId] !== undefined
+        ) {
+          syncTimersRef.current[productId] = setTimeout(
+            flushLatestQuantity,
+            0,
+          );
+          return;
+        }
+
+        delete syncTimersRef.current[productId];
+      }
+    };
+
+    syncTimersRef.current[productId] = setTimeout(
+      flushLatestQuantity,
+      CART_SYNC_DEBOUNCE_MS,
+    );
+  };
 
   const addToCart = async (product: CartItem): Promise<void> => {
     if (isProcessing) return;
@@ -361,15 +483,75 @@ export function CartProvider({ children }: { children: ReactNode }) {
     clearCartStorage();
   };
 
+  const updateCartItemOptimistic = async (
+    productId: string,
+    quantity: number,
+  ): Promise<void> => {
+    const snapshot = cartItems;
+    const item = snapshot.find((x) => x.productId === productId);
+    const max = item?.stock ?? Infinity;
+    const q = Math.max(0, Math.min(Number(quantity), max));
+
+    if (q <= 0) {
+      await removeFromCartOptimistic(productId);
+      return;
+    }
+
+    setCartItems((prev) =>
+      prev.map((x) => (x.productId === productId ? { ...x, quantity: q } : x)),
+    );
+
+    scheduleCartItemSync(productId, q, snapshot);
+  };
+
+  const removeFromCartOptimistic = async (productId: string) => {
+    const snapshot = cartItems;
+    const existingTimer = syncTimersRef.current[productId];
+    if (existingTimer) clearTimeout(existingTimer);
+    delete syncTimersRef.current[productId];
+    delete syncSnapshotsRef.current[productId];
+    delete syncLatestQuantityRef.current[productId];
+
+    const sequence = (syncSequenceRef.current[productId] ?? 0) + 1;
+    syncSequenceRef.current[productId] = sequence;
+
+    setCartItems((prev) => prev.filter((x) => x.productId !== productId));
+
+    try {
+      await apiFetch(`/cart/${productId}`, { method: "DELETE" });
+      if (syncSequenceRef.current[productId] === sequence) {
+        toast.success("Producto eliminado del carrito");
+      }
+    } catch (e) {
+      if (syncSequenceRef.current[productId] === sequence) {
+        console.error(e);
+        rollbackProductFromSnapshot(snapshot, productId);
+        toast.error("No se pudo eliminar el producto", {
+          description: "Restauramos el carrito. Intentá nuevamente.",
+        });
+      }
+    }
+  };
+
+  const clearCartOptimistic = async () => {
+    Object.values(syncTimersRef.current).forEach(clearTimeout);
+    syncTimersRef.current = {};
+    syncSequenceRef.current = {};
+    syncSnapshotsRef.current = {};
+    syncInFlightRef.current = {};
+    syncLatestQuantityRef.current = {};
+    await clearCart();
+  };
+
   return (
     <CartContext.Provider
       value={{
         cartItems,
         cartCount,
         addToCart,
-        updateCartItem,
-        removeFromCart,
-        clearCart,
+        updateCartItem: updateCartItemOptimistic,
+        removeFromCart: removeFromCartOptimistic,
+        clearCart: clearCartOptimistic,
       }}
     >
       {children}
