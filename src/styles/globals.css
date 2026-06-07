@@ -169,7 +169,7 @@
     font-size: var(--font-size);
     width: 100%;
     min-width: 100%;
-    overflow-x: hidden;
+    overflow-x: clip;
     -webkit-text-size-adjust: 100%;
   }
 
@@ -177,7 +177,7 @@
     @apply bg-background text-foreground;
     width: 100%;
     min-width: 100%;
-    overflow-x: hidden;
+    overflow-x: clip;
     font-family:
       "Inter",
       -apple-system,
@@ -196,7 +196,7 @@
   #root {
     width: 100%;
     min-width: 100%;
-    overflow-x: hidden;
+    overflow-x: clip;
   }
 
 }

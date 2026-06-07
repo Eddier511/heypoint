@@ -945,7 +945,7 @@ export function ShopPage({
           <div ref={filterBarSentinelRef} className="xl:hidden h-px -mt-px" aria-hidden="true" />
 
           {/* Mobile Filter + Grid Toggle */}
-          <div className={`xl:hidden sticky top-16 z-30 -mx-4 px-4 py-3 mb-4 bg-[#FFF4E6] flex gap-3 transition-shadow${isFilterBarStuck ? " shadow-md" : ""}`}>
+          <div className={`xl:hidden sticky top-16 lg:top-20 z-30 -mx-4 px-4 py-3 mb-4 bg-[#FFF4E6] flex gap-3 transition-shadow${isFilterBarStuck ? " shadow-md" : ""}`}>
             <Button
               onClick={() => setIsMobileFiltersOpen(true)}
               className="flex-1 sm:flex-initial sm:w-auto bg-white text-[#1C2335] border-2 border-[#FF6B00] hover:bg-[#FFF4E6] rounded-full shadow-sm"
