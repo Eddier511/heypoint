@@ -556,9 +556,9 @@ export function UserProfilePage({
                         Información Personal
                       </h2>
 
-                      {/* Datos de cuenta */}
+                      {/* Datos personales */}
                       <p className="text-xs font-semibold text-[#2E2E2E]/45 uppercase tracking-wider mb-4">
-                        Datos de cuenta
+                        Datos personales
                       </p>
                       <div className="grid md:grid-cols-2 gap-5 md:gap-6 mb-6">
                         {/* Full Name */}
@@ -737,42 +737,6 @@ export function UserProfilePage({
                           )}
                         </div>
 
-                      </div>
-
-                      {/* Datos de retiro */}
-                      <div className="rounded-2xl bg-[#FFF9F4] border border-orange-100 p-4 md:p-5">
-                        <p className="text-xs font-semibold text-[#2E2E2E]/45 uppercase tracking-wider mb-4">
-                          Datos de retiro
-                        </p>
-                        <div className="grid md:grid-cols-2 gap-5 md:gap-6">
-
-                        {/* Birth date */}
-                        <div>
-                          <Label
-                            className="text-[#1C2335] mb-2 block"
-                            style={{ fontSize: "0.875rem", fontWeight: 600 }}
-                          >
-                            Fecha de nacimiento{" "}
-                            <span className="text-red-500">*</span>
-                          </Label>
-                          <BirthDateInput
-                            value={profileData.birthDate}
-                            hasError={!!errors.birthDate}
-                            onChange={(value) =>
-                              handleInputChange("birthDate", value)
-                            }
-                          />
-                          {errors.birthDate && (
-                            <p
-                              className="mt-2 text-red-500 flex items-center gap-1"
-                              style={{ fontSize: "0.813rem" }}
-                            >
-                              <AlertCircle className="w-4 h-4" />
-                              {errors.birthDate}
-                            </p>
-                          )}
-                        </div>
-
                         {/* DNI */}
                         <div>
                           <Label
@@ -810,6 +774,42 @@ export function UserProfilePage({
                             </p>
                           )}
                         </div>
+
+                        {/* Birth date — full width so the 3-col sub-grid respira */}
+                        <div className="md:col-span-2">
+                          <Label
+                            className="text-[#1C2335] mb-2 block"
+                            style={{ fontSize: "0.875rem", fontWeight: 600 }}
+                          >
+                            Fecha de nacimiento{" "}
+                            <span className="text-red-500">*</span>
+                          </Label>
+                          <BirthDateInput
+                            value={profileData.birthDate}
+                            hasError={!!errors.birthDate}
+                            onChange={(value) =>
+                              handleInputChange("birthDate", value)
+                            }
+                          />
+                          {errors.birthDate && (
+                            <p
+                              className="mt-2 text-red-500 flex items-center gap-1"
+                              style={{ fontSize: "0.813rem" }}
+                            >
+                              <AlertCircle className="w-4 h-4" />
+                              {errors.birthDate}
+                            </p>
+                          )}
+                        </div>
+
+                      </div>
+
+                      {/* Datos de retiro */}
+                      <div className="rounded-2xl bg-[#FFF9F4] border border-orange-100 p-4 md:p-5">
+                        <p className="text-xs font-semibold text-[#2E2E2E]/45 uppercase tracking-wider mb-4">
+                          Datos de retiro
+                        </p>
+                        <div className="grid md:grid-cols-2 gap-5 md:gap-6">
 
                         {/* Pickup */}
                         <div>

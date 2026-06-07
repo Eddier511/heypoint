@@ -21,6 +21,11 @@ const months = [
   "Diciembre",
 ];
 
+const monthsShort = [
+  "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+  "Jul", "Ago", "Sep", "Oct", "Nov", "Dic",
+];
+
 function parseBirthDate(value: string) {
   const trimmed = String(value || "").trim();
 
@@ -59,6 +64,17 @@ export function BirthDateInput({
   const [day, setDay] = useState(parsed.day);
   const [month, setMonth] = useState(parsed.month);
   const [year, setYear] = useState(parsed.year);
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth < 640 : false
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   useEffect(() => {
     const next = parseBirthDate(value);
@@ -121,7 +137,7 @@ export function BirthDateInput({
               const value = String(index + 1).padStart(2, "0");
               return (
                 <option key={value} value={value}>
-                  {label}
+                  {isMobile ? monthsShort[index] : label}
                 </option>
               );
             })}
