@@ -53,40 +53,39 @@ export function ReservationTimer({
 
   return (
     <div 
-      className={`flex items-center gap-3 p-4 bg-white rounded-2xl border border-gray-200 ${className}`}
+      className={`flex flex-col items-center gap-3 rounded-2xl border border-[#FFE0C2] bg-white/90 p-4 text-center shadow-sm sm:flex-row sm:items-center sm:gap-4 sm:text-left ${className}`}
       style={{ 
-        backgroundColor: 'rgba(255, 255, 255, 0.8)',
         backdropFilter: 'blur(8px)'
       }}
     >
       {/* Clock Icon - Outline style, discreet */}
-      <div className="flex-shrink-0">
+      <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[#FFF4E6] text-[#FF6B00]">
         <Clock 
-          className="w-5 h-5 text-[#4A4A4A]" 
-          strokeWidth={1.5}
+          className="h-5 w-5" 
+          strokeWidth={2}
         />
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0 flex-1">
         <p 
-          className="text-[#4A4A4A] mb-1"
+          className="text-[#4A4A4A]"
           style={{ fontSize: '0.875rem', fontWeight: 500, lineHeight: 1.4 }}
         >
           Tus productos están reservados mientras completás el pago.
         </p>
         
         {/* Timer Display */}
-        <div className="flex items-center gap-2">
+        <div className="mt-2 flex flex-wrap items-baseline justify-center gap-x-2 gap-y-1 sm:justify-start">
           <span 
             className="text-[#6B6B6B]"
-            style={{ fontSize: '0.75rem', fontWeight: 400 }}
+            style={{ fontSize: '0.8125rem', fontWeight: 500 }}
           >
             Tiempo restante:
           </span>
           <span 
-            className={`font-mono ${timeLeft < 300 ? 'text-[#FF6B00]' : 'text-[#4A4A4A]'}`}
-            style={{ fontSize: '0.875rem', fontWeight: 600 }}
+            className={`font-mono ${timeLeft < 300 ? 'text-[#FF6B00]' : 'text-[#1C2335]'}`}
+            style={{ fontSize: '1.125rem', fontWeight: 700, lineHeight: 1.1 }}
           >
             {formatTime(timeLeft)}
           </span>
@@ -95,9 +94,9 @@ export function ReservationTimer({
 
       {/* Optional: Subtle pulse animation when time is low */}
       {timeLeft < 300 && timeLeft > 0 && (
-        <div className="flex-shrink-0">
+        <div className="hidden flex-shrink-0 sm:block">
           <div 
-            className="w-2 h-2 rounded-full bg-[#FF6B00] animate-pulse"
+            className="h-2 w-2 rounded-full bg-[#FF6B00] animate-pulse"
             style={{ animationDuration: '2s' }}
           />
         </div>
