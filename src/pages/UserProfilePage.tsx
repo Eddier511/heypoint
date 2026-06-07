@@ -7,6 +7,7 @@ import { motion } from "motion/react";
 import { Card } from "../components/ui/card";
 import { Label } from "../components/ui/label";
 import { ChangeEmailModal } from "../components/ChangeEmailModal";
+import { BirthDateInput } from "../components/BirthDateInput";
 import { useStoreSettings } from "../hooks/useStoreSettings";
 import { API_URL } from "../lib/api";
 
@@ -14,7 +15,6 @@ import {
   User,
   Mail,
   MapPin,
-  Calendar,
   CreditCard,
   Home,
   Lock,
@@ -31,7 +31,6 @@ import { useAuth } from "../contexts/AuthContext";
 import {
   isoToDisplay,
   displayToIso,
-  maskDateInput,
   isValidDisplayDate,
   validateAge16,
 } from "../lib/dateUtils";
@@ -339,9 +338,7 @@ export function UserProfilePage({
         ? normalizeDigits(String(value)).slice(0, 3)
         : field === "phone" || field === "dni"
           ? normalizeDigits(String(value))
-          : field === "birthDate"
-            ? maskDateInput(String(value))
-            : value;
+          : value;
     setProfileData((prev) => ({ ...prev, [field]: nextValue }));
     if (errors[field as string]) {
       setErrors((prev) => {
@@ -745,27 +742,13 @@ export function UserProfilePage({
                             Fecha de nacimiento{" "}
                             <span className="text-red-500">*</span>
                           </Label>
-                          <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-[#2E2E2E]/50 pointer-events-none">
-                              <Calendar className="w-5 h-5" />
-                            </span>
-                            <Input
-                              type="text"
-                              inputMode="numeric"
-                              value={profileData.birthDate}
-                              placeholder="dd/mm/aaaa"
-                              maxLength={10}
-                              onChange={(e) =>
-                                handleInputChange("birthDate", e.target.value)
-                              }
-                              className={`pl-12 pr-4 py-6 rounded-2xl border-2 transition-all
-                                ${
-                                  errors.birthDate
-                                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                                    : "border-gray-300 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
-                                } focus:ring-4`}
-                            />
-                          </div>
+                          <BirthDateInput
+                            value={profileData.birthDate}
+                            hasError={!!errors.birthDate}
+                            onChange={(value) =>
+                              handleInputChange("birthDate", value)
+                            }
+                          />
                           {errors.birthDate && (
                             <p
                               className="mt-2 text-red-500 flex items-center gap-1"

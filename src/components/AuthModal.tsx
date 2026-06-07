@@ -12,7 +12,6 @@ import {
   ArrowLeft,
   CheckCircle2,
   CreditCard,
-  Calendar,
   MapPin,
   ChevronRight,
   Check,
@@ -26,13 +25,13 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
+import { BirthDateInput } from "./BirthDateInput";
 
 import { useAuth } from "../contexts/AuthContext";
 import { useStoreSettings } from "../hooks/useStoreSettings";
 import {
   isoToDisplay as _isoToDisplay,
   displayToIso,
-  maskDateInput,
   isValidDisplayDate,
   validateAge16,
 } from "../lib/dateUtils";
@@ -1722,28 +1721,15 @@ export default function AuthModal({
                           <Label className="text-[#1C2335] mb-2 block font-semibold">
                             Fecha de nacimiento
                           </Label>
-                          <div className="relative min-w-0">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-gray-400 pointer-events-none">
-                              <Calendar className="w-5 h-5" />
-                            </span>
-                            <Input
-                              type="text"
-                              inputMode="numeric"
-                              value={birthDate}
-                              placeholder="dd/mm/aaaa"
-                              maxLength={10}
-                              onChange={(e) => {
-                                setBirthDate(maskDateInput(e.target.value));
-                                setBirthDateError("");
-                                setStep2Dirty(true);
-                              }}
-                              className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-4 transition-all ${
-                                birthDateError
-                                  ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                                  : "border-gray-300 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
-                              }`}
-                            />
-                          </div>
+                          <BirthDateInput
+                            value={birthDate}
+                            hasError={!!birthDateError}
+                            onChange={(value) => {
+                              setBirthDate(value);
+                              setBirthDateError("");
+                              setStep2Dirty(true);
+                            }}
+                          />
                           {birthDateError && (
                             <p className="text-red-500 mt-2 text-sm font-semibold">
                               {birthDateError}
