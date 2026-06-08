@@ -108,6 +108,13 @@ function getEmailSuggestions(value: string): string[] {
   );
 }
 
+// Firebase error codes that mean "popup was dismissed by the user" — no
+// error message should be shown, just silently reset the loading state.
+const POPUP_SILENT_CODES = new Set([
+  "auth/popup-closed-by-user",
+  "auth/cancelled-popup-request",
+]);
+
 // Maps Firebase Auth error codes to friendly Spanish messages.
 // Never expose raw Firebase error strings to the user.
 const FIREBASE_ERROR_MAP: Record<string, string> = {
@@ -228,6 +235,10 @@ export default function AuthModal({
 
   const [loading, setLoading] = useState(false);
   const [globalError, setGlobalError] = useState<string>("");
+
+  // Tracks whether a Google popup is currently open so the watchdogs can
+  // reset loading if Firebase never rejects (silent-close in some browsers).
+  const googlePopupActiveRef = useRef(false);
 
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -416,17 +427,59 @@ export default function AuthModal({
 
   const openGmail = () => window.open("https://mail.google.com", "_blank");
 
-  const POPUP_SILENT_CODES = new Set([
-    "auth/popup-closed-by-user",
-    "auth/cancelled-popup-request",
-  ]);
-
   const handleGoogle = async () => {
-    try {
-      setGlobalError("");
-      setLoading(true);
+    setGlobalError("");
+    setLoading(true);
+    googlePopupActiveRef.current = true;
 
+    // ------------------------------------------------------------------
+    // Watchdog 1 — window focus + grace period
+    //
+    // When the popup closes (success OR cancellation) the parent window
+    // regains focus.  On a successful auth, Firebase resolves the promise
+    // within ~100-300 ms of that focus event.  If 1 500 ms pass after
+    // focus without a result, the popup was cancelled silently.
+    // ------------------------------------------------------------------
+    let focusGraceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const onWindowFocus = () => {
+      if (!googlePopupActiveRef.current) return;
+      focusGraceTimer = setTimeout(() => {
+        if (googlePopupActiveRef.current) {
+          googlePopupActiveRef.current = false;
+          setLoading(false);
+          setGlobalError(""); // silent — user just closed the popup
+        }
+      }, 1_500);
+    };
+
+    window.addEventListener("focus", onWindowFocus, { once: true });
+
+    // ------------------------------------------------------------------
+    // Watchdog 2 — hard timeout (30 s backstop)
+    //
+    // Covers the case where the focus event never fires (e.g. popup was
+    // already focused when opened, or the user switches tabs).
+    // ------------------------------------------------------------------
+    const hardTimer = setTimeout(() => {
+      if (googlePopupActiveRef.current) {
+        googlePopupActiveRef.current = false;
+        setLoading(false);
+        setGlobalError(""); // silent
+      }
+    }, 30_000);
+
+    // Call once either path (success or error) completes.
+    const cleanup = () => {
+      googlePopupActiveRef.current = false;
+      window.removeEventListener("focus", onWindowFocus);
+      if (focusGraceTimer !== null) clearTimeout(focusGraceTimer);
+      clearTimeout(hardTimer);
+    };
+
+    try {
       const { user, isNewUser } = await startGoogleOAuth();
+      cleanup();
 
       if (!user?.email)
         throw new Error("No se pudo obtener el email de Google.");
@@ -468,9 +521,9 @@ export default function AuthModal({
       onLoginSuccess(user);
       onClose();
     } catch (e: any) {
+      cleanup();
       const code: string = e?.code ?? "";
 
-      // Always reset loading first — guards against promise-hanging in some browsers
       setLoading(false);
 
       if (POPUP_SILENT_CODES.has(code)) {
@@ -490,6 +543,8 @@ export default function AuthModal({
         getFriendlyAuthError(e, "No se pudo iniciar con Google."),
       );
     } finally {
+      // Belt-and-suspenders: ensure loading is always off after the async
+      // chain settles (covers every code path including unexpected throws).
       setLoading(false);
     }
   };
