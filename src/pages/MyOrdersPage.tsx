@@ -355,7 +355,7 @@ function OrderCard({
                 className="flex items-center gap-2 text-gray-600"
                 style={{ fontSize: "0.875rem" }}
               >
-                <Clock className="w-4 h-4 flex-shrink-0" />
+                <ShoppingBag className="w-4 h-4 flex-shrink-0" />
                 <span>
                   <span style={{ fontWeight: 600 }}>Pedido:</span>{" "}
                   {order.purchaseDate}
@@ -867,7 +867,7 @@ export function MyOrdersPage({
                   className="flex items-center gap-2 text-gray-600"
                   style={{ fontSize: "0.875rem" }}
                 >
-                  <Clock className="w-4 h-4 flex-shrink-0" />
+                  <ShoppingBag className="w-4 h-4 flex-shrink-0" />
                   <span>
                     <span style={{ fontWeight: 600 }}>Pedido:</span>{" "}
                     {order.purchaseDate}
