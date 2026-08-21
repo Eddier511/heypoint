@@ -69,6 +69,11 @@ const PurchaseSuccessPage = lazy(() =>
     default: module.PurchaseSuccessPage,
   })),
 );
+const PaymentResultPage = lazy(() =>
+  import("./pages/PaymentResultPage").then((module) => ({
+    default: module.PaymentResultPage,
+  })),
+);
 const MyOrdersPage = lazy(() =>
   import("./pages/MyOrdersPage").then((module) => ({
     default: module.MyOrdersPage,
@@ -100,6 +105,7 @@ type Page =
   | "profile"
   | "cart"
   | "checkout"
+  | "paymentResult"
   | "success"
   | "orders"
   | "terms"
@@ -183,6 +189,8 @@ function pageToPath(page: Page) {
       return "/carrito";
     case "checkout":
       return "/checkout";
+    case "paymentResult":
+      return "/checkout/resultado";
     case "orders":
       return "/orders";
     case "profile":
@@ -207,6 +215,7 @@ function pathToPage(pathname: string): Page {
   if (p.startsWith("/modelo")) return "business";
   if (p.startsWith("/contacto")) return "contact";
   if (p.startsWith("/carrito") || p.startsWith("/cart")) return "cart";
+  if (p.startsWith("/checkout/resultado")) return "paymentResult";
   if (p.startsWith("/checkout")) return "checkout";
   if (p.startsWith("/orders")) return "orders";
   if (p.startsWith("/account") || p.startsWith("/profile")) return "profile";
@@ -786,6 +795,18 @@ function AppContent() {
         <CheckoutPage
           onNavigate={handleNavigation}
           onOrderSuccess={(data) => setLastOrder(data)}
+        />
+      </Suspense>
+    );
+
+  if (currentPage === "paymentResult")
+    return (
+      <Suspense fallback={<PageFallback />}>
+        <PaymentResultPage
+          onNavigate={handleNavigation}
+          userEmail={userEmail}
+          userName={userName}
+          onClearCart={clearCart}
         />
       </Suspense>
     );

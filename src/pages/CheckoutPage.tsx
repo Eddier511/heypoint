@@ -183,7 +183,7 @@ export function CheckoutPage({
         image: item.image ?? "",
       }));
 
-      const { data } = await api.post("/orders", {
+      const { data } = await api.post("/orders/mercadopago/preference", {
         items: orderItems,
         subtotal: subtotalProductos,
         ...taxBreakdown,
@@ -192,20 +192,16 @@ export function CheckoutPage({
         total: totalAPagar,
       });
 
-      toast.success("¡Pedido confirmado!", {
-        description: "Tu orden fue registrada exitosamente",
-        duration: 2000,
-      });
+      const checkoutUrl = data?.checkoutUrl || data?.sandboxInitPoint || data?.initPoint;
+      if (!checkoutUrl) {
+        throw new Error("Mercado Pago no devolvió una URL de checkout.");
+      }
 
-      setTimeout(() => {
-        onOrderSuccess?.({
-          id: data.id,
-          orderId: data.orderId,
-          pickupToken: data.pickupToken,
-        });
-        clearCart();
-        onNavigate?.("success");
-      }, 2000);
+      if (data?.orderId) {
+        sessionStorage.setItem("heypoint_pending_order_id", String(data.orderId));
+      }
+
+      window.location.href = checkoutUrl;
     } catch (error: any) {
       const body = error?.response?.data;
       if (error?.response?.status === 409 && body?.product) {
