@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { ArrowLeft, Share2, Truck, Shield, Clock } from "lucide-react";
+import { ArrowLeft, Share2 } from "lucide-react";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
@@ -424,32 +424,6 @@ export function ProductDetailsPage({
                   </Button>
                 </div>
               </Card>
-
-              <div className="grid grid-cols-3 gap-4 mt-6">
-                <Card className="bg-white border-none shadow-sm rounded-xl p-4 text-center">
-                  <Truck className="w-8 h-8 text-[#FF6B00] mx-auto mb-2" />
-                  <p className="text-[#1C2335] text-sm font-semibold mb-1">
-                    Envío gratis
-                  </p>
-                  <p className="text-[#2E2E2E] text-xs">En pedidos +$50</p>
-                </Card>
-
-                <Card className="bg-white border-none shadow-sm rounded-xl p-4 text-center">
-                  <Shield className="w-8 h-8 text-[#FF6B00] mx-auto mb-2" />
-                  <p className="text-[#1C2335] text-sm font-semibold mb-1">
-                    Garantía de calidad
-                  </p>
-                  <p className="text-[#2E2E2E] text-xs">100% fresco</p>
-                </Card>
-
-                <Card className="bg-white border-none shadow-sm rounded-xl p-4 text-center">
-                  <Clock className="w-8 h-8 text-[#FF6B00] mx-auto mb-2" />
-                  <p className="text-[#1C2335] text-sm font-semibold mb-1">
-                    Envío el mismo día
-                  </p>
-                  <p className="text-[#2E2E2E] text-xs">Pedidos antes 14hs</p>
-                </Card>
-              </div>
             </div>
           </div>
 
