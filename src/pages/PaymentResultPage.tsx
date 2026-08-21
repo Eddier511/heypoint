@@ -85,10 +85,10 @@ export function PaymentResultPage({
 
       try {
         const response =
-          attempt === 0 && paymentId
+          attempt === 0 && (paymentId || returnStatus === "failure")
             ? await api.post<PaymentOrder>(
                 `/orders/${encodeURIComponent(orderDocId)}/mercadopago/sync`,
-                { paymentId },
+                { paymentId, returnStatus },
               )
             : await api.get<PaymentOrder>(
                 `/orders/${encodeURIComponent(orderDocId)}/payment-status`,
