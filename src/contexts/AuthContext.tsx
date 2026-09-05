@@ -316,6 +316,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           `No se pudo crear el cliente (${res.status}). ${text}`.trim(),
         );
       }
+
+      const data = await res.json().catch(() => ({}));
+      if (data?.profile) {
+        setCustomerProfile(data.profile);
+        if (data.profile.fullName) setCustomerFullName(data.profile.fullName);
+      }
+      return data;
     } catch (error) {
       console.error("[AuthContext] customer bootstrap failed", {
         url,
@@ -424,18 +431,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // token
-  const getAuthToken = async (forceRefresh = false): Promise<string | null> => {
+  const getAuthToken = useCallback(async (forceRefresh = false): Promise<string | null> => {
     const u = auth.currentUser;
     if (!u) return null;
     const token = await fbGetIdToken(u, forceRefresh);
     localStorage.setItem(STORAGE_KEY, token);
     return token;
-  };
+  }, []);
 
-  const getIdTokenFn = () => getAuthToken(false);
+  const getIdTokenFn = useCallback(() => getAuthToken(false), [getAuthToken]);
 
   // ✅ Backend: GET /api/customers/me
-  const fetchMe = async () => {
+  const fetchMe = useCallback(async () => {
     const tok = await getAuthToken(false);
     if (!tok) return { exists: false, profile: null };
 
@@ -479,7 +486,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCustomerProfile(data.profile || null);
     if (data.profile?.fullName) setCustomerFullName(data.profile.fullName);
     return data;
-  };
+  }, [getAuthToken]);
 
   // ✅ Email verification helpers
   const refreshEmailVerification = useCallback(async () => {
@@ -522,7 +529,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [persistToken]);
 
   // ✅ Backend: POST /api/customers/profile (alias)
-  const saveProfile = async (payload: CustomerProfile) => {
+  const saveProfile = useCallback(async (payload: CustomerProfile) => {
     const tok = await getAuthToken(false);
     if (!tok) throw new Error("No hay sesión activa.");
 
@@ -578,7 +585,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data.profile.fullName) setCustomerFullName(data.profile.fullName);
     }
     return data;
-  };
+  }, [getAuthToken]);
 
   const isGoogleUser = useCallback(() => {
     return (
