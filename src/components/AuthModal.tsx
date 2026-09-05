@@ -82,6 +82,11 @@ function normalizeDigits(v: string) {
   return (v || "").replace(/\D/g, "");
 }
 
+function isValidDni(v: string) {
+  const dni = String(v || "").trim();
+  return /^\d{3,8}$/.test(dni) && !/^(\d)\1+$/.test(dni);
+}
+
 const SUGGESTED_DOMAINS = ["gmail.com", "hotmail.com", "outlook.com", "yahoo.com"];
 
 function getEmailSuggestions(value: string): string[] {
@@ -199,9 +204,21 @@ async function saveProfileToBackend(payload: any, idToken: string) {
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new Error(
-      `No se pudo guardar el perfil (${res.status}). ${text || ""}`.trim(),
-    );
+    let data: any = null;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = null;
+    }
+    if (data?.error === "DNI_ALREADY_IN_USE") {
+      throw new Error("Este DNI ya está asociado a otra cuenta.");
+    }
+    if (data?.error === "UNIT_USER_LIMIT_REACHED") {
+      throw new Error(
+        "Esta UF ya alcanzó el límite de usuarios registrados. Contactá a soporte si necesitás ayuda.",
+      );
+    }
+    throw new Error(data?.message || text || `No se pudo guardar el perfil (${res.status}).`);
   }
 
   return res.json().catch(() => ({}));
@@ -273,6 +290,10 @@ export default function AuthModal({
   const [birthDateError, setBirthDateError] = useState("");
   const [apartmentNumber, setApartmentNumber] = useState("");
   const [apartmentNumberError, setApartmentNumberError] = useState("");
+  const [residenceAuthorizationAccepted, setResidenceAuthorizationAccepted] =
+    useState(false);
+  const [residenceAuthorizationError, setResidenceAuthorizationError] =
+    useState("");
 
   // Legal consent — signup form (step 1)
   const [signUpTermsAccepted, setSignUpTermsAccepted] = useState(false);
@@ -337,6 +358,8 @@ export default function AuthModal({
     setBirthDate("");
     setApartmentNumber("");
     setApartmentNumberError("");
+    setResidenceAuthorizationAccepted(false);
+    setResidenceAuthorizationError("");
 
     // ✅ si Google ya autenticó y el padre cerró el modal, volvemos a Paso 2 automáticamente
     if (pendingProfile && sessionUser?.emailVerified !== false) {
@@ -763,6 +786,7 @@ export default function AuthModal({
     setDniError("");
     setBirthDateError("");
     setApartmentNumberError("");
+    setResidenceAuthorizationError("");
     setGlobalError("");
 
     let hasError = false;
@@ -773,9 +797,9 @@ export default function AuthModal({
       hasError = true;
     }
 
-    const dniTrim = (dni || "").trim();
-    if (!dniTrim || dniTrim.length < 7 || dniTrim.length > 15) {
-      setDniError("El DNI debe tener entre 7 y 15 dígitos");
+    const dniTrim = String(dni || "").trim();
+    if (!dniTrim || !isValidDni(dniTrim)) {
+      setDniError("El DNI debe tener entre 3 y 8 dígitos numéricos válidos");
       hasError = true;
     }
 
@@ -793,6 +817,13 @@ export default function AuthModal({
     const uf = normalizeDigits(apartmentNumber).slice(0, 3);
     if (!uf || !/^\d{1,3}$/.test(uf)) {
       setApartmentNumberError("Ingresá un número válido (máx. 3 dígitos)");
+      hasError = true;
+    }
+
+    if (!residenceAuthorizationAccepted) {
+      setResidenceAuthorizationError(
+        "Confirmá que sos residente o estás autorizado para utilizar Hey!Point.",
+      );
       hasError = true;
     }
 
@@ -819,6 +850,7 @@ export default function AuthModal({
         birthDate: displayToIso(birthDate),
         apartmentNumber: uf,
         pickupPoint,
+        residenceAuthorizationAccepted,
         termsAccepted: true,
         termsAcceptedAt: consentAt,
         privacyAccepted: true,
@@ -862,6 +894,8 @@ export default function AuthModal({
     setBirthDate("");
     setApartmentNumber("");
     setApartmentNumberError("");
+    setResidenceAuthorizationAccepted(false);
+    setResidenceAuthorizationError("");
 
     setSignUpStep("form");
     setActiveTab("signup");
@@ -1776,7 +1810,7 @@ export default function AuthModal({
                             <Input
                               value={dni}
                               onChange={(e) => {
-                                setDni(normalizeDigits(e.target.value));
+                                setDni(e.target.value);
                                 setDniError("");
                                 setStep2Dirty(true);
                               }}
@@ -1861,6 +1895,45 @@ export default function AuthModal({
                           <div className="mt-1 font-semibold text-[#1C2335] break-words">
                             {pickupPoint}
                           </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label
+                            className={`flex items-start gap-3 rounded-2xl border p-4 cursor-pointer select-none transition-colors ${
+                              residenceAuthorizationError
+                                ? "border-red-200 bg-red-50"
+                                : "border-orange-100 bg-[#FFF9F4]"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={residenceAuthorizationAccepted}
+                              onChange={(e) => {
+                                setResidenceAuthorizationAccepted(
+                                  e.target.checked,
+                                );
+                                if (e.target.checked) {
+                                  setResidenceAuthorizationError("");
+                                }
+                                setStep2Dirty(true);
+                              }}
+                              className="mt-0.5 w-4 h-4 flex-shrink-0 rounded border-gray-300 accent-[#FF6B00]"
+                            />
+                            <span className="text-sm text-gray-600 leading-relaxed">
+                              Declaro que soy residente o estoy autorizado a
+                              utilizar los servicios de Hey!Point en{" "}
+                              <span className="font-semibold text-[#1C2335]">
+                                {pickupPoint}
+                              </span>
+                              .
+                            </span>
+                          </label>
+                          {residenceAuthorizationError && (
+                            <p className="text-red-500 text-sm flex items-center gap-1">
+                              <span className="text-red-500">•</span>{" "}
+                              {residenceAuthorizationError}
+                            </p>
+                          )}
                         </div>
 
                         {/* Legal consent — only shown for Google new users.

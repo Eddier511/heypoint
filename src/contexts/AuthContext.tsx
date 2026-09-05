@@ -53,6 +53,10 @@ export type CustomerProfile = {
   apartmentNumber?: string;
   pickupPoint?: string;
   profileComplete?: boolean;
+  residenceAuthorizationAccepted?: boolean;
+  residenceAuthorizationAcceptedAt?: string;
+  residenceAuthorizationVersion?: string;
+  residenceAuthorizationComplexName?: string;
 };
 
 interface AuthContextType {
@@ -86,6 +90,7 @@ interface AuthContextType {
   // backend profile helpers (para que TODO pegue con /api)
   fetchMe: () => Promise<{ exists: boolean; profile: CustomerProfile | null }>;
   saveProfile: (payload: CustomerProfile) => Promise<any>;
+  customerProfile: CustomerProfile | null;
 
   // Firestore customer fullName — source of truth for display name.
   // Loaded in the background after login; null until resolved.
@@ -129,6 +134,24 @@ function friendlyVerificationError(error: any) {
   return error?.message || "No se pudo enviar el correo de verificación.";
 }
 
+async function profileErrorFromResponse(res: Response, fallback: string) {
+  const text = await res.text().catch(() => "");
+  let data: any = null;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    data = null;
+  }
+
+  if (data?.error === "DNI_ALREADY_IN_USE") {
+    return "Este DNI ya está asociado a otra cuenta.";
+  }
+  if (data?.error === "UNIT_USER_LIMIT_REACHED") {
+    return "Esta UF ya alcanzó el límite de usuarios registrados. Contactá a soporte si necesitás ayuda.";
+  }
+  return data?.message || text || fallback;
+}
+
 function mapFirebaseUser(u: FirebaseUser): User {
   return {
     uid: u.uid,
@@ -165,6 +188,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Firestore customer fullName — source of truth (loaded in background).
   const [customerFullName, setCustomerFullName] = useState<string | null>(null);
+  const [customerProfile, setCustomerProfile] = useState<CustomerProfile | null>(null);
 
   const user = useMemo(
     () => (fbUser ? mapFirebaseUser(fbUser) : null),
@@ -207,6 +231,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!fbUser) {
       setCustomerFullName(null);
+      setCustomerProfile(null);
       return;
     }
     let cancelled = false;
@@ -219,8 +244,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         if (cancelled || !res.ok) return;
         const data = await res.json();
+        const profile = data?.profile || null;
         const name: string | undefined =
-          data?.profile?.fullName || data?.fullName;
+          profile?.fullName || data?.fullName;
+        if (!cancelled) setCustomerProfile(profile);
         if (!cancelled && name) setCustomerFullName(name);
       } catch {
         // Non-critical — header falls back to Firebase displayName
@@ -390,6 +417,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signOut(auth);
     setFbUser(null);
     setCustomerFullName(null);
+    setCustomerProfile(null);
     localStorage.removeItem(STORAGE_KEY);
     clearAuthOnboardingStorage();
     window.dispatchEvent(new CustomEvent("heypoint:logout"));
@@ -430,10 +458,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const text = await res2.text().catch(() => "");
         throw new Error(`fetchMe failed (${res2.status}). ${text}`.trim());
       }
-      return (await res2.json()) as {
+      const data = (await res2.json()) as {
         exists: boolean;
         profile: CustomerProfile | null;
       };
+      setCustomerProfile(data.profile || null);
+      if (data.profile?.fullName) setCustomerFullName(data.profile.fullName);
+      return data;
     }
 
     if (!res.ok) {
@@ -441,10 +472,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(`fetchMe failed (${res.status}). ${text}`.trim());
     }
 
-    return (await res.json()) as {
+    const data = (await res.json()) as {
       exists: boolean;
       profile: CustomerProfile | null;
     };
+    setCustomerProfile(data.profile || null);
+    if (data.profile?.fullName) setCustomerFullName(data.profile.fullName);
+    return data;
   };
 
   // ✅ Email verification helpers
@@ -516,18 +550,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (!res2.ok) {
-        const text = await res2.text().catch(() => "");
-        throw new Error(`saveProfile failed (${res2.status}). ${text}`.trim());
+        const message = await profileErrorFromResponse(
+          res2,
+          `saveProfile failed (${res2.status})`,
+        );
+        throw new Error(message);
       }
-      return res2.json().catch(() => ({}));
+      const data = await res2.json().catch(() => ({}));
+      if (data?.profile) {
+        setCustomerProfile(data.profile);
+        if (data.profile.fullName) setCustomerFullName(data.profile.fullName);
+      }
+      return data;
     }
 
     if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      throw new Error(`saveProfile failed (${res.status}). ${text}`.trim());
+      const message = await profileErrorFromResponse(
+        res,
+        `saveProfile failed (${res.status})`,
+      );
+      throw new Error(message);
     }
 
-    return res.json().catch(() => ({}));
+    const data = await res.json().catch(() => ({}));
+    if (data?.profile) {
+      setCustomerProfile(data.profile);
+      if (data.profile.fullName) setCustomerFullName(data.profile.fullName);
+    }
+    return data;
   };
 
   const isGoogleUser = useCallback(() => {
@@ -604,6 +654,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         fetchMe,
         saveProfile,
+        customerProfile,
 
         customerFullName,
         setCustomerFullName,

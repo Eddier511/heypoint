@@ -67,6 +67,7 @@ export type CustomerProfile = {
   birthDate: string; // YYYY-MM-DD
   apartmentNumber?: string;
   pickupPoint: string;
+  residenceAuthorizationAccepted?: boolean;
 };
 
 export const CustomersAPI = {

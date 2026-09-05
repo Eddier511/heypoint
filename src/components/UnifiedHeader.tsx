@@ -58,7 +58,15 @@ export function UnifiedHeader({
   userName: userNameProp = "User",
   isTransparent = true,
 }: UnifiedHeaderProps) {
-  const { isAuthenticated, user, customerFullName, logout } = useAuth();
+  const {
+    isAuthenticated,
+    user,
+    currentUser,
+    customerFullName,
+    customerProfile,
+    logout,
+    fetchMe,
+  } = useAuth();
   const { openLoginModal, openSignupModal } = useModal();
   const { cartCount } = useCart();
   const hasPendingOrders = useHasPendingOrders();
@@ -74,6 +82,7 @@ export function UnifiedHeader({
   const [showEmptyCartModal, setShowEmptyCartModal] = useState(false);
   const [showGlobalSearchModal, setShowGlobalSearchModal] = useState(false);
   const [showSupportModal, setShowSupportModal] = useState(false);
+  const [profileComplete, setProfileComplete] = useState<boolean | null>(null);
   const shouldReduceMotion = useReducedMotion();
 
   const aboutDropdownRef = useRef<HTMLDivElement>(null);
@@ -101,6 +110,40 @@ export function UnifiedHeader({
   useEffect(() => {
     setActiveLink(currentPage);
   }, [currentPage]);
+
+  useEffect(() => {
+    if (!effectiveIsLoggedIn || !currentUser) {
+      setProfileComplete(null);
+      return;
+    }
+
+    if (customerProfile) {
+      setProfileComplete(customerProfile.profileComplete ?? null);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadProfileStatus() {
+      try {
+        const me = await fetchMe();
+        if (!cancelled) {
+          setProfileComplete(me.profile?.profileComplete ?? null);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setProfileComplete(null);
+        }
+        console.error("[UnifiedHeader] profile status fetch failed", error);
+      }
+    }
+
+    loadProfileStatus();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [effectiveIsLoggedIn, currentUser, customerProfile, fetchMe]);
 
   // Close dropdowns on outside click / ESC
   useEffect(() => {
@@ -216,6 +259,7 @@ export function UnifiedHeader({
 
   const textColor = scrolled ? "text-[#0D0D0D]" : "text-white";
   const borderColor = scrolled ? "border-gray-200/50" : "border-white/10";
+  const showProfilePending = profileComplete === false;
 
   return (
     <>
@@ -404,7 +448,14 @@ export function UnifiedHeader({
                             style={{ fontSize: "0.938rem", fontWeight: 500 }}
                           >
                             <User className="w-4 h-4" />
-                            Mi perfil
+                            <span className="flex flex-1 items-center justify-between gap-3">
+                              Mi perfil
+                              {showProfilePending && (
+                                <span className="inline-flex items-center rounded-full bg-[#FFF4E6] px-2 py-0.5 text-[#B45309] border border-[#FF6B00]/20" style={{ fontSize: "0.688rem", fontWeight: 700 }}>
+                                  Pendiente
+                                </span>
+                              )}
+                            </span>
                           </button>
 
                           <button
@@ -538,6 +589,9 @@ export function UnifiedHeader({
                         >
                           <User className="w-4 h-4 mr-2" />
                           Perfil
+                          {showProfilePending && (
+                            <span className="ml-2 w-2 h-2 bg-[#FF6B00] rounded-full inline-block" />
+                          )}
                         </Button>
 
                         <Button

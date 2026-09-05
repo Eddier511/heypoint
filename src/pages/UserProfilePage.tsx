@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { UnifiedHeader } from "../components/UnifiedHeader";
@@ -9,7 +9,6 @@ import { Label } from "../components/ui/label";
 import { ChangeEmailModal } from "../components/ChangeEmailModal";
 import { BirthDateInput } from "../components/BirthDateInput";
 import { useStoreSettings } from "../hooks/useStoreSettings";
-import { API_URL } from "../lib/api";
 
 import {
   User,
@@ -44,6 +43,11 @@ type ApiProfile = {
   birthDate?: string;
   apartmentNumber?: string;
   pickupPoint?: string;
+  profileComplete?: boolean;
+  residenceAuthorizationAccepted?: boolean;
+  residenceAuthorizationAcceptedAt?: string;
+  residenceAuthorizationVersion?: string;
+  residenceAuthorizationComplexName?: string;
 };
 
 const RESEND_COOLDOWN_SECONDS = 60;
@@ -66,15 +70,21 @@ function normalizeDigits(v: string) {
   return (v || "").replace(/\D/g, "");
 }
 
+function isValidDni(v: string) {
+  const dni = String(v || "").trim();
+  return /^\d{3,8}$/.test(dni) && !/^(\d)\1+$/.test(dni);
+}
+
 export function UserProfilePage({
   onNavigate,
   isLoggedIn = true,
   onLogout,
 }: UserProfilePageProps) {
   const {
-    getAuthToken,
     currentUser,
     changePassword,
+    fetchMe,
+    saveProfile,
     refreshEmailVerification,
     sendVerifyEmailPro,
     isGoogleUser,
@@ -85,15 +95,16 @@ export function UserProfilePage({
     storeSettings?.pickupPoint?.address ||
     storeSettings?.pickupPoint?.name ||
     "Vilanova Haedo";
-
-  function apiUrl(path: string) {
-    const clean = path.startsWith("/") ? path : `/${path}`;
-    return `${API_URL}${clean}`;
-  }
-
   // UI states
   const [pageLoading, setPageLoading] = useState(true);
   const [pageError, setPageError] = useState<string>("");
+  const [profileComplete, setProfileComplete] = useState<boolean | null>(null);
+  const [residenceAuthorizationAccepted, setResidenceAuthorizationAccepted] =
+    useState(false);
+  const [
+    originalResidenceAuthorizationAccepted,
+    setOriginalResidenceAuthorizationAccepted,
+  ] = useState(false);
 
   // Profile
   const [profileData, setProfileData] = useState({
@@ -181,48 +192,36 @@ export function UserProfilePage({
   useEffect(() => {
     const dataChanged =
       JSON.stringify(profileData) !== JSON.stringify(originalData);
+    const residenceAuthorizationChanged =
+      residenceAuthorizationAccepted !== originalResidenceAuthorizationAccepted;
 
     const passwordChanged =
       passwordData.currentPassword !== "" ||
       passwordData.newPassword !== "" ||
       passwordData.confirmNewPassword !== "";
 
-    setIsModified(dataChanged || passwordChanged);
-  }, [profileData, passwordData, originalData]);
+    setIsModified(dataChanged || residenceAuthorizationChanged || passwordChanged);
+  }, [
+    profileData,
+    passwordData,
+    originalData,
+    residenceAuthorizationAccepted,
+    originalResidenceAuthorizationAccepted,
+  ]);
 
-  // Load profile from backend on mount
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadMe() {
-      setPageLoading(true);
+  const loadProfile = useCallback(
+    async (options: { showLoading?: boolean } = {}) => {
+      if (options.showLoading !== false) setPageLoading(true);
       setPageError("");
 
       try {
-        const idToken = await getAuthToken(true);
-        if (!idToken) throw new Error("No hay sesión activa.");
-
-        const url = apiUrl("/customers/me");
-
-        const res = await fetch(url, {
-          headers: {
-            Authorization: `Bearer ${idToken}`,
-          },
-        });
-
-        if (!res.ok) {
-          const txt = await res.text().catch(() => "");
-          throw new Error(
-            `No se pudo cargar el perfil (${res.status}). ${txt}`.trim(),
-          );
-        }
-
-        const data = (await res.json()) as {
+        const data = (await fetchMe()) as {
           exists: boolean;
           profile: ApiProfile | null;
         };
 
         const api = data.profile || {};
+        const nextProfileComplete = data.profile?.profileComplete ?? null;
 
         const verified = await refreshEmailVerification().catch(
           () => !!currentUser?.emailVerified,
@@ -239,32 +238,53 @@ export function UserProfilePage({
           apartmentNumber: api.apartmentNumber || "",
         };
 
-        if (!mounted) return;
+        setProfileComplete(nextProfileComplete);
+        setResidenceAuthorizationAccepted(
+          api.residenceAuthorizationAccepted === true,
+        );
+        setOriginalResidenceAuthorizationAccepted(
+          api.residenceAuthorizationAccepted === true,
+        );
         setProfileData(next);
         setOriginalData(next);
       } catch (e: any) {
-        if (!mounted) return;
         console.error("[UserProfilePage] profile fetch failed", {
-          apiUrl: apiUrl("/customers/me"),
-          apiBase: API_URL,
           userUid: currentUser?.uid,
           userEmail: currentUser?.email,
           error: e,
         });
+        setProfileComplete(null);
         setPageError(
           "No pudimos cargar tu perfil. Intentá nuevamente en unos segundos.",
         );
       } finally {
-        if (!mounted) return;
-        setPageLoading(false);
+        if (options.showLoading !== false) setPageLoading(false);
       }
-    }
+    },
+    [currentUser, fetchMe, globalPickupPoint, refreshEmailVerification],
+  );
 
-    loadMe();
+  // Load profile from backend on mount
+  useEffect(() => {
+    let mounted = true;
+
+    loadProfile().finally(() => {
+      if (!mounted) return;
+    });
     return () => {
       mounted = false;
     };
-  }, [getAuthToken, currentUser, globalPickupPoint]);
+  }, [loadProfile]);
+
+  const isMissingWhileIncomplete = (field: keyof typeof profileData) =>
+    profileComplete === false &&
+    !errors[field as string] &&
+    !String(profileData[field] || "").trim();
+
+  const pendingFieldClass = (field: keyof typeof profileData) =>
+    isMissingWhileIncomplete(field)
+      ? "border-[#FF6B00]/60 bg-[#FFF9F0]"
+      : "border-gray-300";
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -295,16 +315,21 @@ export function UserProfilePage({
       newErrors.birthDate = "Debes tener al menos 16 años";
     }
 
-    const dniTrim = (profileData.dni || "").trim();
+    const dniTrim = String(profileData.dni || "").trim();
     if (!dniTrim) {
       newErrors.dni = "El DNI es requerido";
-    } else if (dniTrim.length < 7 || dniTrim.length > 15) {
-      newErrors.dni = "El DNI debe tener entre 7 y 15 dígitos";
+    } else if (!isValidDni(dniTrim)) {
+      newErrors.dni = "El DNI debe tener entre 3 y 8 dígitos numéricos válidos";
     }
 
     const uf = normalizeDigits(profileData.apartmentNumber || "").slice(0, 3);
     if (!uf || !/^\d{1,3}$/.test(uf)) {
       newErrors.apartmentNumber = "Ingresá un número de UF válido (máx. 3 dígitos)";
+    }
+
+    if (!residenceAuthorizationAccepted) {
+      newErrors.residenceAuthorization =
+        "Confirmá que sos residente o estás autorizado para utilizar Hey!Point.";
     }
 
     // Password validation if user wants to change it
@@ -336,7 +361,7 @@ export function UserProfilePage({
     const nextValue =
       field === "apartmentNumber"
         ? normalizeDigits(String(value)).slice(0, 3)
-        : field === "phone" || field === "dni"
+        : field === "phone"
           ? normalizeDigits(String(value))
           : value;
     setProfileData((prev) => ({ ...prev, [field]: nextValue }));
@@ -372,34 +397,19 @@ export function UserProfilePage({
     setIsSaving(true);
 
     try {
-      const idToken = await getAuthToken(false);
-      if (!idToken) throw new Error("No hay sesión activa.");
-
       // 1) Guardar perfil en backend
       const payload = {
-        fullName: (profileData.fullName || "").trim(), // ✅ NUEVO
+        fullName: (profileData.fullName || "").trim(),
         phone: normalizeDigits(profileData.phone),
-        dni: (profileData.dni || "").trim(),
+        dni: String(profileData.dni || "").trim(),
         birthDate: displayToIso(profileData.birthDate),
-        apartmentNumber: (profileData.apartmentNumber || "").trim(),
+        apartmentNumber: normalizeDigits(profileData.apartmentNumber),
         pickupPoint: globalPickupPoint,
+        residenceAuthorizationAccepted,
       };
 
-      const res = await fetch(apiUrl("/customers/me"), {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const txt = await res.text().catch(() => "");
-        throw new Error(
-          `No se pudo guardar el perfil (${res.status}). ${txt}`.trim(),
-        );
-      }
+      await saveProfile(payload);
+      await loadProfile({ showLoading: false });
 
       // 2) Cambiar contraseña si aplica
       const wantsPasswordChange =
@@ -439,6 +449,7 @@ export function UserProfilePage({
       newPassword: "",
       confirmNewPassword: "",
     });
+    setResidenceAuthorizationAccepted(originalResidenceAuthorizationAccepted);
     setErrors({});
     setSaveSuccess(false);
   };
@@ -541,6 +552,33 @@ export function UserProfilePage({
                         >
                           ¡Tu perfil se actualizó correctamente!
                         </p>
+                      </motion.div>
+                    )}
+
+                    {profileComplete === false && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-6 p-4 md:p-5 bg-[#FFF4E6] border border-[#FF6B00]/20 rounded-2xl flex items-start gap-3"
+                      >
+                        <div className="mt-0.5 w-9 h-9 rounded-full bg-[#FF6B00]/10 flex items-center justify-center flex-shrink-0">
+                          <User className="w-4 h-4 text-[#FF6B00]" />
+                        </div>
+                        <div>
+                          <h2
+                            className="text-[#1C2335]"
+                            style={{ fontSize: "1rem", fontWeight: 700 }}
+                          >
+                            Completá tu perfil
+                          </h2>
+                          <p
+                            className="mt-1 text-[#2E2E2E]/70"
+                            style={{ fontSize: "0.938rem" }}
+                          >
+                            Necesitamos algunos datos adicionales antes de que
+                            puedas realizar tu primera compra.
+                          </p>
+                        </div>
                       </motion.div>
                     )}
 
@@ -710,7 +748,7 @@ export function UserProfilePage({
                           <div className={`flex items-stretch rounded-2xl border-2 transition-all overflow-hidden ${
                             errors.phone
                               ? "border-red-500 focus-within:border-red-500 focus-within:ring-4 focus-within:ring-red-500/20"
-                              : "border-gray-300 focus-within:border-[#FF6B00] focus-within:ring-4 focus-within:ring-[#FF6B00]/20"
+                              : `${pendingFieldClass("phone")} focus-within:border-[#FF6B00] focus-within:ring-4 focus-within:ring-[#FF6B00]/20`
                           }`}>
                             <span className="flex-shrink-0 flex items-center pl-4 pr-3 text-sm font-medium text-gray-400 select-none pointer-events-none border-r border-gray-200">
                               +54
@@ -733,6 +771,14 @@ export function UserProfilePage({
                             >
                               <AlertCircle className="w-3.5 h-3.5" />
                               {errors.phone}
+                            </p>
+                          )}
+                          {isMissingWhileIncomplete("phone") && (
+                            <p
+                              className="mt-2 text-[#B45309]"
+                              style={{ fontSize: "0.813rem", fontWeight: 600 }}
+                            >
+                              Dato requerido para completar tu perfil.
                             </p>
                           )}
                         </div>
@@ -760,7 +806,7 @@ export function UserProfilePage({
                                 ${
                                   errors.dni
                                     ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                                    : "border-gray-300 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
+                                    : `${pendingFieldClass("dni")} focus:border-[#FF6B00] focus:ring-[#FF6B00]/20`
                                 } focus:ring-4`}
                             />
                           </div>
@@ -771,6 +817,14 @@ export function UserProfilePage({
                             >
                               <AlertCircle className="w-3.5 h-3.5" />
                               {errors.dni}
+                            </p>
+                          )}
+                          {isMissingWhileIncomplete("dni") && (
+                            <p
+                              className="mt-2 text-[#B45309]"
+                              style={{ fontSize: "0.813rem", fontWeight: 600 }}
+                            >
+                              Dato requerido para completar tu perfil.
                             </p>
                           )}
                         </div>
@@ -798,6 +852,14 @@ export function UserProfilePage({
                             >
                               <AlertCircle className="w-4 h-4" />
                               {errors.birthDate}
+                            </p>
+                          )}
+                          {isMissingWhileIncomplete("birthDate") && (
+                            <p
+                              className="mt-2 text-[#B45309]"
+                              style={{ fontSize: "0.813rem", fontWeight: 600 }}
+                            >
+                              Dato requerido para completar tu perfil.
                             </p>
                           )}
                         </div>
@@ -862,7 +924,7 @@ export function UserProfilePage({
                                 ${
                                   errors.apartmentNumber
                                     ? "border-red-500 focus:border-red-500 focus:ring-red-500/20 focus:ring-4"
-                                    : "border-gray-300 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20 focus:ring-4"
+                                    : `${pendingFieldClass("apartmentNumber")} focus:border-[#FF6B00] focus:ring-[#FF6B00]/20 focus:ring-4`
                                 }`}
                             />
                           </div>
@@ -873,6 +935,67 @@ export function UserProfilePage({
                             >
                               <AlertCircle className="w-4 h-4" />
                               {errors.apartmentNumber}
+                            </p>
+                          )}
+                          {isMissingWhileIncomplete("apartmentNumber") && (
+                            <p
+                              className="mt-2 text-[#B45309]"
+                              style={{ fontSize: "0.813rem", fontWeight: 600 }}
+                            >
+                              Dato requerido para completar tu perfil.
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="md:col-span-2">
+                          <label
+                            className={`flex items-start gap-3 rounded-2xl border p-4 transition-colors ${
+                              errors.residenceAuthorization
+                                ? "border-red-200 bg-red-50"
+                                : residenceAuthorizationAccepted
+                                  ? "border-[#FF6B00]/20 bg-[#FFF4E6]"
+                                  : "border-orange-100 bg-white"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={residenceAuthorizationAccepted}
+                              disabled={originalResidenceAuthorizationAccepted}
+                              onChange={(event) => {
+                                setResidenceAuthorizationAccepted(
+                                  event.target.checked,
+                                );
+                                if (event.target.checked) {
+                                  setErrors((prev) => {
+                                    const next = { ...prev };
+                                    delete next.residenceAuthorization;
+                                    return next;
+                                  });
+                                }
+                              }}
+                              className="mt-1 w-4 h-4 flex-shrink-0 rounded border-gray-300 accent-[#FF6B00] disabled:cursor-not-allowed"
+                            />
+                            <span className="text-[#2E2E2E]/75 leading-relaxed" style={{ fontSize: "0.9rem" }}>
+                              Declaro que soy residente o estoy autorizado a
+                              utilizar los servicios de Hey!Point en{" "}
+                              <span className="font-semibold text-[#1C2335]">
+                                {globalPickupPoint}
+                              </span>
+                              .
+                              {originalResidenceAuthorizationAccepted && (
+                                <span className="mt-1 block text-[#B45309] font-semibold">
+                                  Declaración aceptada.
+                                </span>
+                              )}
+                            </span>
+                          </label>
+                          {errors.residenceAuthorization && (
+                            <p
+                              className="mt-2 text-red-500 flex items-center gap-1"
+                              style={{ fontSize: "0.813rem", fontWeight: 600 }}
+                            >
+                              <AlertCircle className="w-4 h-4" />
+                              {errors.residenceAuthorization}
                             </p>
                           )}
                         </div>
