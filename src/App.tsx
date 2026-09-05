@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useEffect, useMemo, useRef } from "react";
+import { lazy, Suspense, useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
   ShoppingBag,
   CreditCard,
@@ -112,6 +112,8 @@ type Page =
   | "privacy"
   | "cookies";
 
+type CheckoutGateStatus = "idle" | "checking" | "allowed";
+
 /**
  * ✅ Product actualizado para buscador/Firestore
  * - id: string (no number)
@@ -133,6 +135,8 @@ interface Product {
  * API helper (categorías Home)
  * ========================= */
 const API_ORIGIN = import.meta.env.VITE_API_URL || "http://localhost:4000";
+const PROFILE_RETURN_TO_KEY = "heypoint_profile_return_to";
+const PROFILE_RETURN_CHECKOUT = "checkout";
 
 // ✅ HERO banner (Home) - para evitar flash/CLS
 const HERO_SRC =
@@ -147,6 +151,14 @@ async function apiGet<T>(path: string): Promise<T> {
     throw new Error(msg || `HTTP ${res.status}`);
   }
   return (await res.json()) as T;
+}
+
+function setProfileReturnIntent(value: typeof PROFILE_RETURN_CHECKOUT) {
+  sessionStorage.setItem(PROFILE_RETURN_TO_KEY, value);
+}
+
+function clearProfileReturnIntent() {
+  sessionStorage.removeItem(PROFILE_RETURN_TO_KEY);
 }
 
 /** =========================
@@ -244,6 +256,8 @@ export default function App() {
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>("home");
+  const [checkoutGateStatus, setCheckoutGateStatus] =
+    useState<CheckoutGateStatus>("idle");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -289,6 +303,7 @@ function AppContent() {
     login,
     loadingAuth,
     currentUser,
+    customerProfile,
     refreshEmailVerification,
     fetchMe,
     getAuthToken,
@@ -380,6 +395,7 @@ function AppContent() {
       localStorage.removeItem("heypoint_pending_profile");
       localStorage.removeItem("heypoint_pending_email");
       localStorage.removeItem("heypoint_pending_name");
+      clearProfileReturnIntent();
       promptedIncompleteProfileUidRef.current = null;
       closeAllModals();
       setCurrentPage("home");
@@ -677,7 +693,7 @@ function AppContent() {
   };
 
   // ✅ (2) navegación interna = setState + pushState
-  const handleNavigation = (page: string) => {
+  const handleNavigation = useCallback((page: string) => {
     const next = page as Page;
     setCurrentPage(next);
 
@@ -690,7 +706,114 @@ function AppContent() {
     if (window.location.pathname !== nextPath) {
       window.history.pushState({}, "", nextPath);
     }
-  };
+  }, []);
+
+  const handleCheckoutIntent = useCallback(async () => {
+    if (loadingAuth) return;
+
+    if (!currentUser) {
+      openLoginModal();
+      return;
+    }
+
+    try {
+      const profile = customerProfile ?? (await fetchMe()).profile;
+
+      if (profile?.profileComplete === true) {
+        clearProfileReturnIntent();
+        handleNavigation("checkout");
+        return;
+      }
+
+      setProfileReturnIntent(PROFILE_RETURN_CHECKOUT);
+      handleNavigation("profile");
+    } catch (error) {
+      console.error("[App] checkout profile gate failed", {
+        uid: currentUser.uid,
+        email: currentUser.email,
+        error,
+      });
+      toast.error("No pudimos validar tu perfil", {
+        description: "Intentá nuevamente en unos segundos.",
+        duration: 4000,
+      });
+    }
+  }, [
+    loadingAuth,
+    currentUser,
+    customerProfile,
+    fetchMe,
+    handleNavigation,
+    openLoginModal,
+  ]);
+
+  useEffect(() => {
+    if (currentPage !== "checkout") {
+      setCheckoutGateStatus("idle");
+      return;
+    }
+
+    if (currentUser && customerProfile?.profileComplete === true) {
+      clearProfileReturnIntent();
+      setCheckoutGateStatus("allowed");
+      return;
+    }
+
+    setCheckoutGateStatus("checking");
+    if (loadingAuth) return;
+
+    let cancelled = false;
+
+    async function guardCheckoutPage() {
+      if (!currentUser) {
+        setCheckoutGateStatus("checking");
+        setCurrentPage("cart");
+        if (window.location.pathname !== "/carrito") {
+          window.history.replaceState({}, "", "/carrito");
+        }
+        openLoginModal();
+        return;
+      }
+
+      try {
+        setCheckoutGateStatus("checking");
+        const profile = customerProfile ?? (await fetchMe()).profile;
+        if (cancelled) return;
+
+        if (profile?.profileComplete === true) {
+          clearProfileReturnIntent();
+          setCheckoutGateStatus("allowed");
+          return;
+        }
+
+        setProfileReturnIntent(PROFILE_RETURN_CHECKOUT);
+        setCurrentPage("profile");
+        if (window.location.pathname !== "/account") {
+          window.history.replaceState({}, "", "/account");
+        }
+      } catch (error) {
+        console.error("[App] direct checkout guard failed", {
+          uid: currentUser.uid,
+          email: currentUser.email,
+          error,
+        });
+        if (!cancelled) setCheckoutGateStatus("idle");
+      }
+    }
+
+    guardCheckoutPage();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    currentPage,
+    loadingAuth,
+    currentUser,
+    customerProfile,
+    fetchMe,
+    openLoginModal,
+  ]);
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
@@ -786,17 +909,22 @@ function AppContent() {
   if (currentPage === "cart")
     return (
       <Suspense fallback={<PageFallback />}>
-        <ShoppingCartPage onNavigate={handleNavigation} />
+        <ShoppingCartPage
+          onNavigate={handleNavigation}
+          onCheckoutIntent={handleCheckoutIntent}
+        />
       </Suspense>
     );
   if (currentPage === "checkout")
-    return (
+    return checkoutGateStatus === "allowed" ? (
       <Suspense fallback={<PageFallback />}>
         <CheckoutPage
           onNavigate={handleNavigation}
           onOrderSuccess={(data) => setLastOrder(data)}
         />
       </Suspense>
+    ) : (
+      <PageFallback />
     );
 
   if (currentPage === "paymentResult")

@@ -43,11 +43,13 @@ import { useStoreSettings } from "../hooks/useStoreSettings";
 
 interface ShoppingCartPageProps {
   onNavigate?: (page: string) => void;
+  onCheckoutIntent?: () => void;
   isLoggedIn?: boolean;
 }
 
 export function ShoppingCartPage({
   onNavigate,
+  onCheckoutIntent,
   isLoggedIn = true,
 }: ShoppingCartPageProps) {
   const { cartItems, updateCartItem, removeFromCart, clearCart } = useCart();
@@ -469,7 +471,11 @@ export function ShoppingCartPage({
                         )}
 
                         <Button
-                          onClick={() => onNavigate?.("checkout")}
+                          onClick={() =>
+                            onCheckoutIntent
+                              ? onCheckoutIntent()
+                              : onNavigate?.("checkout")
+                          }
                           disabled={hasStockIssue}
                           className="w-full mb-3 py-6 rounded-full shadow-lg transition-all transform hover:scale-105 text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                           style={{

@@ -59,6 +59,8 @@ type ApiProfile = {
 const RESEND_COOLDOWN_SECONDS = 60;
 const TOO_MANY_REQUESTS_MESSAGE =
   "Hiciste demasiados intentos. Esperá unos minutos antes de volver a intentarlo.";
+const PROFILE_RETURN_TO_KEY = "heypoint_profile_return_to";
+const PROFILE_RETURN_CHECKOUT = "checkout";
 
 function getFriendlyAuthError(error: any, fallback: string) {
   const raw = String(error?.code || error?.message || "");
@@ -233,7 +235,8 @@ export function UserProfilePage({
           profile: ApiProfile | null;
         };
 
-        const api = data.profile || {};
+        const profile = data.profile || null;
+        const api = profile || {};
         const nextProfileComplete = data.profile?.profileComplete ?? null;
 
         const verified = await refreshEmailVerification().catch(
@@ -260,6 +263,7 @@ export function UserProfilePage({
         );
         setProfileData(next);
         setOriginalData(next);
+        return profile;
       } catch (e: any) {
         console.error("[UserProfilePage] profile fetch failed", {
           userUid: currentUser?.uid,
@@ -270,6 +274,7 @@ export function UserProfilePage({
         setPageError(
           "No pudimos cargar tu perfil. Intentá nuevamente en unos segundos.",
         );
+        return null;
       } finally {
         if (options.showLoading !== false) setPageLoading(false);
       }
@@ -425,7 +430,7 @@ export function UserProfilePage({
       };
 
       await saveProfile(payload);
-      await loadProfile({ showLoading: false });
+      const refreshedProfile = await loadProfile({ showLoading: false });
 
       // 2) Cambiar contraseña si aplica
       const wantsPasswordChange =
@@ -451,6 +456,14 @@ export function UserProfilePage({
       });
 
       setTimeout(() => setSaveSuccess(false), 3000);
+
+      if (
+        refreshedProfile?.profileComplete === true &&
+        sessionStorage.getItem(PROFILE_RETURN_TO_KEY) === PROFILE_RETURN_CHECKOUT
+      ) {
+        sessionStorage.removeItem(PROFILE_RETURN_TO_KEY);
+        onNavigate?.("checkout");
+      }
     } catch (e: any) {
       setPageError(e?.message || "Error guardando cambios.");
     } finally {
