@@ -82,6 +82,10 @@ function normalizeDigits(v: string) {
   return (v || "").replace(/\D/g, "");
 }
 
+function limitDigits(v: string, maxLength: number) {
+  return normalizeDigits(v).slice(0, maxLength);
+}
+
 function isValidDni(v: string) {
   const dni = String(v || "").trim();
   return /^\d{3,8}$/.test(dni) && !/^(\d)\1+$/.test(dni);
@@ -1784,8 +1788,9 @@ export default function AuthModal({
                               type="text"
                               inputMode="numeric"
                               value={phone}
+                              maxLength={15}
                               onChange={(e) => {
-                                setPhone(normalizeDigits(e.target.value));
+                                setPhone(limitDigits(e.target.value, 15));
                                 setPhoneError("");
                                 setStep2Dirty(true);
                               }}
@@ -1810,12 +1815,13 @@ export default function AuthModal({
                             <Input
                               value={dni}
                               onChange={(e) => {
-                                setDni(e.target.value);
+                                setDni(limitDigits(e.target.value, 8));
                                 setDniError("");
                                 setStep2Dirty(true);
                               }}
                               placeholder="Ej: 12345678"
                               inputMode="numeric"
+                              maxLength={8}
                               pattern="[0-9]*"
                               className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-colors ${
                                 dniError
@@ -1863,7 +1869,7 @@ export default function AuthModal({
                               value={apartmentNumber}
                               onChange={(e) => {
                                 setApartmentNumber(
-                                  normalizeDigits(e.target.value).slice(0, 3),
+                                  limitDigits(e.target.value, 3),
                                 );
                                 setApartmentNumberError("");
                                 setStep2Dirty(true);

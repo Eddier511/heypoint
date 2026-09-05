@@ -70,6 +70,10 @@ function normalizeDigits(v: string) {
   return (v || "").replace(/\D/g, "");
 }
 
+function limitDigits(v: string, maxLength: number) {
+  return normalizeDigits(v).slice(0, maxLength);
+}
+
 function isValidDni(v: string) {
   const dni = String(v || "").trim();
   return /^\d{3,8}$/.test(dni) && !/^(\d)\1+$/.test(dni);
@@ -360,9 +364,11 @@ export function UserProfilePage({
   const handleInputChange = (field: keyof typeof profileData, value: any) => {
     const nextValue =
       field === "apartmentNumber"
-        ? normalizeDigits(String(value)).slice(0, 3)
+        ? limitDigits(String(value), 3)
+        : field === "dni"
+          ? limitDigits(String(value), 8)
         : field === "phone"
-          ? normalizeDigits(String(value))
+          ? limitDigits(String(value), 15)
           : value;
     setProfileData((prev) => ({ ...prev, [field]: nextValue }));
     if (errors[field as string]) {
@@ -757,6 +763,7 @@ export function UserProfilePage({
                               type="text"
                               inputMode="numeric"
                               value={profileData.phone}
+                              maxLength={15}
                               onChange={(e) =>
                                 handleInputChange("phone", e.target.value)
                               }
@@ -801,6 +808,7 @@ export function UserProfilePage({
                               }
                               placeholder="Ej: 12345678"
                               inputMode="numeric"
+                              maxLength={8}
                               pattern="[0-9]*"
                               className={`pl-12 pr-4 py-6 rounded-2xl border-2 transition-all
                                 ${
