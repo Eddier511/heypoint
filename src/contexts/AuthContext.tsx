@@ -87,7 +87,7 @@ interface AuthContextType {
     password: string,
     legalConsentAccepted?: boolean,
   ) => Promise<User>;
-  startGoogleOAuth: () => Promise<GoogleOAuthResult>;
+  startGoogleOAuth: (legalConsentAccepted?: boolean) => Promise<GoogleOAuthResult>;
   logout: () => Promise<void>;
   sendResetPassword: (email: string) => Promise<void>;
   // token
@@ -155,6 +155,12 @@ async function profileErrorFromResponse(res: Response, fallback: string) {
   }
   if (data?.error === "UNIT_USER_LIMIT_REACHED") {
     return "Esta UF ya alcanzó el límite de usuarios registrados. Contactá a soporte si necesitás ayuda.";
+  }
+  if (
+    data?.error === "Terms acceptance required" ||
+    data?.error === "Privacy acceptance required"
+  ) {
+    return "Debés aceptar los Términos y Condiciones y la Política de Privacidad para continuar.";
   }
   return data?.message || text || fallback;
 }
@@ -406,7 +412,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   };
 
-  const startGoogleOAuth = async (): Promise<GoogleOAuthResult> => {
+  const startGoogleOAuth = async (
+    legalConsentAccepted = false,
+  ): Promise<GoogleOAuthResult> => {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: "select_account" });
 
@@ -418,9 +426,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setFbUser(auth.currentUser);
 
     const u = mapFirebaseUser(cred.user);
-    if (isNewUser) {
+    if (isNewUser || legalConsentAccepted) {
       try {
-        await bootstrapCustomerProfile(cred.user, u.fullName);
+        await bootstrapCustomerProfile(cred.user, u.fullName, legalConsentAccepted);
       } catch (bootstrapErr: any) {
         console.error(
           "[AuthContext] Google customer bootstrap failed after Firebase signup",

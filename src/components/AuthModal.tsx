@@ -37,6 +37,7 @@ import {
 } from "../lib/dateUtils";
 
 type SignUpStep = "form" | "creating" | "verifyEmail" | "completeProfile";
+type SignupMethod = "google" | "email";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -222,6 +223,14 @@ async function saveProfileToBackend(payload: any, idToken: string) {
         "Esta UF ya alcanzó el límite de usuarios registrados. Contactá a soporte si necesitás ayuda.",
       );
     }
+    if (
+      data?.error === "Terms acceptance required" ||
+      data?.error === "Privacy acceptance required"
+    ) {
+      throw new Error(
+        "Debés aceptar los Términos y Condiciones y la Política de Privacidad para continuar.",
+      );
+    }
     throw new Error(data?.message || text || `No se pudo guardar el perfil (${res.status}).`);
   }
 
@@ -251,6 +260,7 @@ export default function AuthModal({
 
   const [activeTab, setActiveTab] = useState<"login" | "signup">(defaultMode);
   const [signUpStep, setSignUpStep] = useState<SignUpStep>("form");
+  const [signupMethod, setSignupMethod] = useState<SignupMethod | null>(null);
 
   const [readyToClose, setReadyToClose] = useState(false);
   const [step2Dirty, setStep2Dirty] = useState(false);
@@ -305,9 +315,7 @@ export default function AuthModal({
   const [signUpTermsAccepted, setSignUpTermsAccepted] = useState(false);
   const [signUpTermsError, setSignUpTermsError] = useState("");
 
-  // Legal consent — complete profile form (step 3, both email and Google new users)
-  const [profileTermsAccepted, setProfileTermsAccepted] = useState(false);
-  const [profileTermsError, setProfileTermsError] = useState("");
+  // Legal consent — signup form is the single source for new-account consent.
   const hasPersistedLegalConsent =
     customerProfile?.termsAccepted === true &&
     customerProfile?.privacyAccepted === true;
@@ -459,7 +467,7 @@ export default function AuthModal({
 
   const openGmail = () => window.open("https://mail.google.com", "_blank");
 
-  const handleGoogle = async () => {
+  const handleGoogle = async (legalConsentAccepted = false) => {
     setGlobalError("");
     setLoading(true);
     googlePopupActiveRef.current = true;
@@ -510,7 +518,7 @@ export default function AuthModal({
     };
 
     try {
-      const { user, isNewUser } = await startGoogleOAuth();
+      const { user, isNewUser } = await startGoogleOAuth(legalConsentAccepted);
       cleanup();
 
       if (!user?.email)
@@ -523,6 +531,20 @@ export default function AuthModal({
       setActiveTab("signup");
       setPendingEmail(user.email);
       setPendingFullName(user.fullName || "");
+
+      if (isNewUser && !legalConsentAccepted) {
+        setSignupMethod("google");
+        setSignUpTermsAccepted(false);
+        setActiveTab("signup");
+        setGlobalError(
+          "Para crear tu cuenta con Google, primero aceptá los Términos y Condiciones y la Política de Privacidad.",
+        );
+        return;
+      }
+
+      const profileAfterGoogle = legalConsentAccepted
+        ? await fetchMe().catch(() => null)
+        : null;
 
       // ✅ REFRESH REAL de verificación desde Firebase (por si el context estaba stale)
       const verifiedNow = await refreshEmailVerification().catch(() => {
@@ -542,7 +564,7 @@ export default function AuthModal({
       }
 
       // ✅ Si ES nuevo y ya está verificado: completar perfil
-      if (isNewUser) {
+      if (isNewUser || profileAfterGoogle?.profile?.profileComplete === false) {
         localStorage.setItem(PENDING_PROFILE_KEY, "1");
         setSignUpStep("completeProfile");
         setStep2Dirty(false);
@@ -633,6 +655,8 @@ export default function AuthModal({
     setEmailError("");
     setPasswordError("");
     setGlobalError("");
+
+    if (signupMethod !== "email") return;
 
     if (!validateEmail(signUpEmail)) {
       setEmailError("Ingresá un correo electrónico válido");
@@ -837,15 +861,6 @@ export default function AuthModal({
       hasError = true;
     }
 
-    // Only require consent in this step if the user did NOT already accept
-    // during email/password signup (signUpTermsAccepted covers that case).
-    if (!hasPersistedLegalConsent && !signUpTermsAccepted && !profileTermsAccepted) {
-      setProfileTermsError(
-        "Debés aceptar los Términos y Condiciones para continuar.",
-      );
-      hasError = true;
-    }
-
     if (hasError) return;
 
     try {
@@ -862,12 +877,10 @@ export default function AuthModal({
         residenceAuthorizationAccepted,
         termsAccepted:
           hasPersistedLegalConsent ||
-          signUpTermsAccepted ||
-          profileTermsAccepted,
+          signUpTermsAccepted,
         privacyAccepted:
           hasPersistedLegalConsent ||
-          signUpTermsAccepted ||
-          profileTermsAccepted,
+          signUpTermsAccepted,
       };
 
       // ✅ FIX: token con retry (evita fallos random con Google)
@@ -899,8 +912,6 @@ export default function AuthModal({
     setDniError("");
     setBirthDateError("");
     setApartmentNumberError("");
-    setProfileTermsAccepted(false);
-    setProfileTermsError("");
     setStep2Dirty(false);
 
     setPhone("");
@@ -926,10 +937,12 @@ export default function AuthModal({
   // Button readiness — drives disabled state + visual style
   const loginFormReady = !!loginEmail.trim() && !!loginPassword.trim();
   const signupFormReady =
+    signupMethod === "email" &&
     !!signUpFullName.trim() &&
     !!signUpEmail.trim() &&
     strengthInfo.strength !== "weak" &&
     signUpTermsAccepted;
+  const googleSignupReady = signupMethod === "google" && signUpTermsAccepted;
 
   // =========================
   // UI (la tuya, igual)
@@ -1006,10 +1019,11 @@ export default function AuthModal({
                     </TabsList>
 
                     <div className="flex-1 overflow-y-auto">
-                      {/* Google */}
+                      {/* Google login */}
+                      {activeTab === "login" && (
                       <div className="px-6 md:px-8 pt-8 pb-2">
                         <Button
-                          onClick={handleGoogle}
+                          onClick={() => handleGoogle(false)}
                           variant="outline"
                           type="button"
                           disabled={loading}
@@ -1033,6 +1047,7 @@ export default function AuthModal({
                           </div>
                         </div>
                       </div>
+                      )}
 
                       {/* LOGIN TAB */}
                       <TabsContent
@@ -1170,6 +1185,58 @@ export default function AuthModal({
                         className="mt-0 px-6 md:px-8 pb-8"
                       >
                         <form onSubmit={handleSignup} className="space-y-6">
+                          <div className="space-y-3">
+                            <p className="text-[#1C2335] font-semibold">
+                              ¿Cómo querés crear tu cuenta?
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSignupMethod("google");
+                                setGlobalError("");
+                              }}
+                              className={`w-full flex items-center gap-3 rounded-2xl border-2 px-4 py-4 text-left transition-colors ${
+                                signupMethod === "google"
+                                  ? "border-[#FF6B00] bg-[#FFF4E6]"
+                                  : "border-gray-200 hover:border-[#FF6B00] hover:bg-[#FFF9F4]"
+                              }`}
+                            >
+                              <Chrome className="w-5 h-5 text-[#FF6B00]" />
+                              <span className="font-semibold text-[#1C2335]">
+                                Continuar con Google
+                              </span>
+                            </button>
+                            <div className="relative py-1">
+                              <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-gray-200" />
+                              </div>
+                              <div className="relative flex justify-center">
+                                <span className="bg-white px-3 text-xs font-medium text-gray-400">
+                                  o
+                                </span>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSignupMethod("email");
+                                setGlobalError("");
+                              }}
+                              className={`w-full flex items-center gap-3 rounded-2xl border-2 px-4 py-4 text-left transition-colors ${
+                                signupMethod === "email"
+                                  ? "border-[#FF6B00] bg-[#FFF4E6]"
+                                  : "border-gray-200 hover:border-[#FF6B00] hover:bg-[#FFF9F4]"
+                              }`}
+                            >
+                              <Mail className="w-5 h-5 text-[#FF6B00]" />
+                              <span className="font-semibold text-[#1C2335]">
+                                Continuar con email
+                              </span>
+                            </button>
+                          </div>
+
+                          {signupMethod === "email" && (
+                            <>
                           <div>
                             <Label className="text-[#1C2335] mb-2 block font-semibold">
                               Nombre completo
@@ -1378,8 +1445,11 @@ export default function AuthModal({
                               </p>
                             )}
                           </div>
+                            </>
+                          )}
 
                           {/* Legal consent */}
+                          {signupMethod && (
                           <div className="space-y-2.5">
                             <p className="text-xs text-gray-400 leading-relaxed">
                               Te invitamos a conocer nuestras{" "}
@@ -1441,6 +1511,7 @@ export default function AuthModal({
                               </p>
                             )}
                           </div>
+                          )}
 
                           {/* Contextual error — signup */}
                           {!!globalError && (
@@ -1450,18 +1521,34 @@ export default function AuthModal({
                             </div>
                           )}
 
-                          <Button
-                            type="submit"
-                            disabled={loading || !signupFormReady}
-                            className={`w-full py-6 rounded-2xl transition-all ${
-                              signupFormReady && !loading
-                                ? "bg-[#FF6B00] hover:bg-[#e56000] text-white shadow-lg"
-                                : "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
-                            }`}
-                            style={{ fontWeight: 600 }}
-                          >
-                            {loading ? "Creando..." : "Crear cuenta"}
-                          </Button>
+                          {signupMethod === "google" ? (
+                            <Button
+                              type="button"
+                              onClick={() => handleGoogle(true)}
+                              disabled={loading || !googleSignupReady}
+                              className={`w-full py-6 rounded-2xl transition-all ${
+                                googleSignupReady && !loading
+                                  ? "bg-[#FF6B00] hover:bg-[#e56000] text-white shadow-lg"
+                                  : "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
+                              }`}
+                              style={{ fontWeight: 600 }}
+                            >
+                              {loading ? "Procesando..." : "Crear cuenta con Google"}
+                            </Button>
+                          ) : (
+                            <Button
+                              type="submit"
+                              disabled={loading || !signupFormReady}
+                              className={`w-full py-6 rounded-2xl transition-all ${
+                                signupFormReady && !loading
+                                  ? "bg-[#FF6B00] hover:bg-[#e56000] text-white shadow-lg"
+                                  : "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
+                              }`}
+                              style={{ fontWeight: 600 }}
+                            >
+                              {loading ? "Creando..." : "Crear cuenta"}
+                            </Button>
+                          )}
 
                           <p className="text-center text-gray-500 text-sm">
                             ¿Ya tenés cuenta?{" "}
@@ -1957,72 +2044,6 @@ export default function AuthModal({
                             </p>
                           )}
                         </div>
-
-                        {/* Legal consent — only shown for Google new users.
-                            Email/password users already accepted in step 1. */}
-                        {!hasPersistedLegalConsent && !signUpTermsAccepted && (
-                          <div className="space-y-2.5">
-                            <p className="text-xs text-gray-400 leading-relaxed">
-                              Te invitamos a conocer nuestras{" "}
-                              <a
-                                href="/privacidad"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="hover:underline"
-                              >
-                                Políticas de Privacidad
-                              </a>{" "}
-                              y los{" "}
-                              <a
-                                href="/terminos"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="hover:underline"
-                              >
-                                Términos y Condiciones
-                              </a>
-                              .
-                            </p>
-                            <label className="flex items-start gap-3 cursor-pointer select-none">
-                              <input
-                                type="checkbox"
-                                checked={profileTermsAccepted}
-                                onChange={(e) => {
-                                  setProfileTermsAccepted(e.target.checked);
-                                  if (e.target.checked) setProfileTermsError("");
-                                }}
-                                className="mt-0.5 w-4 h-4 flex-shrink-0 rounded border-gray-300 accent-[#FF6B00]"
-                              />
-                              <span className="text-sm text-gray-600 leading-relaxed">
-                                He leído y acepto los{" "}
-                                <a
-                                  href="/terminos"
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-[#FF6B00] hover:underline font-medium"
-                                >
-                                  Términos y Condiciones
-                                </a>{" "}
-                                y las{" "}
-                                <a
-                                  href="/privacidad"
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-[#FF6B00] hover:underline font-medium"
-                                >
-                                  Políticas de Privacidad
-                                </a>
-                                .
-                              </span>
-                            </label>
-                            {profileTermsError && (
-                              <p className="text-red-500 text-sm flex items-center gap-1">
-                                <span className="text-red-500">•</span>{" "}
-                                {profileTermsError}
-                              </p>
-                            )}
-                          </div>
-                        )}
 
                         {/* Contextual error — completeProfile */}
                         {!!globalError && (
