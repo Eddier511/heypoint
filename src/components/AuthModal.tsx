@@ -795,7 +795,7 @@ export default function AuthModal({
 
     let hasError = false;
 
-    const phoneDigits = limitDigits(phone, 15);
+    const phoneDigits = limitDigits(phone, 10);
     if (!phoneDigits || phoneDigits.length < 8) {
       setPhoneError("Ingresá un teléfono válido (mínimo 8 dígitos)");
       hasError = true;
@@ -1788,9 +1788,11 @@ export default function AuthModal({
                               type="text"
                               inputMode="numeric"
                               value={phone}
-                              maxLength={15}
+                              maxLength={10}
                               onChange={(e) => {
-                                setPhone(limitDigits(e.target.value, 15));
+                                setPhone(
+                                  e.target.value.replace(/\D/g, "").slice(0, 10),
+                                );
                                 setPhoneError("");
                                 setStep2Dirty(true);
                               }}
@@ -1816,7 +1818,9 @@ export default function AuthModal({
                               type="text"
                               value={dni}
                               onChange={(e) => {
-                                setDni(limitDigits(e.target.value, 8));
+                                setDni(
+                                  e.target.value.replace(/\D/g, "").slice(0, 8),
+                                );
                                 setDniError("");
                                 setStep2Dirty(true);
                               }}
@@ -1871,7 +1875,7 @@ export default function AuthModal({
                               value={apartmentNumber}
                               onChange={(e) => {
                                 setApartmentNumber(
-                                  limitDigits(e.target.value, 3),
+                                  e.target.value.replace(/\D/g, "").slice(0, 3),
                                 );
                                 setApartmentNumberError("");
                                 setStep2Dirty(true);

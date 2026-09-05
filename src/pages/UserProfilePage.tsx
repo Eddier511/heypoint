@@ -235,11 +235,11 @@ export function UserProfilePage({
           fullName: api.fullName || currentUser?.displayName || "",
           email: currentUser?.email || api.email || "",
           emailVerified: verified,
-          phone: api.phone || "",
+          phone: limitDigits(api.phone || "", 10),
           birthDate: isoToDisplay(api.birthDate || ""),
-          dni: api.dni || "",
+          dni: limitDigits(api.dni || "", 8),
           pickupPoint: globalPickupPoint,
-          apartmentNumber: api.apartmentNumber || "",
+          apartmentNumber: limitDigits(api.apartmentNumber || "", 3),
         };
 
         setProfileComplete(nextProfileComplete);
@@ -306,7 +306,7 @@ export function UserProfilePage({
     }
 
     // Tel CR suele ser 8 dígitos; dejamos mínimo 8
-    const phoneDigits = normalizeDigits(profileData.phone);
+    const phoneDigits = limitDigits(profileData.phone, 10);
     if (!phoneDigits || phoneDigits.length < 8) {
       newErrors.phone = "El teléfono debe tener mínimo 8 dígitos";
     }
@@ -319,14 +319,14 @@ export function UserProfilePage({
       newErrors.birthDate = "Debes tener al menos 16 años";
     }
 
-    const dniTrim = String(profileData.dni || "").trim();
+    const dniTrim = limitDigits(profileData.dni, 8);
     if (!dniTrim) {
       newErrors.dni = "El DNI es requerido";
     } else if (!isValidDni(dniTrim)) {
       newErrors.dni = "El DNI debe tener entre 3 y 8 dígitos numéricos válidos";
     }
 
-    const uf = normalizeDigits(profileData.apartmentNumber || "").slice(0, 3);
+    const uf = limitDigits(profileData.apartmentNumber, 3);
     if (!uf || !/^\d{1,3}$/.test(uf)) {
       newErrors.apartmentNumber = "Ingresá un número de UF válido (máx. 3 dígitos)";
     }
@@ -362,13 +362,14 @@ export function UserProfilePage({
   };
 
   const handleInputChange = (field: keyof typeof profileData, value: any) => {
+    const rawValue = String(value || "");
     const nextValue =
       field === "apartmentNumber"
-        ? limitDigits(String(value), 3)
+        ? rawValue.replace(/\D/g, "").slice(0, 3)
         : field === "dni"
-          ? limitDigits(String(value), 8)
+          ? rawValue.replace(/\D/g, "").slice(0, 8)
         : field === "phone"
-          ? limitDigits(String(value), 15)
+          ? rawValue.replace(/\D/g, "").slice(0, 10)
           : value;
     setProfileData((prev) => ({ ...prev, [field]: nextValue }));
     if (errors[field as string]) {
@@ -406,7 +407,7 @@ export function UserProfilePage({
       // 1) Guardar perfil en backend
       const payload = {
         fullName: (profileData.fullName || "").trim(),
-        phone: limitDigits(profileData.phone, 15),
+        phone: limitDigits(profileData.phone, 10),
         dni: limitDigits(profileData.dni, 8),
         birthDate: displayToIso(profileData.birthDate),
         apartmentNumber: limitDigits(profileData.apartmentNumber, 3),
@@ -763,7 +764,7 @@ export function UserProfilePage({
                               type="text"
                               inputMode="numeric"
                               value={profileData.phone}
-                              maxLength={15}
+                              maxLength={10}
                               onChange={(e) =>
                                 handleInputChange("phone", e.target.value)
                               }
