@@ -104,7 +104,8 @@ const GOOGLE_CONTROL_BASE_CLASS =
 const AUTH_CTA_BASE_CLASS =
   "w-full py-6 rounded-2xl text-base font-semibold transition-all";
 const AUTH_SECTION_TITLE_CLASS =
-  "mb-4 text-base font-semibold text-[#1C2335]";
+  "text-base font-semibold text-[#1C2335]";
+const AUTH_METHOD_SECTION_CLASS = "space-y-4";
 
 function getEmailSuggestions(value: string): string[] {
   if (!value || value.length < 2) return [];
@@ -1038,22 +1039,21 @@ export default function AuthModal({
                     <div className={`flex-1 overflow-y-auto ${MODAL_SCROLL_CLASS}`}>
                       {/* Google login */}
                       {activeTab === "login" && (
-                      <div className="px-6 md:px-8 pt-8 pb-2">
+                      <div className={`px-6 md:px-8 pt-8 pb-2 ${AUTH_METHOD_SECTION_CLASS}`}>
                         <p className={AUTH_SECTION_TITLE_CLASS}>
                           ¿Cómo querés iniciar sesión?
                         </p>
-                        <Button
+                        <button
                           onClick={() => handleGoogle(false)}
-                          variant="outline"
                           type="button"
                           disabled={loading}
-                          className={`${GOOGLE_CONTROL_BASE_CLASS} mb-6 border-gray-200 hover:border-[#FF6B00] hover:bg-[#FFF4E6] group`}
+                          className={`${GOOGLE_CONTROL_BASE_CLASS} border-gray-200 hover:border-[#FF6B00] hover:bg-[#FFF4E6] group disabled:pointer-events-none disabled:opacity-50`}
                         >
                           <Chrome className="w-5 h-5 text-gray-600 group-hover:text-[#FF6B00]" />
                           <span className="text-[#1C2335]">
                             {loading ? "Procesando..." : "Continuar con Google"}
                           </span>
-                        </Button>
+                        </button>
 
                         <div className="relative mb-6">
                           <div className="absolute inset-0 flex items-center">
@@ -1203,7 +1203,7 @@ export default function AuthModal({
                         className="mt-0 px-6 md:px-8 pt-8 pb-8"
                       >
                         <form onSubmit={handleSignup} className="space-y-6">
-                          <div className="space-y-4">
+                          <div className={AUTH_METHOD_SECTION_CLASS}>
                             <p className={AUTH_SECTION_TITLE_CLASS}>
                               ¿Cómo querés crear tu cuenta?
                             </p>
@@ -1217,10 +1217,16 @@ export default function AuthModal({
                                 signupMethod === "google"
                                   ? "border-[#FF6B00] bg-[#FFF4E6]"
                                   : "border-gray-200 hover:border-[#FF6B00] hover:bg-[#FFF9F4]"
-                              }`}
+                              } group disabled:pointer-events-none disabled:opacity-50`}
                             >
-                              <Chrome className="w-5 h-5 text-[#FF6B00]" />
-                              <span className="font-semibold text-[#1C2335]">
+                              <Chrome
+                                className={`w-5 h-5 ${
+                                  signupMethod === "google"
+                                    ? "text-[#FF6B00]"
+                                    : "text-gray-600 group-hover:text-[#FF6B00]"
+                                }`}
+                              />
+                              <span className="text-[#1C2335]">
                                 Continuar con Google
                               </span>
                             </button>
