@@ -93,6 +93,18 @@ function isValidDni(v: string) {
 }
 
 const SUGGESTED_DOMAINS = ["gmail.com", "hotmail.com", "outlook.com", "yahoo.com"];
+const MODAL_SCROLL_CLASS =
+  "[scrollbar-width:thin] [scrollbar-color:#D1D5DB_transparent]";
+const AUTH_INPUT_CLASS =
+  "pl-12 pr-4 py-6 rounded-2xl border-2 border-gray-200 focus:border-[#FF6B00] focus:ring-2 focus:ring-[#FF6B00]/20";
+const AUTH_PASSWORD_INPUT_CLASS =
+  "pl-12 pr-12 py-6 rounded-2xl border-2 border-gray-200 focus:border-[#FF6B00] focus:ring-2 focus:ring-[#FF6B00]/20";
+const GOOGLE_CONTROL_BASE_CLASS =
+  "w-full flex items-center justify-start gap-3 rounded-2xl border-2 px-4 py-4 text-left text-base font-semibold transition-colors";
+const AUTH_CTA_BASE_CLASS =
+  "w-full py-6 rounded-2xl text-base font-semibold transition-all";
+const AUTH_SECTION_TITLE_CLASS =
+  "mb-4 text-base font-semibold text-[#1C2335]";
 
 function getEmailSuggestions(value: string): string[] {
   if (!value || value.length < 2) return [];
@@ -944,7 +956,7 @@ export default function AuthModal({
     signUpTermsAccepted;
   const googleSignupReady = signupMethod === "google" && signUpTermsAccepted;
   const compactModal =
-    signUpStep === "form" && !showForgotPassword && activeTab === "signup";
+    signUpStep === "form" && !showForgotPassword;
   const modalSizeStyle = compactModal
     ? { maxHeight: "min(88vh, 900px)" }
     : { height: "min(88vh, 900px)" };
@@ -1023,19 +1035,21 @@ export default function AuthModal({
                       </TabsTrigger>
                     </TabsList>
 
-                    <div className="flex-1 overflow-y-auto">
+                    <div className={`flex-1 overflow-y-auto ${MODAL_SCROLL_CLASS}`}>
                       {/* Google login */}
                       {activeTab === "login" && (
                       <div className="px-6 md:px-8 pt-8 pb-2">
+                        <p className={AUTH_SECTION_TITLE_CLASS}>
+                          ¿Cómo querés iniciar sesión?
+                        </p>
                         <Button
                           onClick={() => handleGoogle(false)}
                           variant="outline"
                           type="button"
                           disabled={loading}
-                          className="w-full mb-6 py-6 rounded-2xl border-2 border-gray-200 hover:border-[#FF6B00] hover:bg-[#FFF4E6] transition-colors group"
-                          style={{ fontWeight: 600 }}
+                          className={`${GOOGLE_CONTROL_BASE_CLASS} mb-6 border-gray-200 hover:border-[#FF6B00] hover:bg-[#FFF4E6] group`}
                         >
-                          <Chrome className="w-5 h-5 mr-3 text-gray-600 group-hover:text-[#FF6B00]" />
+                          <Chrome className="w-5 h-5 text-gray-600 group-hover:text-[#FF6B00]" />
                           <span className="text-[#1C2335]">
                             {loading ? "Procesando..." : "Continuar con Google"}
                           </span>
@@ -1081,7 +1095,7 @@ export default function AuthModal({
                                   )
                                 }
                                 placeholder="tu.email@ejemplo.com"
-                                className="pl-12 pr-4 py-6 rounded-2xl border-2 border-gray-200 focus:border-[#FF6B00] focus:ring-2 focus:ring-[#FF6B00]/20"
+                                className={AUTH_INPUT_CLASS}
                                 required
                               />
                             </div>
@@ -1123,7 +1137,7 @@ export default function AuthModal({
                                   setLoginPassword(e.target.value)
                                 }
                                 placeholder="Ingresá tu contraseña"
-                                className="pl-12 pr-12 py-6 rounded-2xl border-2 border-gray-200 focus:border-[#FF6B00] focus:ring-2 focus:ring-[#FF6B00]/20"
+                                className={AUTH_PASSWORD_INPUT_CLASS}
                                 required
                               />
                               <button
@@ -1161,12 +1175,11 @@ export default function AuthModal({
                           <Button
                             type="submit"
                             disabled={loading || !loginFormReady}
-                            className={`w-full py-6 rounded-2xl transition-all ${
+                            className={`${AUTH_CTA_BASE_CLASS} ${
                               loginFormReady && !loading
                                 ? "bg-[#FF6B00] hover:bg-[#e56000] text-white shadow-lg"
                                 : "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
                             }`}
-                            style={{ fontWeight: 600 }}
                           >
                             {loading ? "Ingresando..." : "Iniciar sesión"}
                           </Button>
@@ -1187,11 +1200,11 @@ export default function AuthModal({
                       {/* SIGNUP TAB */}
                       <TabsContent
                         value="signup"
-                        className="mt-0 px-6 md:px-8 pb-8"
+                        className="mt-0 px-6 md:px-8 pt-8 pb-8"
                       >
                         <form onSubmit={handleSignup} className="space-y-6">
                           <div className="space-y-4">
-                            <p className="text-[#1C2335] font-semibold">
+                            <p className={AUTH_SECTION_TITLE_CLASS}>
                               ¿Cómo querés crear tu cuenta?
                             </p>
                             <button
@@ -1200,7 +1213,7 @@ export default function AuthModal({
                                 setSignupMethod("google");
                                 setGlobalError("");
                               }}
-                              className={`w-full flex items-center gap-3 rounded-2xl border-2 px-4 py-4 text-left transition-colors ${
+                              className={`${GOOGLE_CONTROL_BASE_CLASS} ${
                                 signupMethod === "google"
                                   ? "border-[#FF6B00] bg-[#FFF4E6]"
                                   : "border-gray-200 hover:border-[#FF6B00] hover:bg-[#FFF9F4]"
@@ -1227,7 +1240,7 @@ export default function AuthModal({
                                 setSignupMethod("email");
                                 setGlobalError("");
                               }}
-                              className={`w-full flex items-center gap-3 rounded-2xl border-2 px-4 py-4 text-left transition-colors ${
+                              className={`${GOOGLE_CONTROL_BASE_CLASS} ${
                                 signupMethod === "email"
                                   ? "border-[#FF6B00] bg-[#FFF4E6]"
                                   : "border-gray-200 hover:border-[#FF6B00] hover:bg-[#FFF9F4]"
@@ -1256,7 +1269,7 @@ export default function AuthModal({
                                   setSignUpFullName(e.target.value)
                                 }
                                 placeholder="Juan Pérez"
-                                className="pl-12 pr-4 py-6 rounded-2xl border-2 border-gray-200 focus:border-[#FF6B00] focus:ring-2 focus:ring-[#FF6B00]/20"
+                                className={AUTH_INPUT_CLASS}
                                 required
                               />
                             </div>
@@ -1511,12 +1524,11 @@ export default function AuthModal({
                               type="button"
                               onClick={() => handleGoogle(true)}
                               disabled={loading || !googleSignupReady}
-                              className={`w-full py-6 rounded-2xl transition-all ${
+                              className={`${AUTH_CTA_BASE_CLASS} ${
                                 googleSignupReady && !loading
                                   ? "bg-[#FF6B00] hover:bg-[#e56000] text-white shadow-lg"
                                   : "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
                               }`}
-                              style={{ fontWeight: 600 }}
                             >
                               {loading ? "Procesando..." : "Crear cuenta con Google"}
                             </Button>
@@ -1524,12 +1536,11 @@ export default function AuthModal({
                             <Button
                               type="submit"
                               disabled={loading || !signupFormReady}
-                              className={`w-full py-6 rounded-2xl transition-all ${
+                              className={`${AUTH_CTA_BASE_CLASS} ${
                                 signupFormReady && !loading
                                   ? "bg-[#FF6B00] hover:bg-[#e56000] text-white shadow-lg"
                                   : "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
                               }`}
-                              style={{ fontWeight: 600 }}
                             >
                               {loading ? "Creando..." : "Crear cuenta"}
                             </Button>
@@ -1575,7 +1586,7 @@ export default function AuthModal({
 
                   {/* ✅ FIX SCROLL */}
                   <div
-                    className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 md:px-8 py-8"
+                    className={`flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 md:px-8 py-8 ${MODAL_SCROLL_CLASS}`}
                     style={{ WebkitOverflowScrolling: "touch" as any }}
                   >
                     {!forgotPasswordSent ? (
@@ -1711,7 +1722,7 @@ export default function AuthModal({
 
                   {/* ✅ FIX SCROLL */}
                   <div
-                    className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 md:px-8 py-8"
+                    className={`flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 md:px-8 py-8 ${MODAL_SCROLL_CLASS}`}
                     style={{ WebkitOverflowScrolling: "touch" as any }}
                   >
                     <div className="rounded-3xl border border-gray-200 bg-white p-5">
@@ -1835,7 +1846,7 @@ export default function AuthModal({
                   {/* ✅ FIX SCROLL REAL */}
                   <div className="flex-1 min-h-0 min-w-0 overflow-hidden">
                     <div
-                      className="h-full min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain px-6 md:px-8 py-8"
+                      className={`h-full min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain px-6 md:px-8 py-8 ${MODAL_SCROLL_CLASS}`}
                       style={{ WebkitOverflowScrolling: "touch" as any }}
                     >
                       <form
