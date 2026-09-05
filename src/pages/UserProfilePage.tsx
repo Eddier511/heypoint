@@ -406,10 +406,10 @@ export function UserProfilePage({
       // 1) Guardar perfil en backend
       const payload = {
         fullName: (profileData.fullName || "").trim(),
-        phone: normalizeDigits(profileData.phone),
-        dni: String(profileData.dni || "").trim(),
+        phone: limitDigits(profileData.phone, 15),
+        dni: limitDigits(profileData.dni, 8),
         birthDate: displayToIso(profileData.birthDate),
-        apartmentNumber: normalizeDigits(profileData.apartmentNumber),
+        apartmentNumber: limitDigits(profileData.apartmentNumber, 3),
         pickupPoint: globalPickupPoint,
         residenceAuthorizationAccepted,
       };
@@ -802,6 +802,7 @@ export function UserProfilePage({
                           <div className="relative">
                             <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#2E2E2E]/50 pointer-events-none z-10" />
                             <Input
+                              type="text"
                               value={profileData.dni}
                               onChange={(e) =>
                                 handleInputChange("dni", e.target.value)
@@ -917,6 +918,7 @@ export function UserProfilePage({
                           <div className="relative">
                             <Home className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#2E2E2E]/50 pointer-events-none z-10" />
                             <Input
+                              type="text"
                               value={profileData.apartmentNumber}
                               onChange={(e) =>
                                 handleInputChange(

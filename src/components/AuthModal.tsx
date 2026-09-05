@@ -795,13 +795,13 @@ export default function AuthModal({
 
     let hasError = false;
 
-    const phoneDigits = normalizeDigits(phone);
+    const phoneDigits = limitDigits(phone, 15);
     if (!phoneDigits || phoneDigits.length < 8) {
       setPhoneError("Ingresá un teléfono válido (mínimo 8 dígitos)");
       hasError = true;
     }
 
-    const dniTrim = String(dni || "").trim();
+    const dniTrim = limitDigits(dni, 8);
     if (!dniTrim || !isValidDni(dniTrim)) {
       setDniError("El DNI debe tener entre 3 y 8 dígitos numéricos válidos");
       hasError = true;
@@ -818,7 +818,7 @@ export default function AuthModal({
       hasError = true;
     }
 
-    const uf = normalizeDigits(apartmentNumber).slice(0, 3);
+    const uf = limitDigits(apartmentNumber, 3);
     if (!uf || !/^\d{1,3}$/.test(uf)) {
       setApartmentNumberError("Ingresá un número válido (máx. 3 dígitos)");
       hasError = true;
@@ -1813,6 +1813,7 @@ export default function AuthModal({
                           <div className="relative min-w-0">
                             <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                             <Input
+                              type="text"
                               value={dni}
                               onChange={(e) => {
                                 setDni(limitDigits(e.target.value, 8));
@@ -1866,6 +1867,7 @@ export default function AuthModal({
                           <div className="relative min-w-0">
                             <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                             <Input
+                              type="text"
                               value={apartmentNumber}
                               onChange={(e) => {
                                 setApartmentNumber(
