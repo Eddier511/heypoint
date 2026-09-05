@@ -244,6 +244,8 @@ export default function AuthModal({
     sendVerifyEmailPro, // ✅ ESTA ES LA CLAVE
     getAuthToken,
     getIdToken,
+    customerProfile,
+    fetchMe,
   } = useAuth();
   const { settings: storeSettings } = useStoreSettings();
 
@@ -306,6 +308,9 @@ export default function AuthModal({
   // Legal consent — complete profile form (step 3, both email and Google new users)
   const [profileTermsAccepted, setProfileTermsAccepted] = useState(false);
   const [profileTermsError, setProfileTermsError] = useState("");
+  const hasPersistedLegalConsent =
+    customerProfile?.termsAccepted === true &&
+    customerProfile?.privacyAccepted === true;
 
   const shouldReduceMotion = useReducedMotion();
 
@@ -659,6 +664,7 @@ export default function AuthModal({
         signUpFullName,
         signUpEmail,
         signUpPassword,
+        signUpTermsAccepted,
       );
 
       localStorage.setItem(PENDING_EMAIL_KEY, user.email);
@@ -833,7 +839,7 @@ export default function AuthModal({
 
     // Only require consent in this step if the user did NOT already accept
     // during email/password signup (signUpTermsAccepted covers that case).
-    if (!signUpTermsAccepted && !profileTermsAccepted) {
+    if (!hasPersistedLegalConsent && !signUpTermsAccepted && !profileTermsAccepted) {
       setProfileTermsError(
         "Debés aceptar los Términos y Condiciones para continuar.",
       );
@@ -845,7 +851,6 @@ export default function AuthModal({
     try {
       setLoading(true);
 
-      const consentAt = new Date().toISOString();
       const finalUser = {
         email: pendingEmail,
         fullName: pendingFullName || "User",
@@ -855,15 +860,20 @@ export default function AuthModal({
         apartmentNumber: uf,
         pickupPoint,
         residenceAuthorizationAccepted,
-        termsAccepted: true,
-        termsAcceptedAt: consentAt,
-        privacyAccepted: true,
-        privacyAcceptedAt: consentAt,
+        termsAccepted:
+          hasPersistedLegalConsent ||
+          signUpTermsAccepted ||
+          profileTermsAccepted,
+        privacyAccepted:
+          hasPersistedLegalConsent ||
+          signUpTermsAccepted ||
+          profileTermsAccepted,
       };
 
       // ✅ FIX: token con retry (evita fallos random con Google)
       const idToken = await getIdTokenWithRetry();
       await saveProfileToBackend(finalUser, idToken);
+      await fetchMe().catch(() => null);
 
       // ✅ limpiar flags
       localStorage.removeItem(PENDING_PROFILE_KEY);
@@ -1950,7 +1960,7 @@ export default function AuthModal({
 
                         {/* Legal consent — only shown for Google new users.
                             Email/password users already accepted in step 1. */}
-                        {!signUpTermsAccepted && (
+                        {!hasPersistedLegalConsent && !signUpTermsAccepted && (
                           <div className="space-y-2.5">
                             <p className="text-xs text-gray-400 leading-relaxed">
                               Te invitamos a conocer nuestras{" "}

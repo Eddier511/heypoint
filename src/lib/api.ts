@@ -68,6 +68,12 @@ export type CustomerProfile = {
   apartmentNumber?: string;
   pickupPoint: string;
   residenceAuthorizationAccepted?: boolean;
+  termsAccepted?: boolean;
+  termsAcceptedAt?: string;
+  termsVersion?: string;
+  privacyAccepted?: boolean;
+  privacyAcceptedAt?: string;
+  privacyVersion?: string;
 };
 
 export const CustomersAPI = {

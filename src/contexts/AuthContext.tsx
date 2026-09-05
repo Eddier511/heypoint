@@ -57,6 +57,12 @@ export type CustomerProfile = {
   residenceAuthorizationAcceptedAt?: string;
   residenceAuthorizationVersion?: string;
   residenceAuthorizationComplexName?: string;
+  termsAccepted?: boolean;
+  termsAcceptedAt?: string;
+  termsVersion?: string;
+  privacyAccepted?: boolean;
+  privacyAcceptedAt?: string;
+  privacyVersion?: string;
 };
 
 interface AuthContextType {
@@ -79,6 +85,7 @@ interface AuthContextType {
     fullName: string,
     email: string,
     password: string,
+    legalConsentAccepted?: boolean,
   ) => Promise<User>;
   startGoogleOAuth: () => Promise<GoogleOAuthResult>;
   logout: () => Promise<void>;
@@ -278,6 +285,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const bootstrapCustomerProfile = async (
     firebaseUser: FirebaseUser,
     fullName?: string,
+    legalConsentAccepted = false,
   ) => {
     const token = await fbGetIdToken(firebaseUser, true);
     localStorage.setItem(STORAGE_KEY, token);
@@ -296,7 +304,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ fullName }),
+        body: JSON.stringify({
+          fullName,
+          ...(legalConsentAccepted
+            ? { termsAccepted: true, privacyAccepted: true }
+            : {}),
+        }),
       });
 
       if (res.status === 409) {
@@ -345,6 +358,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fullName: string,
     email: string,
     password: string,
+    legalConsentAccepted = false,
   ): Promise<User> => {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(cred.user, { displayName: fullName });
@@ -352,7 +366,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setFbUser(auth.currentUser);
 
     try {
-      await bootstrapCustomerProfile(cred.user, fullName);
+      await bootstrapCustomerProfile(cred.user, fullName, legalConsentAccepted);
     } catch (error) {
       console.error(
         "[AuthContext] signup customer bootstrap failed after Firebase signup",

@@ -48,6 +48,12 @@ type ApiProfile = {
   residenceAuthorizationAcceptedAt?: string;
   residenceAuthorizationVersion?: string;
   residenceAuthorizationComplexName?: string;
+  termsAccepted?: boolean;
+  termsAcceptedAt?: string;
+  termsVersion?: string;
+  privacyAccepted?: boolean;
+  privacyAcceptedAt?: string;
+  privacyVersion?: string;
 };
 
 const RESEND_COOLDOWN_SECONDS = 60;
@@ -109,6 +115,9 @@ export function UserProfilePage({
     originalResidenceAuthorizationAccepted,
     setOriginalResidenceAuthorizationAccepted,
   ] = useState(false);
+  const [legalConsentAccepted, setLegalConsentAccepted] = useState(false);
+  const [originalLegalConsentAccepted, setOriginalLegalConsentAccepted] =
+    useState(false);
 
   // Profile
   const [profileData, setProfileData] = useState({
@@ -198,19 +207,28 @@ export function UserProfilePage({
       JSON.stringify(profileData) !== JSON.stringify(originalData);
     const residenceAuthorizationChanged =
       residenceAuthorizationAccepted !== originalResidenceAuthorizationAccepted;
+    const legalConsentChanged =
+      legalConsentAccepted !== originalLegalConsentAccepted;
 
     const passwordChanged =
       passwordData.currentPassword !== "" ||
       passwordData.newPassword !== "" ||
       passwordData.confirmNewPassword !== "";
 
-    setIsModified(dataChanged || residenceAuthorizationChanged || passwordChanged);
+    setIsModified(
+      dataChanged ||
+        residenceAuthorizationChanged ||
+        legalConsentChanged ||
+        passwordChanged,
+    );
   }, [
     profileData,
     passwordData,
     originalData,
     residenceAuthorizationAccepted,
     originalResidenceAuthorizationAccepted,
+    legalConsentAccepted,
+    originalLegalConsentAccepted,
   ]);
 
   const loadProfile = useCallback(
@@ -248,6 +266,12 @@ export function UserProfilePage({
         );
         setOriginalResidenceAuthorizationAccepted(
           api.residenceAuthorizationAccepted === true,
+        );
+        setLegalConsentAccepted(
+          api.termsAccepted === true && api.privacyAccepted === true,
+        );
+        setOriginalLegalConsentAccepted(
+          api.termsAccepted === true && api.privacyAccepted === true,
         );
         setProfileData(next);
         setOriginalData(next);
@@ -336,6 +360,11 @@ export function UserProfilePage({
         "Confirmá que sos residente o estás autorizado para utilizar Hey!Point.";
     }
 
+    if (!legalConsentAccepted) {
+      newErrors.legalConsent =
+        "Debés aceptar los Términos y Condiciones para continuar.";
+    }
+
     // Password validation if user wants to change it
     const wantsPasswordChange =
       passwordData.currentPassword ||
@@ -413,6 +442,8 @@ export function UserProfilePage({
         apartmentNumber: limitDigits(profileData.apartmentNumber, 3),
         pickupPoint: globalPickupPoint,
         residenceAuthorizationAccepted,
+        termsAccepted: legalConsentAccepted,
+        privacyAccepted: legalConsentAccepted,
       };
 
       await saveProfile(payload);
@@ -1008,6 +1039,80 @@ export function UserProfilePage({
                               <AlertCircle className="w-4 h-4" />
                               {errors.residenceAuthorization}
                             </p>
+                          )}
+                        </div>
+                        <div className="md:col-span-2">
+                          {originalLegalConsentAccepted ? (
+                            <div className="flex items-start gap-3 rounded-2xl border border-[#FF6B00]/20 bg-[#FFF4E6] p-4">
+                              <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#FF6B00]" />
+                              <p
+                                className="text-[#2E2E2E]/75 leading-relaxed"
+                                style={{ fontSize: "0.9rem" }}
+                              >
+                                Términos y Política de Privacidad aceptados.
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="space-y-2.5">
+                              <label
+                                className={`flex items-start gap-3 rounded-2xl border p-4 transition-colors ${
+                                  errors.legalConsent
+                                    ? "border-red-200 bg-red-50"
+                                    : legalConsentAccepted
+                                      ? "border-[#FF6B00]/20 bg-[#FFF4E6]"
+                                      : "border-orange-100 bg-white"
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={legalConsentAccepted}
+                                  onChange={(event) => {
+                                    setLegalConsentAccepted(event.target.checked);
+                                    if (event.target.checked) {
+                                      setErrors((prev) => {
+                                        const next = { ...prev };
+                                        delete next.legalConsent;
+                                        return next;
+                                      });
+                                    }
+                                  }}
+                                  className="mt-1 w-4 h-4 flex-shrink-0 rounded border-gray-300 accent-[#FF6B00]"
+                                />
+                                <span
+                                  className="text-[#2E2E2E]/75 leading-relaxed"
+                                  style={{ fontSize: "0.9rem" }}
+                                >
+                                  He leído y acepto los{" "}
+                                  <a
+                                    href="/terminos"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[#FF6B00] hover:underline font-medium"
+                                  >
+                                    Términos y Condiciones
+                                  </a>{" "}
+                                  y las{" "}
+                                  <a
+                                    href="/privacidad"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[#FF6B00] hover:underline font-medium"
+                                  >
+                                    Políticas de Privacidad
+                                  </a>
+                                  .
+                                </span>
+                              </label>
+                              {errors.legalConsent && (
+                                <p
+                                  className="mt-2 text-red-500 flex items-center gap-1"
+                                  style={{ fontSize: "0.813rem", fontWeight: 600 }}
+                                >
+                                  <AlertCircle className="w-4 h-4" />
+                                  {errors.legalConsent}
+                                </p>
+                              )}
+                            </div>
                           )}
                         </div>
                         </div>{/* end grid retiro */}
