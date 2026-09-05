@@ -943,6 +943,11 @@ export default function AuthModal({
     strengthInfo.strength !== "weak" &&
     signUpTermsAccepted;
   const googleSignupReady = signupMethod === "google" && signUpTermsAccepted;
+  const compactModal =
+    signUpStep === "form" && !showForgotPassword && activeTab === "signup";
+  const modalSizeStyle = compactModal
+    ? { maxHeight: "min(88vh, 900px)" }
+    : { height: "min(88vh, 900px)" };
 
   // =========================
   // UI (la tuya, igual)
@@ -967,7 +972,7 @@ export default function AuthModal({
               exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98, y: 8 }}
               transition={{ duration: shouldReduceMotion ? 0 : 0.18, ease: "easeOut" }}
               className="relative w-full max-w-[calc(100vw-1.5rem)] sm:max-w-md md:max-w-lg bg-white rounded-3xl shadow-2xl pointer-events-auto overflow-hidden flex flex-col my-auto min-h-0"
-              style={{ height: "min(88vh, 900px)" }} // 🔥 CAMBIO: height fijo en vez de maxHeight
+              style={modalSizeStyle}
             >
               {signUpStep !== "verifyEmail" && signUpStep !== "creating" && (
                 <button
@@ -1185,7 +1190,7 @@ export default function AuthModal({
                         className="mt-0 px-6 md:px-8 pb-8"
                       >
                         <form onSubmit={handleSignup} className="space-y-6">
-                          <div className="space-y-3">
+                          <div className="space-y-4">
                             <p className="text-[#1C2335] font-semibold">
                               ¿Cómo querés crear tu cuenta?
                             </p>
@@ -1237,6 +1242,7 @@ export default function AuthModal({
 
                           {signupMethod === "email" && (
                             <>
+                          <div className="pt-1" />
                           <div>
                             <Label className="text-[#1C2335] mb-2 block font-semibold">
                               Nombre completo
@@ -1450,28 +1456,7 @@ export default function AuthModal({
 
                           {/* Legal consent */}
                           {signupMethod && (
-                          <div className="space-y-2.5">
-                            <p className="text-xs text-gray-400 leading-relaxed">
-                              Te invitamos a conocer nuestras{" "}
-                              <a
-                                href="/privacidad"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="hover:underline"
-                              >
-                                Políticas de Privacidad
-                              </a>{" "}
-                              y los{" "}
-                              <a
-                                href="/terminos"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="hover:underline"
-                              >
-                                Términos y Condiciones
-                              </a>
-                              .
-                            </p>
+                          <div className="space-y-2.5 pt-2">
                             <label className="flex items-start gap-3 cursor-pointer select-none">
                               <input
                                 type="checkbox"
