@@ -59,6 +59,11 @@ const CompleteProfilePage = lazy(() =>
     default: module.CompleteProfilePage,
   })),
 );
+const VerifyEmailPage = lazy(() =>
+  import("./pages/VerifyEmailPage").then((module) => ({
+    default: module.VerifyEmailPage,
+  })),
+);
 const ShoppingCartPage = lazy(() =>
   import("./pages/ShoppingCartPage").then((module) => ({
     default: module.ShoppingCartPage,
@@ -109,6 +114,7 @@ type Page =
   | "ourcompany"
   | "profile"
   | "completeProfile"
+  | "verifyEmail"
   | "cart"
   | "checkout"
   | "paymentResult"
@@ -143,6 +149,8 @@ interface Product {
 const API_ORIGIN = import.meta.env.VITE_API_URL || "http://localhost:4000";
 const PROFILE_RETURN_TO_KEY = "heypoint_profile_return_to";
 const PROFILE_RETURN_CHECKOUT = "checkout";
+const EMAIL_RETURN_TO_KEY = "heypoint_email_return_to";
+const EMAIL_RETURN_CHECKOUT = "checkout";
 
 // ✅ HERO banner (Home) - para evitar flash/CLS
 const HERO_SRC =
@@ -165,6 +173,14 @@ function setProfileReturnIntent(value: typeof PROFILE_RETURN_CHECKOUT) {
 
 function clearProfileReturnIntent() {
   sessionStorage.removeItem(PROFILE_RETURN_TO_KEY);
+}
+
+function setEmailReturnIntent(value: typeof EMAIL_RETURN_CHECKOUT) {
+  sessionStorage.setItem(EMAIL_RETURN_TO_KEY, value);
+}
+
+function clearEmailReturnIntent() {
+  sessionStorage.removeItem(EMAIL_RETURN_TO_KEY);
 }
 
 /** =========================
@@ -215,6 +231,8 @@ function pageToPath(page: Page) {
       return "/account";
     case "completeProfile":
       return "/complete-profile";
+    case "verifyEmail":
+      return "/verify-email";
     case "terms":
       return "/terminos";
     case "privacy":
@@ -238,6 +256,7 @@ function pathToPage(pathname: string): Page {
   if (p.startsWith("/checkout/resultado")) return "paymentResult";
   if (p.startsWith("/checkout")) return "checkout";
   if (p.startsWith("/orders")) return "orders";
+  if (p.startsWith("/verify-email")) return "verifyEmail";
   if (p.startsWith("/complete-profile")) return "completeProfile";
   if (p.startsWith("/account") || p.startsWith("/profile")) return "profile";
   if (p.startsWith("/terminos")) return "terms";
@@ -437,8 +456,24 @@ function AppContent() {
 
     async function handleVerifiedRedirect() {
       try {
-        await refreshEmailVerification();
+        const verified = await refreshEmailVerification();
         await getAuthToken(true);
+        if (
+          verified &&
+          sessionStorage.getItem(EMAIL_RETURN_TO_KEY) === EMAIL_RETURN_CHECKOUT
+        ) {
+          clearEmailReturnIntent();
+          const profile = (await fetchMe()).profile;
+          if (profile?.profileComplete === true) {
+            clearProfileReturnIntent();
+            setCurrentPage("checkout");
+            window.history.replaceState({}, "", "/checkout");
+          } else {
+            setProfileReturnIntent(PROFILE_RETURN_CHECKOUT);
+            setCurrentPage("completeProfile");
+            window.history.replaceState({}, "", "/complete-profile");
+          }
+        }
       } catch (error) {
         console.error("[App] verified redirect handling failed", {
           uid: currentUser?.uid,
@@ -464,6 +499,7 @@ function AppContent() {
     currentUser,
     refreshEmailVerification,
     getAuthToken,
+    fetchMe,
   ]);
 
   // ── Email-change callback (?emailChanged=1) ──────────────────────────────
@@ -665,10 +701,17 @@ function AppContent() {
       return;
     }
 
+    if (currentUser.emailVerified !== true) {
+      setEmailReturnIntent(EMAIL_RETURN_CHECKOUT);
+      handleNavigation("verifyEmail");
+      return;
+    }
+
     try {
       const profile = customerProfile ?? (await fetchMe()).profile;
 
       if (profile?.profileComplete === true) {
+        clearEmailReturnIntent();
         clearProfileReturnIntent();
         handleNavigation("checkout");
         return;
@@ -703,6 +746,15 @@ function AppContent() {
     }
 
     if (currentUser && customerProfile?.profileComplete === true) {
+      if (currentUser.emailVerified !== true) {
+        setEmailReturnIntent(EMAIL_RETURN_CHECKOUT);
+        setCheckoutGateStatus("checking");
+        setCurrentPage("verifyEmail");
+        if (window.location.pathname !== "/verify-email") {
+          window.history.replaceState({}, "", "/verify-email");
+        }
+        return;
+      }
       clearProfileReturnIntent();
       setCheckoutGateStatus("allowed");
       return;
@@ -724,12 +776,22 @@ function AppContent() {
         return;
       }
 
+      if (currentUser.emailVerified !== true) {
+        setEmailReturnIntent(EMAIL_RETURN_CHECKOUT);
+        setCurrentPage("verifyEmail");
+        if (window.location.pathname !== "/verify-email") {
+          window.history.replaceState({}, "", "/verify-email");
+        }
+        return;
+      }
+
       try {
         setCheckoutGateStatus("checking");
         const profile = customerProfile ?? (await fetchMe()).profile;
         if (cancelled) return;
 
         if (profile?.profileComplete === true) {
+          clearEmailReturnIntent();
           clearProfileReturnIntent();
           setCheckoutGateStatus("allowed");
           return;
@@ -859,6 +921,12 @@ function AppContent() {
     return (
       <Suspense fallback={<PageFallback />}>
         <CompleteProfilePage onNavigate={handleNavigation} />
+      </Suspense>
+    );
+  if (currentPage === "verifyEmail")
+    return (
+      <Suspense fallback={<PageFallback />}>
+        <VerifyEmailPage onNavigate={handleNavigation} />
       </Suspense>
     );
   if (currentPage === "cart")

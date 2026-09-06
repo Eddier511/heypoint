@@ -58,6 +58,8 @@ interface CheckoutPageProps {
 }
 
 const PROFILE_RETURN_TO_KEY = "heypoint_profile_return_to";
+const EMAIL_RETURN_TO_KEY = "heypoint_email_return_to";
+const EMAIL_RETURN_CHECKOUT = "checkout";
 
 function getMissingProfileFields(profile: any): string[] {
   const missing: string[] = [];
@@ -85,7 +87,7 @@ export function CheckoutPage({
   onOrderSuccess,
 }: CheckoutPageProps) {
   const { cartItems } = useCart();
-  const { fetchMe } = useAuth();
+  const { currentUser, fetchMe, refreshEmailVerification } = useAuth();
   const { settings: storeSettings } = useStoreSettings();
   const ivaPct = storeSettings?.iva ?? 21;
   const [currentStep] = useState(2);
@@ -174,6 +176,20 @@ export function CheckoutPage({
     setIsProcessing(true);
 
     try {
+      const emailVerified = await refreshEmailVerification().catch(
+        () => currentUser?.emailVerified === true,
+      );
+      if (!emailVerified) {
+        sessionStorage.setItem(EMAIL_RETURN_TO_KEY, EMAIL_RETURN_CHECKOUT);
+        toast.error("Necesitás verificar tu correo para continuar.", {
+          description: "Confirmá tu email y seguimos con tu compra.",
+          duration: 5000,
+        });
+        onNavigate?.("verifyEmail");
+        setIsProcessing(false);
+        return;
+      }
+
       const { profile } = await fetchMe();
 
       if (!isCustomerProfileComplete(profile)) {
@@ -234,6 +250,14 @@ export function CheckoutPage({
             duration: 5000,
           });
           onNavigate?.("completeProfile");
+        } else if (body?.error === "EMAIL_NOT_VERIFIED") {
+          await refreshEmailVerification().catch(() => false);
+          sessionStorage.setItem(EMAIL_RETURN_TO_KEY, EMAIL_RETURN_CHECKOUT);
+          toast.error("Necesitás verificar tu correo para continuar.", {
+            description: body?.message || "Confirmá tu email y seguimos con tu compra.",
+            duration: 5000,
+          });
+          onNavigate?.("verifyEmail");
         } else {
           toast.error("Error al procesar el pedido", {
             description: "Por favor intentá nuevamente",
