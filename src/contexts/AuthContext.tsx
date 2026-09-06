@@ -27,6 +27,7 @@ import {
   sendPasswordResetEmail, // ✅ AÑADIR
 } from "firebase/auth";
 import { auth } from "../config/firebaseClient";
+import { clearCheckoutAttempt } from "../lib/checkoutAttempt";
 
 interface User {
   email: string;
@@ -448,6 +449,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCustomerProfile(null);
     localStorage.removeItem(STORAGE_KEY);
     clearAuthOnboardingStorage();
+    clearCheckoutAttempt();
     window.dispatchEvent(new CustomEvent("heypoint:logout"));
   };
 

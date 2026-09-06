@@ -6,6 +6,7 @@ import { CheckoutStepper } from "../components/CheckoutStepper";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { api } from "../lib/api";
+import { clearCheckoutAttempt } from "../lib/checkoutAttempt";
 import { PurchaseSuccessPage } from "./PurchaseSuccessPage";
 
 type PaymentState = "verifying" | "approved" | "pending" | "failed" | "review";
@@ -62,10 +63,12 @@ export function PaymentResultPage({
       setOrder(data);
       if (data.state === "approved" && data.pickupToken) {
         sessionStorage.removeItem("heypoint_pending_order_id");
+        clearCheckoutAttempt();
         setState("approved");
         return true;
       }
       if (data.state === "failed") {
+        clearCheckoutAttempt();
         setState("failed");
         if (returnStatus === "failure" && !paymentId) {
           setFailedKind("notCompleted");
@@ -107,6 +110,7 @@ export function PaymentResultPage({
         if (applyStatus(response.data)) return;
 
         if (returnStatus === "failure" && !paymentId) {
+          clearCheckoutAttempt();
           setState("failed");
           setFailedKind("notCompleted");
           setMessage("Podés volver al carrito e intentarlo nuevamente cuando quieras.");

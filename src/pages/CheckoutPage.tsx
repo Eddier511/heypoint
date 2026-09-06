@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   ArrowLeft,
   Package,
@@ -37,6 +37,12 @@ import { motion } from "motion/react";
 import { useCart } from "../contexts/CartContext";
 import { useAuth } from "../contexts/AuthContext";
 import { api } from "../lib/api";
+import {
+  CHECKOUT_ATTEMPT_FINGERPRINT_KEY,
+  cartFingerprint,
+  clearCheckoutAttempt,
+  getCheckoutAttemptId,
+} from "../lib/checkoutAttempt";
 import { toast } from "sonner";
 
 interface OrderSuccessData {
@@ -85,6 +91,14 @@ export function CheckoutPage({
   const [currentStep] = useState(2);
   const [isProcessing, setIsProcessing] = useState(false);
   const [stockError, setStockError] = useState<string | null>(null);
+  const checkoutFingerprint = useMemo(() => cartFingerprint(cartItems), [cartItems]);
+
+  useEffect(() => {
+    const storedFingerprint = sessionStorage.getItem(CHECKOUT_ATTEMPT_FINGERPRINT_KEY);
+    if (storedFingerprint && storedFingerprint !== checkoutFingerprint) {
+      clearCheckoutAttempt();
+    }
+  }, [checkoutFingerprint]);
 
   const subtotalSinIVA = cartItems.reduce(
     (sum, item) => sum + Number(item.price || 0) * item.quantity,
@@ -124,6 +138,37 @@ export function CheckoutPage({
     { number: 3, label: "Confirmación de retiro", icon: Package },
   ];
 
+  const createMercadoPagoPreference = async (): Promise<void> => {
+    const orderItems = cartItems.map((item) => ({
+      id: item.productId,
+      name: item.name,
+      quantity: item.quantity,
+      unitPrice: getPrecioFinalConIVA(item.price, ivaPct),
+      image: item.image ?? "",
+    }));
+
+    const { data } = await api.post("/orders/mercadopago/preference", {
+      checkoutAttemptId: getCheckoutAttemptId(checkoutFingerprint),
+      items: orderItems,
+      subtotal: subtotalProductos,
+      ...taxBreakdown,
+      serviceCharge: cargoServicio,
+      serviceChargeLabel: reglaCargoLabel,
+      total: totalAPagar,
+    });
+
+    const checkoutUrl = data?.checkoutUrl || data?.sandboxInitPoint || data?.initPoint;
+    if (!checkoutUrl) {
+      throw new Error("Mercado Pago no devolvió una URL de checkout.");
+    }
+
+    if (data?.orderId) {
+      sessionStorage.setItem("heypoint_pending_order_id", String(data.orderId));
+    }
+
+    window.location.href = checkoutUrl;
+  };
+
   const handleMercadoPagoPayment = async () => {
     setStockError(null);
     setIsProcessing(true);
@@ -146,33 +191,7 @@ export function CheckoutPage({
         return;
       }
 
-      const orderItems = cartItems.map((item) => ({
-        id: item.productId,
-        name: item.name,
-        quantity: item.quantity,
-        unitPrice: getPrecioFinalConIVA(item.price, ivaPct),
-        image: item.image ?? "",
-      }));
-
-      const { data } = await api.post("/orders/mercadopago/preference", {
-        items: orderItems,
-        subtotal: subtotalProductos,
-        ...taxBreakdown,
-        serviceCharge: cargoServicio,
-        serviceChargeLabel: reglaCargoLabel,
-        total: totalAPagar,
-      });
-
-      const checkoutUrl = data?.checkoutUrl || data?.sandboxInitPoint || data?.initPoint;
-      if (!checkoutUrl) {
-        throw new Error("Mercado Pago no devolvió una URL de checkout.");
-      }
-
-      if (data?.orderId) {
-        sessionStorage.setItem("heypoint_pending_order_id", String(data.orderId));
-      }
-
-      window.location.href = checkoutUrl;
+      await createMercadoPagoPreference();
     } catch (error: any) {
       const body = error?.response?.data;
       if (error?.response?.status === 409 && body?.product) {
@@ -184,6 +203,28 @@ export function CheckoutPage({
               ? `Solo quedan ${available} unidades disponibles. Ajustá la cantidad en el carrito.`
               : `Este producto se agotó. Retiralo del carrito para continuar.`,
           duration: 5000,
+        });
+      } else if (
+        body?.error === "CHECKOUT_ATTEMPT_CART_CHANGED" ||
+        body?.error === "CHECKOUT_ATTEMPT_NOT_REUSABLE"
+      ) {
+        clearCheckoutAttempt();
+        try {
+          await createMercadoPagoPreference();
+          return;
+        } catch (retryError: any) {
+          toast.error("Error al procesar el pedido", {
+            description: retryError?.response?.data?.message || "Por favor intentá nuevamente",
+            duration: 3000,
+          });
+        }
+      } else if (
+        body?.error === "CHECKOUT_ATTEMPT_PROCESSING" ||
+        body?.error === "CHECKOUT_ATTEMPT_PREFERENCE_UNCERTAIN"
+      ) {
+        toast.error("Estamos preparando tu pago", {
+          description: body?.message || "Esperá unos segundos y volvé a intentar.",
+          duration: 4000,
         });
       } else {
         if (body?.error === "PROFILE_INCOMPLETE") {
