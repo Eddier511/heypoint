@@ -10,7 +10,7 @@ interface ReservationTimerProps {
  * ReservationTimer Component
  * 
  * Displays a discreet, premium reservation timer for web checkout.
- * Shows how long products are reserved during payment flow.
+ * Shows a checkout UX window without implying backend stock reservation.
  * 
  * Design principles:
  * - Non-alarming, informative tone
@@ -72,7 +72,12 @@ export function ReservationTimer({
           className="text-[#4A4A4A]"
           style={{ fontSize: '0.875rem', fontWeight: 500, lineHeight: 1.4 }}
         >
-          Tus productos están reservados mientras completás el pago.
+          {timeLeft > 0
+            ? "Completá tu compra dentro de los próximos 15 minutos."
+            : "El tiempo de compra finalizó."}
+        </p>
+        <p className="mt-1 text-[#6B6B6B]" style={{ fontSize: '0.8125rem', fontWeight: 500, lineHeight: 1.4 }}>
+          La disponibilidad se confirmará al continuar con el pago.
         </p>
         
         {/* Timer Display */}

@@ -25,8 +25,6 @@ import { StockIndicator } from "../components/StockIndicator";
 import { BackToTopButton } from "../components/BackToTopButton";
 import { Footer } from "../components/Footer";
 import { CheckoutStepper } from "../components/CheckoutStepper";
-import { InactivityExpirationModal } from "../components/InactivityExpirationModal";
-import { useInactivityTimer } from "../hooks/useInactivityTimer";
 import { formatPrecioARS, getPrecioFinalConIVA } from "../utils/priceUtils";
 import {
   findServiceChargeRule,
@@ -52,25 +50,12 @@ export function ShoppingCartPage({
   onCheckoutIntent,
   isLoggedIn = true,
 }: ShoppingCartPageProps) {
-  const { cartItems, updateCartItem, removeFromCart, clearCart } = useCart();
+  const { cartItems, updateCartItem, removeFromCart } = useCart();
 
   const { settings } = useStoreSettings();
   const ivaPct = settings?.iva ?? 21;
 
   const [currentStep] = useState(1);
-  const [showExpirationModal, setShowExpirationModal] = useState(false);
-
-  useInactivityTimer({
-    onInactive: () => setShowExpirationModal(true),
-    timeoutMinutes: 15,
-    isEnabled: cartItems.length > 0,
-  });
-
-  const handleExpirationConfirm = () => {
-    clearCart();
-    setShowExpirationModal(false);
-    onNavigate?.("shop");
-  };
 
   const updateQuantity = async (productId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
@@ -536,11 +521,6 @@ export function ShoppingCartPage({
 
       <BackToTopButton />
       <Footer onNavigate={onNavigate} />
-
-      <InactivityExpirationModal
-        isOpen={showExpirationModal}
-        onConfirm={handleExpirationConfirm}
-      />
     </div>
   );
 }

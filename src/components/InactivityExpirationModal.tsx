@@ -78,8 +78,7 @@ export function InactivityExpirationModal({
             className="text-center text-[#4A4A4A] mb-8"
             style={{ fontSize: "1rem", fontWeight: 400, lineHeight: 1.6 }}
           >
-            Liberamos el stock para que otros usuarios puedan comprar. Podés
-            armar tu pedido nuevamente.
+            Podés armar tu pedido nuevamente cuando quieras.
           </p>
 
           {/* Botón Principal */}

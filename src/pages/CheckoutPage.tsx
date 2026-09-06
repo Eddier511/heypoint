@@ -22,8 +22,6 @@ import { BackToTopButton } from "../components/BackToTopButton";
 import { Footer } from "../components/Footer";
 import { CheckoutStepper } from "../components/CheckoutStepper";
 import { ReservationTimer } from "../components/ReservationTimer";
-import { InactivityExpirationModal } from "../components/InactivityExpirationModal";
-import { useInactivityTimer } from "../hooks/useInactivityTimer";
 import { useStoreSettings } from "../hooks/useStoreSettings";
 import { formatPrecioARS, getPrecioFinalConIVA } from "../utils/priceUtils";
 import {
@@ -80,28 +78,13 @@ export function CheckoutPage({
   isLoggedIn = true,
   onOrderSuccess,
 }: CheckoutPageProps) {
-  const { cartItems, clearCart } = useCart();
+  const { cartItems } = useCart();
   const { fetchMe } = useAuth();
   const { settings: storeSettings } = useStoreSettings();
   const ivaPct = storeSettings?.iva ?? 21;
   const [currentStep] = useState(2);
   const [isProcessing, setIsProcessing] = useState(false);
   const [stockError, setStockError] = useState<string | null>(null);
-  const [showExpirationModal, setShowExpirationModal] = useState(false);
-
-  useInactivityTimer({
-    onInactive: () => {
-      setShowExpirationModal(true);
-    },
-    timeoutMinutes: 15,
-    isEnabled: cartItems.length > 0 && !isProcessing,
-  });
-
-  const handleExpirationConfirm = () => {
-    clearCart();
-    setShowExpirationModal(false);
-    onNavigate?.("shop");
-  };
 
   const subtotalSinIVA = cartItems.reduce(
     (sum, item) => sum + Number(item.price || 0) * item.quantity,
@@ -635,11 +618,6 @@ export function CheckoutPage({
       </div>
 
       <Footer onNavigate={onNavigate} />
-
-      <InactivityExpirationModal
-        isOpen={showExpirationModal}
-        onConfirm={handleExpirationConfirm}
-      />
     </div>
   );
 }
