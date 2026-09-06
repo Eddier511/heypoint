@@ -31,6 +31,7 @@ type CustomerProfileFormProps = {
   onChangeEmail?: () => void;
   showAccountActions?: boolean;
   showPendingHints?: boolean;
+  variant?: "profile" | "checkout";
 };
 
 export function CustomerProfileForm({
@@ -50,7 +51,9 @@ export function CustomerProfileForm({
   onChangeEmail,
   showAccountActions = true,
   showPendingHints = true,
+  variant = "profile",
 }: CustomerProfileFormProps) {
+  const isCheckoutVariant = variant === "checkout";
   const isMissingWhileIncomplete = (field: keyof CustomerProfileFormData) =>
     showPendingHints &&
     profileComplete === false &&
@@ -63,120 +66,155 @@ export function CustomerProfileForm({
       : "border-gray-300";
 
   return (
-    <div className="mb-8">
-      <h2
-        className="text-[#1C2335] mb-6 pb-3 border-b border-gray-200"
-        style={{
-          fontSize: "clamp(1.25rem, 3vw, 1.5rem)",
-          fontWeight: 600,
-        }}
-      >
-        Información Personal
-      </h2>
+    <div className={isCheckoutVariant ? "mb-6" : "mb-8"}>
+      {!isCheckoutVariant && (
+        <h2
+          className="text-[#1C2335] mb-6 pb-3 border-b border-gray-200"
+          style={{
+            fontSize: "clamp(1.25rem, 3vw, 1.5rem)",
+            fontWeight: 600,
+          }}
+        >
+          Información Personal
+        </h2>
+      )}
 
       <p className="text-xs font-semibold text-[#2E2E2E]/45 uppercase tracking-wider mb-4">
-        Datos personales
+        {isCheckoutVariant ? "Tu cuenta" : "Datos personales"}
+      </p>
+      {isCheckoutVariant ? (
+        <div className="mb-6 rounded-2xl border border-gray-200 bg-white px-4 py-3.5">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="truncate text-[#1C2335]" style={{ fontSize: "1rem", fontWeight: 700 }}>
+                {profileData.fullName || "Usuario"}
+              </p>
+              <p className="mt-0.5 truncate text-[#2E2E2E]/65" style={{ fontSize: "0.875rem" }}>
+                {profileData.email}
+              </p>
+            </div>
+            <span className={`mt-2 inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold sm:mt-0 ${
+              profileData.emailVerified
+                ? "bg-green-50 text-green-700"
+                : "bg-red-50 text-red-700"
+            }`}>
+              {profileData.emailVerified ? (
+                <CheckCircle2 className="h-3.5 w-3.5" />
+              ) : (
+                <XCircle className="h-3.5 w-3.5" />
+              )}
+              {profileData.emailVerified ? "Email verificado" : "Email no verificado"}
+            </span>
+          </div>
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-2 gap-5 md:gap-6 mb-6">
+          <div>
+            <Label className="text-[#1C2335] mb-2 block" style={{ fontSize: "0.875rem", fontWeight: 600 }}>
+              Nombre completo <span className="text-red-500">*</span>
+            </Label>
+            <div className="relative">
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none z-10" />
+              <Input
+                value={profileData.fullName}
+                onChange={(e) => onInputChange("fullName", e.target.value)}
+                placeholder="Juan Pérez"
+                className={`pl-12 pr-4 py-6 rounded-2xl border-2 transition-all text-[#1C2335] ${
+                  errors.fullName
+                    ? "border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
+                    : "border-gray-200 focus:border-[#FF6B00] focus:ring-2 focus:ring-[#FF6B00]/20"
+                }`}
+              />
+            </div>
+            {errors.fullName && (
+              <p className="mt-2 text-red-500 flex items-center gap-1.5" style={{ fontSize: "0.813rem", fontWeight: 600 }}>
+                <AlertCircle className="w-3.5 h-3.5" />
+                {errors.fullName}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <Label className="text-[#1C2335] mb-2 block" style={{ fontSize: "0.875rem", fontWeight: 600 }}>
+              Correo electrónico <span className="text-red-500">*</span>
+            </Label>
+            <div className="relative">
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#2E2E2E]/50 pointer-events-none z-10" />
+              <Input
+                type="email"
+                value={profileData.email}
+                disabled
+                className="pl-12 pr-10 py-6 rounded-2xl border-2 border-gray-300 bg-gray-50 cursor-not-allowed opacity-80"
+              />
+              {profileData.emailVerified ? (
+                <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
+              ) : (
+                <XCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-red-500" />
+              )}
+            </div>
+
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <p className="text-[#2E2E2E]/60 text-xs">
+                {profileData.emailVerified ? "Email verificado ✓" : "Email NO verificado"}
+              </p>
+
+              {showAccountActions && (
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={onRefreshVerifiedState}
+                    className="text-[#2E2E2E]/70 hover:text-[#1C2335] transition-colors inline-flex items-center gap-1"
+                    style={{ fontSize: "0.813rem", fontWeight: 600 }}
+                    disabled={checkingEmail}
+                    title="Revisar verificación"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${checkingEmail ? "animate-spin" : ""}`} />
+                    {checkingEmail ? "Revisando..." : "Revisar"}
+                  </button>
+
+                  {!profileData.emailVerified && (
+                    <button
+                      type="button"
+                      onClick={onResendVerification}
+                      disabled={resendCooldown > 0}
+                      className={`transition-colors inline-flex items-center gap-1 ${
+                        resendCooldown > 0
+                          ? "text-gray-400 cursor-not-allowed"
+                          : "text-[#FF6B00] hover:text-[#e56000]"
+                      }`}
+                      style={{ fontSize: "0.813rem", fontWeight: 600 }}
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                      {resendCooldown > 0 ? `Reenviar en ${resendCooldown}s` : "Reenviar verificación"}
+                    </button>
+                  )}
+
+                  {hasPasswordProvider ? (
+                    <button
+                      type="button"
+                      onClick={onChangeEmail}
+                      className="text-[#FF6B00] hover:text-[#e56000] transition-colors inline-flex items-center gap-1"
+                      style={{ fontSize: "0.813rem", fontWeight: 600 }}
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      Cambiar correo
+                    </button>
+                  ) : (
+                    <span className="text-[#2E2E2E]/50 inline-flex items-center gap-1" style={{ fontSize: "0.813rem" }}>
+                      Tu correo está gestionado por Google.
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <p className="text-xs font-semibold text-[#2E2E2E]/45 uppercase tracking-wider mb-4">
+        Datos necesarios
       </p>
       <div className="grid md:grid-cols-2 gap-5 md:gap-6 mb-6">
-        <div>
-          <Label className="text-[#1C2335] mb-2 block" style={{ fontSize: "0.875rem", fontWeight: 600 }}>
-            Nombre completo <span className="text-red-500">*</span>
-          </Label>
-          <div className="relative">
-            <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none z-10" />
-            <Input
-              value={profileData.fullName}
-              onChange={(e) => onInputChange("fullName", e.target.value)}
-              placeholder="Juan Pérez"
-              className={`pl-12 pr-4 py-6 rounded-2xl border-2 transition-all text-[#1C2335] ${
-                errors.fullName
-                  ? "border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
-                  : "border-gray-200 focus:border-[#FF6B00] focus:ring-2 focus:ring-[#FF6B00]/20"
-              }`}
-            />
-          </div>
-          {errors.fullName && (
-            <p className="mt-2 text-red-500 flex items-center gap-1.5" style={{ fontSize: "0.813rem", fontWeight: 600 }}>
-              <AlertCircle className="w-3.5 h-3.5" />
-              {errors.fullName}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <Label className="text-[#1C2335] mb-2 block" style={{ fontSize: "0.875rem", fontWeight: 600 }}>
-            Correo electrónico <span className="text-red-500">*</span>
-          </Label>
-          <div className="relative">
-            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#2E2E2E]/50 pointer-events-none z-10" />
-            <Input
-              type="email"
-              value={profileData.email}
-              disabled
-              className="pl-12 pr-10 py-6 rounded-2xl border-2 border-gray-300 bg-gray-50 cursor-not-allowed opacity-80"
-            />
-            {profileData.emailVerified ? (
-              <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
-            ) : (
-              <XCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-red-500" />
-            )}
-          </div>
-
-          <div className="mt-2 flex items-center justify-between gap-3">
-            <p className="text-[#2E2E2E]/60 text-xs">
-              {profileData.emailVerified ? "Email verificado ✓" : "Email NO verificado"}
-            </p>
-
-            {showAccountActions && (
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={onRefreshVerifiedState}
-                  className="text-[#2E2E2E]/70 hover:text-[#1C2335] transition-colors inline-flex items-center gap-1"
-                  style={{ fontSize: "0.813rem", fontWeight: 600 }}
-                  disabled={checkingEmail}
-                  title="Revisar verificación"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${checkingEmail ? "animate-spin" : ""}`} />
-                  {checkingEmail ? "Revisando..." : "Revisar"}
-                </button>
-
-                {!profileData.emailVerified && (
-                  <button
-                    type="button"
-                    onClick={onResendVerification}
-                    disabled={resendCooldown > 0}
-                    className={`transition-colors inline-flex items-center gap-1 ${
-                      resendCooldown > 0
-                        ? "text-gray-400 cursor-not-allowed"
-                        : "text-[#FF6B00] hover:text-[#e56000]"
-                    }`}
-                    style={{ fontSize: "0.813rem", fontWeight: 600 }}
-                  >
-                    <Mail className="w-3.5 h-3.5" />
-                    {resendCooldown > 0 ? `Reenviar en ${resendCooldown}s` : "Reenviar verificación"}
-                  </button>
-                )}
-
-                {hasPasswordProvider ? (
-                  <button
-                    type="button"
-                    onClick={onChangeEmail}
-                    className="text-[#FF6B00] hover:text-[#e56000] transition-colors inline-flex items-center gap-1"
-                    style={{ fontSize: "0.813rem", fontWeight: 600 }}
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    Cambiar correo
-                  </button>
-                ) : (
-                  <span className="text-[#2E2E2E]/50 inline-flex items-center gap-1" style={{ fontSize: "0.813rem" }}>
-                    Tu correo está gestionado por Google.
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
 
         <div>
           <Label className="text-[#1C2335] mb-2 block" style={{ fontSize: "0.875rem", fontWeight: 600 }}>
@@ -243,27 +281,41 @@ export function CustomerProfileForm({
         </div>
       </div>
 
-      <div className="rounded-2xl bg-[#FFF9F4] border border-orange-100 p-4 md:p-5">
+      <div className={isCheckoutVariant ? "border-t border-gray-200 pt-5" : "rounded-2xl bg-[#FFF9F4] border border-orange-100 p-4 md:p-5"}>
         <p className="text-xs font-semibold text-[#2E2E2E]/45 uppercase tracking-wider mb-4">
           Datos de retiro
         </p>
         <div className="grid md:grid-cols-2 gap-5 md:gap-6">
-          <div>
-            <Label className="text-[#1C2335] mb-2 block" style={{ fontSize: "0.875rem", fontWeight: 600 }}>
-              Point – Ubicación de retiro
-            </Label>
-            <div className="relative">
-              <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#2E2E2E]/50 pointer-events-none z-10" />
-              <Input
-                value={profileData.pickupPoint}
-                disabled
-                className="pl-12 pr-4 py-6 rounded-2xl border-2 border-gray-300 bg-gray-50 cursor-not-allowed opacity-70"
-              />
+          {isCheckoutVariant ? (
+            <div className="rounded-2xl border border-gray-200 bg-white px-4 py-3.5">
+              <p className="text-xs font-semibold uppercase tracking-wider text-[#2E2E2E]/45">
+                Retiro en
+              </p>
+              <div className="mt-2 flex items-start gap-2 text-[#1C2335]">
+                <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#FF6B00]" />
+                <p className="leading-snug" style={{ fontSize: "0.938rem", fontWeight: 700 }}>
+                  {profileData.pickupPoint}
+                </p>
+              </div>
             </div>
-            <p className="mt-2 text-[#2E2E2E]/60" style={{ fontSize: "0.813rem" }}>
-              Este punto de retiro es administrado por Hey!Point. No podés editarlo desde acá.
-            </p>
-          </div>
+          ) : (
+            <div>
+              <Label className="text-[#1C2335] mb-2 block" style={{ fontSize: "0.875rem", fontWeight: 600 }}>
+                Point – Ubicación de retiro
+              </Label>
+              <div className="relative">
+                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#2E2E2E]/50 pointer-events-none z-10" />
+                <Input
+                  value={profileData.pickupPoint}
+                  disabled
+                  className="pl-12 pr-4 py-6 rounded-2xl border-2 border-gray-300 bg-gray-50 cursor-not-allowed opacity-70"
+                />
+              </div>
+              <p className="mt-2 text-[#2E2E2E]/60" style={{ fontSize: "0.813rem" }}>
+                Este punto de retiro es administrado por Hey!Point. No podés editarlo desde acá.
+              </p>
+            </div>
+          )}
 
           <div>
             <Label className="text-[#1C2335] mb-2 block" style={{ fontSize: "0.875rem", fontWeight: 600 }}>

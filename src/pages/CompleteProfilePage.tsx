@@ -250,7 +250,7 @@ export function CompleteProfilePage({ onNavigate }: CompleteProfilePageProps) {
       <BackToTopButton />
 
       <div className="pt-20 lg:pt-24 pb-16">
-        <div className="container mx-auto px-5 md:px-6 py-8 md:py-12 max-w-5xl">
+        <div className="container mx-auto px-5 md:px-6 py-8 md:py-12 max-w-4xl">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <button
               type="button"
@@ -296,8 +296,8 @@ export function CompleteProfilePage({ onNavigate }: CompleteProfilePageProps) {
               </div>
             )}
 
-            <Card className="border-none shadow-xl overflow-hidden" style={{ background: "linear-gradient(135deg, #FFFFFF 0%, #FFF9F0 100%)", borderRadius: "24px" }}>
-              <div className="p-6 md:p-10">
+            <Card className="border border-orange-100/70 shadow-xl overflow-hidden bg-white" style={{ borderRadius: "24px" }}>
+              <div className="p-5 md:p-8">
                 {!currentUser ? (
                   <div className="py-16 text-center">
                     <h2 className="text-[#1C2335] text-xl font-bold">Iniciá sesión para continuar</h2>
@@ -338,9 +338,11 @@ export function CompleteProfilePage({ onNavigate }: CompleteProfilePageProps) {
                         }
                       }}
                       showAccountActions={false}
+                      showPendingHints={false}
+                      variant="checkout"
                     />
 
-                    <div className="flex justify-end pt-6 border-t border-gray-200">
+                    <div className="flex justify-end pt-5 border-t border-gray-200">
                       <Button
                         onClick={handleSave}
                         disabled={isSaving}
