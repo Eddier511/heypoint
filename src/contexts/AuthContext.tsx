@@ -119,7 +119,6 @@ interface AuthContextType {
 const STORAGE_KEY = "heypoint_id_token";
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const AUTH_ONBOARDING_KEYS = [
-  "heypoint_pending_profile",
   "heypoint_pending_email",
   "heypoint_pending_name",
 ];

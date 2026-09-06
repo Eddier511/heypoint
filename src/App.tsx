@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { lazy, Suspense, useState, useEffect, useMemo, useCallback } from "react";
 import {
   ShoppingBag,
   CreditCard,
@@ -54,6 +54,11 @@ const UserProfilePage = lazy(() =>
     default: module.UserProfilePage,
   })),
 );
+const CompleteProfilePage = lazy(() =>
+  import("./pages/CompleteProfilePage").then((module) => ({
+    default: module.CompleteProfilePage,
+  })),
+);
 const ShoppingCartPage = lazy(() =>
   import("./pages/ShoppingCartPage").then((module) => ({
     default: module.ShoppingCartPage,
@@ -103,6 +108,7 @@ type Page =
   | "business"
   | "ourcompany"
   | "profile"
+  | "completeProfile"
   | "cart"
   | "checkout"
   | "paymentResult"
@@ -207,6 +213,8 @@ function pageToPath(page: Page) {
       return "/orders";
     case "profile":
       return "/account";
+    case "completeProfile":
+      return "/complete-profile";
     case "terms":
       return "/terminos";
     case "privacy":
@@ -230,6 +238,7 @@ function pathToPage(pathname: string): Page {
   if (p.startsWith("/checkout/resultado")) return "paymentResult";
   if (p.startsWith("/checkout")) return "checkout";
   if (p.startsWith("/orders")) return "orders";
+  if (p.startsWith("/complete-profile")) return "completeProfile";
   if (p.startsWith("/account") || p.startsWith("/profile")) return "profile";
   if (p.startsWith("/terminos")) return "terms";
   if (p.startsWith("/privacidad")) return "privacy";
@@ -308,10 +317,9 @@ function AppContent() {
     fetchMe,
     getAuthToken,
   } = useAuth();
-  const { loginOpen, signupOpen, openLoginModal, openSignupModal, closeAllModals, openedAt } =
+  const { openLoginModal, openSignupModal, closeAllModals, openedAt } =
     useModal();
   const { clearCart } = useCart();
-  const promptedIncompleteProfileUidRef = useRef<string | null>(null);
 
   const userName = user?.fullName || "User";
   const userEmail = user?.email || "";
@@ -397,7 +405,6 @@ function AppContent() {
       localStorage.removeItem("heypoint_pending_email");
       localStorage.removeItem("heypoint_pending_name");
       clearProfileReturnIntent();
-      promptedIncompleteProfileUidRef.current = null;
       closeAllModals();
       setCurrentPage("home");
       if (window.location.pathname !== "/") {
@@ -423,50 +430,6 @@ function AppContent() {
 
   useEffect(() => {
     if (loadingAuth || !currentUser) return;
-    if (loginOpen || signupOpen) return;
-    if (currentUser.emailVerified === false) return;
-    if (localStorage.getItem("heypoint_pending_profile") === "1") return;
-    if (promptedIncompleteProfileUidRef.current === currentUser.uid) return;
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("verified") === "1") return;
-
-    let cancelled = false;
-
-    async function promptIncompleteProfileAfterLogin() {
-      try {
-        const me = await fetchMe();
-        const profile = me.profile;
-        if (cancelled || profile?.profileComplete !== false) return;
-
-        promptedIncompleteProfileUidRef.current = currentUser.uid;
-        localStorage.setItem("heypoint_pending_profile", "1");
-        localStorage.setItem(
-          "heypoint_pending_email",
-          profile.email || currentUser.email || "",
-        );
-        localStorage.setItem(
-          "heypoint_pending_name",
-          profile.fullName || currentUser.displayName || "",
-        );
-        openSignupModal();
-      } catch (error) {
-        console.error("[App] incomplete profile check after login failed", {
-          uid: currentUser.uid,
-          email: currentUser.email,
-          error,
-        });
-      }
-    }
-
-    promptIncompleteProfileAfterLogin();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [loadingAuth, currentUser, fetchMe, openSignupModal, loginOpen, signupOpen]);
-
-  useEffect(() => {
-    if (loadingAuth || !currentUser) return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("verified") !== "1") return;
 
@@ -474,24 +437,8 @@ function AppContent() {
 
     async function handleVerifiedRedirect() {
       try {
-        const verified = await refreshEmailVerification();
+        await refreshEmailVerification();
         await getAuthToken(true);
-        const me = await fetchMe();
-        const profile = me.profile;
-
-        if (!cancelled && verified && profile?.profileComplete === false) {
-          promptedIncompleteProfileUidRef.current = currentUser.uid;
-          localStorage.setItem("heypoint_pending_profile", "1");
-          localStorage.setItem(
-            "heypoint_pending_email",
-            profile.email || currentUser?.email || "",
-          );
-          localStorage.setItem(
-            "heypoint_pending_name",
-            profile.fullName || currentUser?.displayName || "",
-          );
-          openSignupModal();
-        }
       } catch (error) {
         console.error("[App] verified redirect handling failed", {
           uid: currentUser?.uid,
@@ -517,8 +464,6 @@ function AppContent() {
     currentUser,
     refreshEmailVerification,
     getAuthToken,
-    fetchMe,
-    openSignupModal,
   ]);
 
   // ── Email-change callback (?emailChanged=1) ──────────────────────────────
@@ -729,7 +674,7 @@ function AppContent() {
         return;
       }
 
-      handleNavigation("profile");
+      handleNavigation("completeProfile");
       setProfileReturnIntent(PROFILE_RETURN_CHECKOUT);
     } catch (error) {
       console.error("[App] checkout profile gate failed", {
@@ -791,9 +736,9 @@ function AppContent() {
         }
 
         setProfileReturnIntent(PROFILE_RETURN_CHECKOUT);
-        setCurrentPage("profile");
-        if (window.location.pathname !== "/account") {
-          window.history.replaceState({}, "", "/account");
+        setCurrentPage("completeProfile");
+        if (window.location.pathname !== "/complete-profile") {
+          window.history.replaceState({}, "", "/complete-profile");
         }
       } catch (error) {
         console.error("[App] direct checkout guard failed", {
@@ -908,6 +853,12 @@ function AppContent() {
     return (
       <Suspense fallback={<PageFallback />}>
         <UserProfilePage onNavigate={handleNavigation} />
+      </Suspense>
+    );
+  if (currentPage === "completeProfile")
+    return (
+      <Suspense fallback={<PageFallback />}>
+        <CompleteProfilePage onNavigate={handleNavigation} />
       </Suspense>
     );
   if (currentPage === "cart")

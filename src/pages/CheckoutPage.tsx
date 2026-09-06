@@ -38,7 +38,6 @@ import {
 import { motion } from "motion/react";
 import { useCart } from "../contexts/CartContext";
 import { useAuth } from "../contexts/AuthContext";
-import { useModal } from "../contexts/ModalContext";
 import { api } from "../lib/api";
 import { toast } from "sonner";
 
@@ -54,9 +53,7 @@ interface CheckoutPageProps {
   onOrderSuccess?: (data: OrderSuccessData) => void;
 }
 
-const PENDING_PROFILE_KEY = "heypoint_pending_profile";
-const PENDING_EMAIL_KEY = "heypoint_pending_email";
-const PENDING_NAME_KEY = "heypoint_pending_name";
+const PROFILE_RETURN_TO_KEY = "heypoint_profile_return_to";
 
 function getMissingProfileFields(profile: any): string[] {
   const missing: string[] = [];
@@ -84,8 +81,7 @@ export function CheckoutPage({
   onOrderSuccess,
 }: CheckoutPageProps) {
   const { cartItems, clearCart } = useCart();
-  const { fetchMe, user: sessionUser } = useAuth();
-  const { openSignupModal } = useModal();
+  const { fetchMe } = useAuth();
   const { settings: storeSettings } = useStoreSettings();
   const ivaPct = storeSettings?.iva ?? 21;
   const [currentStep] = useState(2);
@@ -157,20 +153,12 @@ export function CheckoutPage({
           missingFields: getMissingProfileFields(profile),
           profileComplete: profile?.profileComplete,
         });
-        localStorage.setItem(PENDING_PROFILE_KEY, "1");
-        localStorage.setItem(
-          PENDING_EMAIL_KEY,
-          profile?.email || sessionUser?.email || "",
-        );
-        localStorage.setItem(
-          PENDING_NAME_KEY,
-          profile?.fullName || sessionUser?.fullName || "",
-        );
+        sessionStorage.setItem(PROFILE_RETURN_TO_KEY, "checkout");
         toast.error("Para continuar con tu compra necesitás completar tu perfil.", {
           description: "Completá teléfono, DNI, fecha de nacimiento y UF.",
           duration: 5000,
         });
-        openSignupModal();
+        onNavigate?.("completeProfile");
         setIsProcessing(false);
         return;
       }
@@ -216,12 +204,12 @@ export function CheckoutPage({
         });
       } else {
         if (body?.error === "PROFILE_INCOMPLETE") {
-          localStorage.setItem(PENDING_PROFILE_KEY, "1");
+          sessionStorage.setItem(PROFILE_RETURN_TO_KEY, "checkout");
           toast.error("Para continuar con tu compra necesitás completar tu perfil.", {
             description: "Completá teléfono, DNI, fecha de nacimiento y UF.",
             duration: 5000,
           });
-          openSignupModal();
+          onNavigate?.("completeProfile");
         } else {
           toast.error("Error al procesar el pedido", {
             description: "Por favor intentá nuevamente",

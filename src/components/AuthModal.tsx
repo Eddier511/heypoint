@@ -9,11 +9,7 @@ import {
   Eye,
   EyeOff,
   Chrome,
-  ArrowLeft,
   CheckCircle2,
-  CreditCard,
-  MapPin,
-  ChevronRight,
   Check,
   Clock,
   RefreshCw,
@@ -25,18 +21,10 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
-import { BirthDateInput } from "./BirthDateInput";
 
 import { useAuth } from "../contexts/AuthContext";
-import { useStoreSettings } from "../hooks/useStoreSettings";
-import {
-  isoToDisplay as _isoToDisplay,
-  displayToIso,
-  isValidDisplayDate,
-  validateAge16,
-} from "../lib/dateUtils";
 
-type SignUpStep = "form" | "creating" | "verifyEmail" | "completeProfile";
+type SignUpStep = "form" | "creating" | "verifyEmail";
 type SignupMethod = "google" | "email";
 
 interface AuthModalProps {
@@ -51,7 +39,6 @@ const PENDING_NAME_KEY = "heypoint_pending_name";
 const RESEND_COOLDOWN_SECONDS = 60;
 const TOO_MANY_REQUESTS_MESSAGE =
   "Hiciste demasiados intentos. Esperá unos minutos antes de volver a intentarlo.";
-const PENDING_PROFILE_KEY = "heypoint_pending_profile"; // ✅ nuevo
 
 const calculatePasswordStrength = (
   password: string,
@@ -76,20 +63,6 @@ const checkPasswordRequirements = (password: string) => ({
 
 function validateEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-
-function normalizeDigits(v: string) {
-  return (v || "").replace(/\D/g, "");
-}
-
-function limitDigits(v: string, maxLength: number) {
-  return normalizeDigits(v).slice(0, maxLength);
-}
-
-function isValidDni(v: string) {
-  const dni = String(v || "").trim();
-  return /^\d{3,8}$/.test(dni) && !/^(\d)\1+$/.test(dni);
 }
 
 const SUGGESTED_DOMAINS = ["gmail.com", "hotmail.com", "outlook.com", "yahoo.com"];
@@ -186,70 +159,6 @@ function getFriendlyAuthError(error: any, fallback: string): string {
   return fallback;
 }
 
-/**
- * ✅ FIX #1: normalizar base para que SIEMPRE termine en /api
- * ✅ FIX #2: joinUrl robusto (evita dobles slashes)
- */
-function joinUrl(base: string, path: string) {
-  const b = (base || "").replace(/\/+$/, "");
-  const p = (path || "").replace(/^\/+/, "");
-  return `${b}/${p}`;
-}
-
-function resolveApiBase() {
-  const raw =
-    import.meta.env.VITE_API_URL ||
-    import.meta.env.VITE_API_BASE_URL ||
-    "http://localhost:4000"; // ✅ SIN /api aquí
-
-  const base = String(raw).trim().replace(/\/+$/, "");
-  if (base.endsWith("/api")) return base;
-  return `${base}/api`;
-}
-
-async function saveProfileToBackend(payload: any, idToken: string) {
-  const apiBase = resolveApiBase();
-  const url = joinUrl(apiBase, "/customers/profile");
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${idToken}`,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    let data: any = null;
-    try {
-      data = text ? JSON.parse(text) : null;
-    } catch {
-      data = null;
-    }
-    if (data?.error === "DNI_ALREADY_IN_USE") {
-      throw new Error("Este DNI ya está asociado a otra cuenta.");
-    }
-    if (data?.error === "UNIT_USER_LIMIT_REACHED") {
-      throw new Error(
-        "Esta UF ya alcanzó el límite de usuarios registrados. Contactá a soporte si necesitás ayuda.",
-      );
-    }
-    if (
-      data?.error === "Terms acceptance required" ||
-      data?.error === "Privacy acceptance required"
-    ) {
-      throw new Error(
-        "Debés aceptar los Términos y Condiciones y la Política de Privacidad para continuar.",
-      );
-    }
-    throw new Error(data?.message || text || `No se pudo guardar el perfil (${res.status}).`);
-  }
-
-  return res.json().catch(() => ({}));
-}
-
 export default function AuthModal({
   isOpen,
   onClose,
@@ -264,20 +173,13 @@ export default function AuthModal({
     sendResetPassword,
     refreshEmailVerification,
     sendVerifyEmailPro, // ✅ ESTA ES LA CLAVE
-    getAuthToken,
-    getIdToken,
-    customerProfile,
-    fetchMe,
   } = useAuth();
-  const { settings: storeSettings } = useStoreSettings();
 
   const [activeTab, setActiveTab] = useState<"login" | "signup">(defaultMode);
   const [signUpStep, setSignUpStep] = useState<SignUpStep>("form");
   const [signupMethod, setSignupMethod] = useState<SignupMethod | null>(null);
 
   const [readyToClose, setReadyToClose] = useState(false);
-  const [step2Dirty, setStep2Dirty] = useState(false);
-  const [showConfirmLeave, setShowConfirmLeave] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [globalError, setGlobalError] = useState<string>("");
@@ -311,58 +213,15 @@ export default function AuthModal({
   const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
   const [forgotPasswordError, setForgotPasswordError] = useState("");
 
-  const [phone, setPhone] = useState("");
-  const [phoneError, setPhoneError] = useState("");
-  const [dni, setDni] = useState("");
-  const [dniError, setDniError] = useState("");
-  const [birthDate, setBirthDate] = useState("");
-  const [birthDateError, setBirthDateError] = useState("");
-  const [apartmentNumber, setApartmentNumber] = useState("");
-  const [apartmentNumberError, setApartmentNumberError] = useState("");
-  const [residenceAuthorizationAccepted, setResidenceAuthorizationAccepted] =
-    useState(false);
-  const [residenceAuthorizationError, setResidenceAuthorizationError] =
-    useState("");
-
   // Legal consent — signup form (step 1)
   const [signUpTermsAccepted, setSignUpTermsAccepted] = useState(false);
   const [signUpTermsError, setSignUpTermsError] = useState("");
-
-  // Legal consent — signup form is the single source for new-account consent.
-  const hasPersistedLegalConsent =
-    customerProfile?.termsAccepted === true &&
-    customerProfile?.privacyAccepted === true;
 
   const shouldReduceMotion = useReducedMotion();
 
   // Email suggestion visibility
   const [showLoginSuggestions, setShowLoginSuggestions] = useState(false);
   const [showSignupSuggestions, setShowSignupSuggestions] = useState(false);
-
-  const pickupPoint =
-    storeSettings?.pickupPoint?.address ||
-    storeSettings?.pickupPoint?.name ||
-    "Vilanova Haedo";
-
-  // ✅ FIX: token retry (Google puede tardar en estar listo)
-  async function getIdTokenWithRetry(retries = 6, delayMs = 250) {
-    let lastErr: any = null;
-
-    for (let i = 0; i < retries; i++) {
-      try {
-        const tok = (await getAuthToken(true)) || (await getIdToken());
-        if (tok) return tok;
-      } catch (e) {
-        lastErr = e;
-      }
-      await new Promise((r) => setTimeout(r, delayMs));
-    }
-
-    throw new Error(
-      lastErr?.message ||
-        "No se pudo obtener el token de sesión. Probá de nuevo.",
-    );
-  }
 
   // ✅ restore state
   useEffect(() => {
@@ -376,31 +235,10 @@ export default function AuthModal({
     setShowForgotPassword(false);
     setForgotPasswordSent(false);
     setForgotPasswordError("");
-    setStep2Dirty(false);
     setVerificationNotice("");
 
     const savedEmail = localStorage.getItem(PENDING_EMAIL_KEY);
     const savedName = localStorage.getItem(PENDING_NAME_KEY);
-    const pendingProfile = localStorage.getItem(PENDING_PROFILE_KEY) === "1";
-
-    setPhone("");
-    setDni("");
-    setBirthDate("");
-    setApartmentNumber("");
-    setApartmentNumberError("");
-    setResidenceAuthorizationAccepted(false);
-    setResidenceAuthorizationError("");
-
-    // ✅ si Google ya autenticó y el padre cerró el modal, volvemos a Paso 2 automáticamente
-    if (pendingProfile && sessionUser?.emailVerified !== false) {
-      const email = sessionUser?.email || savedEmail || "";
-      const name = sessionUser?.fullName || savedName || "";
-      setPendingEmail(email);
-      setPendingFullName(name);
-      setSignUpStep("completeProfile");
-      setActiveTab("signup");
-      return;
-    }
 
     if (defaultMode === "signup" && savedEmail) {
       setPendingEmail(savedEmail);
@@ -448,12 +286,8 @@ export default function AuthModal({
     // Email verification is a hard blocking step — cannot be dismissed.
     if (signUpStep === "verifyEmail") return;
     if (signUpStep === "creating") return;
-    if (signUpStep === "completeProfile" && step2Dirty) {
-      setShowConfirmLeave(true);
-      return;
-    }
     onClose();
-  }, [onClose, signUpStep, step2Dirty]);
+  }, [onClose, signUpStep]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -555,10 +389,6 @@ export default function AuthModal({
         return;
       }
 
-      const profileAfterGoogle = legalConsentAccepted
-        ? await fetchMe().catch(() => null)
-        : null;
-
       // ✅ REFRESH REAL de verificación desde Firebase (por si el context estaba stale)
       const verifiedNow = await refreshEmailVerification().catch(() => {
         // si falla el reload, usamos lo que venía del user
@@ -576,11 +406,10 @@ export default function AuthModal({
         return;
       }
 
-      // ✅ Si ES nuevo y ya está verificado: completar perfil
-      if (isNewUser || profileAfterGoogle?.profile?.profileComplete === false) {
-        localStorage.setItem(PENDING_PROFILE_KEY, "1");
-        setSignUpStep("completeProfile");
-        setStep2Dirty(false);
+      // ✅ Si ES nuevo y ya está verificado: cerrar y dejar disponible completar perfil.
+      if (isNewUser) {
+        onLoginSuccess(user);
+        onClose();
         return;
       }
 
@@ -706,8 +535,6 @@ export default function AuthModal({
 
       localStorage.setItem(PENDING_EMAIL_KEY, user.email);
       localStorage.setItem(PENDING_NAME_KEY, signUpFullName);
-      localStorage.setItem(PENDING_PROFILE_KEY, "1");
-
       setPendingEmail(user.email);
       setPendingFullName(signUpFullName);
 
@@ -740,15 +567,6 @@ export default function AuthModal({
         return;
       }
 
-      const pendingProfile = localStorage.getItem(PENDING_PROFILE_KEY) === "1";
-
-      if (pendingProfile) {
-        setSignUpStep("completeProfile");
-        setStep2Dirty(false);
-        return;
-      }
-
-      // Si no hay perfil pendiente, es un usuario existente: lo dejamos loguear
       onLoginSuccess({
         email: pendingEmail,
         fullName: pendingFullName || "User",
@@ -789,7 +607,6 @@ export default function AuthModal({
   const handleChangeEmail = () => {
     localStorage.removeItem(PENDING_EMAIL_KEY);
     localStorage.removeItem(PENDING_NAME_KEY);
-    localStorage.removeItem(PENDING_PROFILE_KEY);
     setPendingEmail("");
     setPendingFullName("");
     setSignUpStep("form");
@@ -825,118 +642,6 @@ export default function AuthModal({
     setForgotPasswordSent(false);
     setForgotPasswordError("");
     setActiveTab("login");
-  };
-
-  const handleCompleteProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPhoneError("");
-    setDniError("");
-    setBirthDateError("");
-    setApartmentNumberError("");
-    setResidenceAuthorizationError("");
-    setGlobalError("");
-
-    let hasError = false;
-
-    const phoneDigits = limitDigits(phone, 10);
-    if (!phoneDigits || phoneDigits.length < 8) {
-      setPhoneError("Ingresá un teléfono válido (mínimo 8 dígitos)");
-      hasError = true;
-    }
-
-    const dniTrim = limitDigits(dni, 8);
-    if (!dniTrim || !isValidDni(dniTrim)) {
-      setDniError("El DNI debe tener entre 3 y 8 dígitos numéricos válidos");
-      hasError = true;
-    }
-
-    if (!birthDate) {
-      setBirthDateError("La fecha de nacimiento es requerida");
-      hasError = true;
-    } else if (!isValidDisplayDate(birthDate)) {
-      setBirthDateError("Fecha inválida. Usá el formato dd/mm/aaaa");
-      hasError = true;
-    } else if (!validateAge16(displayToIso(birthDate))) {
-      setBirthDateError("Debés tener al menos 16 años");
-      hasError = true;
-    }
-
-    const uf = limitDigits(apartmentNumber, 3);
-    if (!uf || !/^\d{1,3}$/.test(uf)) {
-      setApartmentNumberError("Ingresá un número válido (máx. 3 dígitos)");
-      hasError = true;
-    }
-
-    if (!residenceAuthorizationAccepted) {
-      setResidenceAuthorizationError(
-        "Confirmá que sos residente o estás autorizado para utilizar Hey!Point.",
-      );
-      hasError = true;
-    }
-
-    if (hasError) return;
-
-    try {
-      setLoading(true);
-
-      const finalUser = {
-        email: pendingEmail,
-        fullName: pendingFullName || "User",
-        phone: phoneDigits,
-        dni: dniTrim,
-        birthDate: displayToIso(birthDate),
-        apartmentNumber: uf,
-        pickupPoint,
-        residenceAuthorizationAccepted,
-        termsAccepted:
-          hasPersistedLegalConsent ||
-          signUpTermsAccepted,
-        privacyAccepted:
-          hasPersistedLegalConsent ||
-          signUpTermsAccepted,
-      };
-
-      // ✅ FIX: token con retry (evita fallos random con Google)
-      const idToken = await getIdTokenWithRetry();
-      await saveProfileToBackend(finalUser, idToken);
-      await fetchMe().catch(() => null);
-
-      // ✅ limpiar flags
-      localStorage.removeItem(PENDING_PROFILE_KEY);
-      localStorage.removeItem(PENDING_EMAIL_KEY);
-      localStorage.removeItem(PENDING_NAME_KEY);
-
-      onLoginSuccess(finalUser);
-      setStep2Dirty(false);
-      onClose();
-    } catch (err: any) {
-      setGlobalError(
-        err?.message ||
-          "No se pudo guardar el perfil. Revisá el endpoint del backend.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleBackFromCompleteProfile = () => {
-    setGlobalError("");
-    setPhoneError("");
-    setDniError("");
-    setBirthDateError("");
-    setApartmentNumberError("");
-    setStep2Dirty(false);
-
-    setPhone("");
-    setDni("");
-    setBirthDate("");
-    setApartmentNumber("");
-    setApartmentNumberError("");
-    setResidenceAuthorizationAccepted(false);
-    setResidenceAuthorizationError("");
-
-    setSignUpStep("form");
-    setActiveTab("signup");
   };
 
   // =========================
@@ -1828,292 +1533,6 @@ export default function AuthModal({
                 </div>
               )}
 
-              {/* COMPLETE PROFILE (Paso 2) */}
-              {signUpStep === "completeProfile" && (
-                <div className="flex flex-col h-full min-h-0 min-w-0 overflow-x-hidden">
-                  <div className="flex-shrink-0 bg-gradient-to-br from-[#FF6B00] to-[#e56000] text-white px-6 md:px-8 pt-6 pb-4 min-w-0">
-                    <button
-                      type="button"
-                      onClick={handleBackFromCompleteProfile}
-                      className="flex items-center gap-2 text-white/90 hover:text-white text-sm font-semibold"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                      Volver
-                    </button>
-
-                    <h2 className="font-bold text-2xl mt-3">
-                      Completá tu perfil
-                    </h2>
-                    <p className="mt-2 text-[#FFF4E6] break-words">
-                      Esto nos ayuda a validar tu acceso y preparar tu pickup.
-                    </p>
-                  </div>
-
-                  {/* ✅ FIX SCROLL REAL */}
-                  <div className="flex-1 min-h-0 min-w-0 overflow-hidden">
-                    <div
-                      className={`h-full min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain px-6 md:px-8 py-8 ${MODAL_SCROLL_CLASS}`}
-                      style={{ WebkitOverflowScrolling: "touch" as any }}
-                    >
-                      <form
-                        onSubmit={handleCompleteProfile}
-                        className="space-y-6 min-w-0"
-                      >
-                        {/* Email / Nombre (solo display) */}
-                        <div className="min-w-0 overflow-hidden rounded-3xl border border-gray-200 bg-white p-4">
-                          <div className="text-sm text-gray-600">Cuenta</div>
-                          <div className="mt-1 font-semibold text-[#1C2335] break-words">
-                            {pendingFullName || "User"}
-                          </div>
-                          <div className="text-sm text-gray-600 break-all">
-                            {pendingEmail}
-                          </div>
-                        </div>
-
-                        {/* Teléfono */}
-                        <div>
-                          <Label className="text-[#1C2335] mb-2 block font-semibold">
-                            Teléfono
-                          </Label>
-                          <div className={`relative min-w-0 flex items-center rounded-2xl border-2 transition-colors overflow-hidden ${
-                            phoneError
-                              ? "border-red-500 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/20"
-                              : "border-gray-200 focus-within:border-[#FF6B00] focus-within:ring-2 focus-within:ring-[#FF6B00]/20"
-                          }`}>
-                            <span className="flex-shrink-0 pl-4 pr-3 text-sm font-semibold text-gray-500 select-none pointer-events-none border-r border-gray-200 py-[22px] bg-gray-50">
-                              +54
-                            </span>
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              value={phone}
-                              maxLength={10}
-                              onChange={(e) => {
-                                setPhone(
-                                  e.target.value.replace(/\D/g, "").slice(0, 10),
-                                );
-                                setPhoneError("");
-                                setStep2Dirty(true);
-                              }}
-                              placeholder="11 2345 6789"
-                              className="flex-1 pl-3 pr-4 py-[22px] text-base bg-transparent outline-none text-[#1C2335] placeholder:text-gray-400"
-                            />
-                          </div>
-                          {phoneError && (
-                            <p className="text-red-500 mt-2 text-sm font-semibold">
-                              {phoneError}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* DNI */}
-                        <div>
-                          <Label className="text-[#1C2335] mb-2 block font-semibold">
-                            DNI / N° de documento
-                          </Label>
-                          <div className="relative min-w-0">
-                            <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                            <Input
-                              type="text"
-                              value={dni}
-                              onChange={(e) => {
-                                setDni(
-                                  e.target.value.replace(/\D/g, "").slice(0, 8),
-                                );
-                                setDniError("");
-                                setStep2Dirty(true);
-                              }}
-                              placeholder="Ej: 12345678"
-                              inputMode="numeric"
-                              maxLength={8}
-                              pattern="[0-9]*"
-                              className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-2 transition-colors ${
-                                dniError
-                                  ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                                  : "border-gray-200 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
-                              }`}
-                            />
-                          </div>
-                          {dniError && (
-                            <p className="text-red-500 mt-2 text-sm font-semibold">
-                              {dniError}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Fecha de nacimiento */}
-                        <div>
-                          <Label className="text-[#1C2335] mb-2 block font-semibold">
-                            Fecha de nacimiento
-                          </Label>
-                          <BirthDateInput
-                            value={birthDate}
-                            hasError={!!birthDateError}
-                            onChange={(value) => {
-                              setBirthDate(value);
-                              setBirthDateError("");
-                              setStep2Dirty(true);
-                            }}
-                          />
-                          {birthDateError && (
-                            <p className="text-red-500 mt-2 text-sm font-semibold">
-                              {birthDateError}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Apartamento */}
-                        <div>
-                          <Label className="text-[#1C2335] mb-2 block font-semibold">
-                            UF
-                          </Label>
-                          <div className="relative min-w-0">
-                            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                            <Input
-                              type="text"
-                              value={apartmentNumber}
-                              onChange={(e) => {
-                                setApartmentNumber(
-                                  e.target.value.replace(/\D/g, "").slice(0, 3),
-                                );
-                                setApartmentNumberError("");
-                                setStep2Dirty(true);
-                              }}
-                              placeholder="Ej: 101"
-                              inputMode="numeric"
-                              maxLength={3}
-                              pattern="[0-9]*"
-                              className={`pl-12 pr-4 py-6 rounded-2xl border-2 focus:ring-4 transition-all ${
-                                apartmentNumberError
-                                  ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                                  : "border-gray-300 focus:border-[#FF6B00] focus:ring-[#FF6B00]/20"
-                              }`}
-                            />
-                          </div>
-                          {apartmentNumberError && (
-                            <p className="text-red-500 mt-2 text-sm font-semibold">
-                              {apartmentNumberError}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Pickup point */}
-                        <div className="min-w-0 overflow-hidden rounded-3xl border border-gray-200 bg-white p-4">
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <MapPin className="w-4 h-4" />
-                            Punto de retiro
-                          </div>
-                          <div className="mt-1 font-semibold text-[#1C2335] break-words">
-                            {pickupPoint}
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <label
-                            className={`flex items-start gap-3 rounded-2xl border p-4 cursor-pointer select-none transition-colors ${
-                              residenceAuthorizationError
-                                ? "border-red-200 bg-red-50"
-                                : "border-orange-100 bg-[#FFF9F4]"
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={residenceAuthorizationAccepted}
-                              onChange={(e) => {
-                                setResidenceAuthorizationAccepted(
-                                  e.target.checked,
-                                );
-                                if (e.target.checked) {
-                                  setResidenceAuthorizationError("");
-                                }
-                                setStep2Dirty(true);
-                              }}
-                              className="mt-0.5 w-4 h-4 flex-shrink-0 rounded border-gray-300 accent-[#FF6B00]"
-                            />
-                            <span className="text-sm text-gray-600 leading-relaxed">
-                              Declaro que soy residente o estoy autorizado a
-                              utilizar los servicios de Hey!Point en{" "}
-                              <span className="font-semibold text-[#1C2335]">
-                                {pickupPoint}
-                              </span>
-                              .
-                            </span>
-                          </label>
-                          {residenceAuthorizationError && (
-                            <p className="text-red-500 text-sm flex items-center gap-1">
-                              <span className="text-red-500">•</span>{" "}
-                              {residenceAuthorizationError}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Contextual error — completeProfile */}
-                        {!!globalError && (
-                          <div className="flex items-start gap-2.5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
-                            <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-                            <p className="text-sm text-red-700 font-medium leading-snug">{globalError}</p>
-                          </div>
-                        )}
-
-                        <Button
-                          type="submit"
-                          disabled={loading}
-                          className="w-full bg-[#FF6B00] hover:bg-[#e56000] text-white py-6 rounded-2xl shadow-lg"
-                          style={{ fontWeight: 600 }}
-                        >
-                          {loading ? (
-                            <>
-                              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                              Guardando...
-                            </>
-                          ) : (
-                            <>
-                              Continuar{" "}
-                              <ChevronRight className="w-5 h-5 ml-2" />
-                            </>
-                          )}
-                        </Button>
-                      </form>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Confirm leave step2 */}
-              {showConfirmLeave && (
-                <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] z-30 flex items-center justify-center p-4">
-                  <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl border border-gray-200 p-5">
-                    <h3 className="text-[#1C2335] font-bold text-lg">
-                      ¿Salir sin guardar?
-                    </h3>
-                    <p className="text-sm text-gray-600 mt-2">
-                      Tenés datos sin guardar en tu perfil. Si salís ahora, se
-                      perderán.
-                    </p>
-
-                    <div className="mt-5 flex gap-3">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="flex-1 rounded-2xl"
-                        onClick={() => setShowConfirmLeave(false)}
-                      >
-                        Cancelar
-                      </Button>
-                      <Button
-                        type="button"
-                        className="flex-1 rounded-2xl bg-[#FF6B00] hover:bg-[#e56000]"
-                        onClick={() => {
-                          setShowConfirmLeave(false);
-                          onClose();
-                        }}
-                      >
-                        Salir
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
             </motion.div>
           </div>
         </>
