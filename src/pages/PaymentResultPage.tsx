@@ -9,6 +9,7 @@ import { api } from "../lib/api";
 import { PurchaseSuccessPage } from "./PurchaseSuccessPage";
 
 type PaymentState = "verifying" | "approved" | "pending" | "failed" | "review";
+type FailedPaymentKind = "notCompleted" | "paymentFailed" | null;
 
 type PaymentOrder = {
   id: string;
@@ -48,6 +49,7 @@ export function PaymentResultPage({
   const returnStatus = String(params.get("mp_status") || params.get("status") || "").toLowerCase();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [state, setState] = useState<PaymentState>("verifying");
+  const [failedKind, setFailedKind] = useState<FailedPaymentKind>(null);
   const [order, setOrder] = useState<PaymentOrder | null>(null);
   const [message, setMessage] = useState("Estamos confirmando el pago con Mercado Pago.");
 
@@ -65,7 +67,15 @@ export function PaymentResultPage({
       }
       if (data.state === "failed") {
         setState("failed");
-        setMessage("El pago no se completó. Tu carrito sigue disponible para intentarlo nuevamente.");
+        if (returnStatus === "failure" && !paymentId) {
+          setFailedKind("notCompleted");
+          setMessage("Podés volver al carrito e intentarlo nuevamente cuando quieras.");
+        } else {
+          setFailedKind("paymentFailed");
+          setMessage(
+            "Tu carrito sigue disponible. Podés intentarlo nuevamente o elegir otro medio de pago.",
+          );
+        }
         return true;
       }
       if (data.state === "review") {
@@ -98,7 +108,8 @@ export function PaymentResultPage({
 
         if (returnStatus === "failure" && !paymentId) {
           setState("failed");
-          setMessage("El pago fue cancelado o rechazado. Podés volver al carrito e intentarlo otra vez.");
+          setFailedKind("notCompleted");
+          setMessage("Podés volver al carrito e intentarlo nuevamente cuando quieras.");
           return;
         }
 
@@ -155,7 +166,9 @@ export function PaymentResultPage({
   const title = isVerifying
     ? "Confirmando tu pago"
     : isFailed
-      ? "El pago no se completó"
+      ? failedKind === "notCompleted"
+        ? "No completaste el pago"
+        : "No pudimos procesar tu pago"
       : isReview
         ? "Pago en validación"
         : "Pago pendiente";
