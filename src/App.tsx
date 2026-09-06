@@ -364,6 +364,7 @@ function AppContent() {
       const path = event.detail?.path;
 
       if (path === "/account" || path === "profile") {
+        clearProfileReturnIntent();
         // ✅ también sincroniza URL
         window.history.pushState({}, "", "/account");
         setCurrentPage("profile");
@@ -695,6 +696,9 @@ function AppContent() {
   // ✅ (2) navegación interna = setState + pushState
   const handleNavigation = useCallback((page: string) => {
     const next = page as Page;
+    if (next === "profile") {
+      clearProfileReturnIntent();
+    }
     setCurrentPage(next);
 
     if (next !== "shop") {
@@ -725,8 +729,8 @@ function AppContent() {
         return;
       }
 
-      setProfileReturnIntent(PROFILE_RETURN_CHECKOUT);
       handleNavigation("profile");
+      setProfileReturnIntent(PROFILE_RETURN_CHECKOUT);
     } catch (error) {
       console.error("[App] checkout profile gate failed", {
         uid: currentUser.uid,
