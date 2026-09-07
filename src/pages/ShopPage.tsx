@@ -12,22 +12,18 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { Slider } from "../components/ui/slider";
-import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { UnifiedHeader } from "../components/UnifiedHeader";
 import { Footer } from "../components/Footer";
-import { QuantitySelector } from "../components/QuantitySelector";
-import { AddToCartButton } from "../components/AddToCartButton";
 import { ProductCardSkeleton } from "../components/ProductCardSkeleton";
-import { SaleChip } from "../components/SaleChip";
-import { StockIndicator } from "../components/StockIndicator";
-import { PriceDisplay } from "../components/PriceDisplay";
+import { ProductCard } from "../components/ProductCard";
+import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "../components/ui/collapsible";
-import { formatPrecioARS, getPrecioFinalConIVA } from "../utils/priceUtils";
+import { formatPrecioARS } from "../utils/priceUtils";
 import { api } from "../lib/api";
 import { useCategories } from "../hooks/useCategories";
 import { useQuery } from "@tanstack/react-query";
@@ -706,119 +702,23 @@ export function ShopPage({
                   {!isLargeViewport ? (
                     <div className="overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
                       <div className="flex gap-4 min-w-max">
-                            {productosEnOferta.map((product, index) => {
-                              const hasDiscount =
-                                product.originalPrice !== undefined &&
-                                product.originalPrice > product.price;
-                              const isPriorityImage = index === 0;
-
-                              return (
-                                <div
-                                  key={product.id}
-                                  className="w-[280px] sm:w-[320px] flex-shrink-0"
-                                >
-                                  <Card
-                                    className={`group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-sm p-4 min-h-[300px] transition-opacity${product.stock === 0 ? " opacity-80" : ""}`}
-                                    onClick={() => onProductClick(product)}
-                                  >
-                                    <div className="relative h-36 rounded-xl overflow-hidden flex-shrink-0 bg-white">
-                                      <ImageWithFallback
-                                        src={product.image}
-                                        alt={product.name}
-                                        width={600}
-                                        height={600}
-                                        loading={isPriorityImage ? "eager" : "lazy"}
-                                        decoding="async"
-                                        fetchPriority={
-                                          isPriorityImage ? "high" : "auto"
-                                        }
-                                        className="block w-full h-full object-contain p-2"
-                                      />
-                                      {hasDiscount && (
-                                        <div className="absolute top-3 right-3">
-                                          <SaleChip variant="red" size="lg" />
-                                        </div>
-                                      )}
-                                    </div>
-
-                                    <div className="flex-1 flex flex-col pt-2">
-                                <h3
-                                  className="text-[#1C2335] mb-3 line-clamp-2"
-                                  style={{
-                                    fontSize: "1rem",
-                                    fontWeight: 600,
-                                    minHeight: "2.5rem",
-                                    lineHeight: "1.25",
-                                  }}
-                                >
-                                  {product.name}
-                                </h3>
-
-                                <div className="flex-1"></div>
-
-                                <div className="mb-2">
-                                  <PriceDisplay
-                                    price={product.price}
-                                    originalPrice={product.originalPrice}
-                                    size="md"
-                                    showSaleChip={false}
-                                  />
-                                  {/* Reserved height — keeps all cards equal regardless of discount */}
-                                  <div className="min-h-[1.125rem] mt-1">
-                                    {hasDiscount && (
-                                      <span
-                                        className="text-[#EF4444]"
-                                        style={{
-                                          fontSize: "0.75rem",
-                                          fontWeight: 700,
-                                        }}
-                                      >
-                                        ¡Ahorrás{" "}
-                                        {formatPrecioARS(
-                                          getPrecioFinalConIVA(
-                                            product.originalPrice!,
-                                          ) - getPrecioFinalConIVA(product.price),
-                                        )}
-                                        !
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-
-                                <div className="mb-2 min-h-[14px]">
-                                  <StockIndicator
-                                    stock={product.stock}
-                                    variant="card"
-                                  />
-                                </div>
+                            {productosEnOferta.map((product, index) => (
+                              <div
+                                key={product.id}
+                                className="w-[280px] sm:w-[320px] flex-shrink-0"
+                              >
+                                <ProductCard
+                                  product={product}
+                                  variant="featured-mobile"
+                                  quantity={getQuantity(product.id)}
+                                  onQuantityChange={(newQ) =>
+                                    updateQuantity(product.id, newQ)
+                                  }
+                                  onProductClick={onProductClick}
+                                  isPriorityImage={index === 0}
+                                />
                               </div>
-
-                                    <div
-                                      className="flex flex-col gap-2 flex-shrink-0"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      <QuantitySelector
-                                        quantity={getQuantity(product.id)}
-                                        onQuantityChange={(newQ) =>
-                                          updateQuantity(product.id, newQ)
-                                        }
-                                        max={product.stock}
-                                      />
-                                      <AddToCartButton
-                                        productId={product.backendId}
-                                        productName={product.name}
-                                        productImage={product.image}
-                                        productPrice={product.price}
-                                        quantity={getQuantity(product.id)}
-                                        variant="compact"
-                                        disabled={product.stock === 0}
-                                        stock={product.stock}
-                                      />
-                                    </div>
-                                  </Card>
-                                </div>
-                              );
-                            })}
+                            ))}
                           </div>
                     </div>
                   ) : (
@@ -831,108 +731,23 @@ export function ShopPage({
                             : `repeat(${productosEnOferta.length}, minmax(0, 420px))`,
                       }}
                     >
-                    {productosEnOferta.map((product, index) => {
-                      const hasDiscount =
-                        product.originalPrice !== undefined &&
-                        product.originalPrice > product.price;
-                      const isPriorityImage = index === 0;
-
-                      return (
-                        <div
-                          key={product.id}
-                          className="h-full"
-                        >
-                          <Card
-                            className={`group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-sm p-4 h-full transition-opacity${product.stock === 0 ? " opacity-80" : ""}`}
-                            onClick={() => onProductClick(product)}
-                          >
-                            <div className="relative h-44 rounded-xl overflow-hidden flex-shrink-0 bg-white">
-                              <ImageWithFallback
-                                src={product.image}
-                                alt={product.name}
-                                width={600}
-                                height={600}
-                                loading={isPriorityImage ? "eager" : "lazy"}
-                                decoding="async"
-                                fetchPriority={
-                                  isPriorityImage ? "high" : "auto"
-                                }
-                                className="block w-full h-full object-contain p-2"
-                              />
-                              {hasDiscount && (
-                                <div className="absolute top-3 right-3">
-                                  <SaleChip variant="red" size="lg" />
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="flex-1 flex flex-col pt-2">
-                              <h3 className="text-[#1C2335] mb-3 line-clamp-2 text-base">
-                                {product.name}
-                              </h3>
-
-                              <div className="flex-1"></div>
-
-                              <div className="mb-2">
-                                <PriceDisplay
-                                  price={product.price}
-                                  originalPrice={product.originalPrice}
-                                  size="lg"
-                                  showSaleChip={false}
-                                />
-                                {/* Reserved height — keeps all cards equal regardless of discount */}
-                                <div className="min-h-[1.125rem] mt-1">
-                                  {hasDiscount && (
-                                    <span
-                                      className="text-[#EF4444] text-xs"
-                                      style={{ fontWeight: 700 }}
-                                    >
-                                      ¡Ahorrás{" "}
-                                      {formatPrecioARS(
-                                        getPrecioFinalConIVA(
-                                          product.originalPrice!,
-                                        ) - getPrecioFinalConIVA(product.price),
-                                      )}
-                                      !
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-
-                              <div className="mb-2 min-h-[14px]">
-                                <StockIndicator
-                                  stock={product.stock}
-                                  variant="card"
-                                />
-                              </div>
-                            </div>
-
-                            <div
-                              className="flex flex-col gap-2 flex-shrink-0"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <QuantitySelector
-                                quantity={getQuantity(product.id)}
-                                onQuantityChange={(newQ) =>
-                                  updateQuantity(product.id, newQ)
-                                }
-                                max={product.stock}
-                              />
-                              <AddToCartButton
-                                productId={product.backendId}
-                                productName={product.name}
-                                productImage={product.image}
-                                productPrice={product.price}
-                                quantity={getQuantity(product.id)}
-                                variant="compact"
-                                disabled={product.stock === 0}
-                                stock={product.stock}
-                              />
-                            </div>
-                          </Card>
-                        </div>
-                      );
-                    })}
+                    {productosEnOferta.map((product, index) => (
+                      <div
+                        key={product.id}
+                        className="h-full"
+                      >
+                        <ProductCard
+                          product={product}
+                          variant="featured-desktop"
+                          quantity={getQuantity(product.id)}
+                          onQuantityChange={(newQ) =>
+                            updateQuantity(product.id, newQ)
+                          }
+                          onProductClick={onProductClick}
+                          isPriorityImage={index === 0}
+                        />
+                      </div>
+                    ))}
                   </div>
                       )}
                     </>
@@ -1032,140 +847,25 @@ export function ShopPage({
                         (currentPage - 1) * itemsPerPage,
                         currentPage * itemsPerPage,
                       )
-                      .map((product, index) => {
-                        const hasDiscount =
-                          product.originalPrice !== undefined &&
-                          product.originalPrice > product.price;
-                        const isPriorityImage =
-                          currentPage === 1 &&
-                          productosEnOferta.length === 0 &&
-                          index === 0;
-
-                        return (
-                          <div
-                            key={product.id}
-                          >
-                            <Card
-                              className={`group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-sm p-4 h-full min-h-[360px] transition-opacity${product.stock === 0 ? " opacity-80" : ""}`}
-                              onClick={() => onProductClick(product)}
-                            >
-                              <div className="relative aspect-square rounded-xl overflow-hidden flex-shrink-0 bg-white">
-                                <ImageWithFallback
-                                  src={product.image}
-                                  alt={product.name}
-                                  width={600}
-                                  height={600}
-                                  loading={isPriorityImage ? "eager" : "lazy"}
-                                  decoding="async"
-                                  fetchPriority={
-                                    isPriorityImage ? "high" : "auto"
-                                  }
-                                  className="block w-full h-full object-contain p-2"
-                                />
-                                {product.badges?.length ? (
-                                  <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
-                                    {product.badges.map((badge, index) =>
-                                      badge === "Sale" ? (
-                                        <SaleChip
-                                          key={index}
-                                          variant="red"
-                                          size="md"
-                                        />
-                                      ) : (
-                                        <Badge
-                                          key={index}
-                                          className="bg-[#B6E322] text-white border-2 border-white px-3 py-1 shadow-md"
-                                          style={{
-                                            fontSize: "0.75rem",
-                                            fontWeight: 600,
-                                          }}
-                                        >
-                                          {badge}
-                                        </Badge>
-                                      ),
-                                    )}
-                                  </div>
-                                ) : null}
-                              </div>
-
-                              <div className="flex-1 flex flex-col pt-2">
-                                <h3
-                                  className="text-[#1C2335] mb-3 line-clamp-2 md:line-clamp-3"
-                                  style={{
-                                    fontSize: "1rem",
-                                    fontWeight: 600,
-                                    minHeight: "2.5rem",
-                                    lineHeight: "1.25",
-                                  }}
-                                >
-                                  {product.name}
-                                </h3>
-
-                                <div className="flex-1"></div>
-
-                                <div className="mb-2">
-                                  <PriceDisplay
-                                    price={product.price}
-                                    originalPrice={product.originalPrice}
-                                    size="md"
-                                    showSaleChip={false}
-                                  />
-                                  {/* Reserved height — keeps all cards equal regardless of discount */}
-                                  <div className="min-h-[1.125rem] mt-1">
-                                    {hasDiscount && (
-                                      <span
-                                        className="text-[#EF4444]"
-                                        style={{
-                                          fontSize: "0.75rem",
-                                          fontWeight: 700,
-                                        }}
-                                      >
-                                        ¡Ahorrás{" "}
-                                        {formatPrecioARS(
-                                          getPrecioFinalConIVA(
-                                            product.originalPrice!,
-                                          ) - getPrecioFinalConIVA(product.price),
-                                        )}
-                                        !
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-
-                                <div className="mb-2 min-h-[14px]">
-                                  <StockIndicator
-                                    stock={product.stock}
-                                    variant="card"
-                                  />
-                                </div>
-                              </div>
-
-                              <div
-                                className="flex flex-col gap-2 flex-shrink-0"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <QuantitySelector
-                                  quantity={getQuantity(product.id)}
-                                  onQuantityChange={(newQ) =>
-                                    updateQuantity(product.id, newQ)
-                                  }
-                                  max={product.stock}
-                                />
-                                <AddToCartButton
-                                  productId={product.backendId}
-                                  productName={product.name}
-                                  productImage={product.image}
-                                  productPrice={product.price}
-                                  quantity={getQuantity(product.id)}
-                                  variant="compact"
-                                  disabled={product.stock === 0}
-                                  stock={product.stock}
-                                />
-                              </div>
-                            </Card>
-                          </div>
-                        );
-                      })}
+                      .map((product, index) => (
+                        <div key={product.id}>
+                          <ProductCard
+                            product={product}
+                            variant="catalog"
+                            mobileLayout={isMobileGridCompact ? "grid" : "list"}
+                            quantity={getQuantity(product.id)}
+                            onQuantityChange={(newQ) =>
+                              updateQuantity(product.id, newQ)
+                            }
+                            onProductClick={onProductClick}
+                            isPriorityImage={
+                              currentPage === 1 &&
+                              productosEnOferta.length === 0 &&
+                              index === 0
+                            }
+                          />
+                        </div>
+                      ))}
               </div>
 
               {Math.ceil(filteredProducts.length / itemsPerPage) > 1 && (

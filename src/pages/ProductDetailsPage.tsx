@@ -8,6 +8,7 @@ import { UnifiedHeader } from "../components/UnifiedHeader";
 import { Footer } from "../components/Footer";
 import { QuantitySelector } from "../components/QuantitySelector";
 import { AddToCartButton } from "../components/AddToCartButton";
+import { ProductCard } from "../components/ProductCard";
 import { DiscountBadge } from "../components/DiscountBadge";
 import { StockIndicator } from "../components/StockIndicator";
 import { BackToTopButton } from "../components/BackToTopButton";
@@ -442,52 +443,15 @@ export function ProductDetailsPage({
 
           <div className="grid md:grid-cols-3 gap-6">
             {relatedProducts.slice(0, 3).map((p) => (
-              <Card
+              <ProductCard
                 key={p.id}
-                className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md hover:shadow-xl transition-all p-4"
-                onClick={() => handleRelatedClick(p)}
-              >
-                <div className="relative aspect-square rounded-xl overflow-hidden mb-3 bg-gray-50">
-                  <ImageWithFallback
-                    src={p.image}
-                    alt={p.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                  />
-                </div>
-
-                <h3 className="font-semibold mb-2 line-clamp-2 text-[#1C2335]">
-                  {p.name}
-                </h3>
-
-                <p className="font-bold mb-2 text-[#1C2335]">
-                  {formatPrecioARS(getPrecioFinalConIVA(p.price, ivaPct))}
-                </p>
-
-                <div className="mb-3">
-                  <StockIndicator stock={p.stock} variant="card" />
-                </div>
-
-                <div
-                  className="mt-auto flex gap-2"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <QuantitySelector
-                    quantity={getRelatedQty(p.id)}
-                    onQuantityChange={(q) => setRelatedQty(p.id, q)}
-                    max={p.stock}
-                  />
-                  <AddToCartButton
-                    productId={p.id}
-                    productName={p.name}
-                    productImage={p.image}
-                    productPrice={p.price}
-                    quantity={getRelatedQty(p.id)}
-                    variant="compact"
-                    stock={p.stock}
-                    disabled={p.stock === 0}
-                  />
-                </div>
-              </Card>
+                product={p}
+                variant="related"
+                quantity={getRelatedQty(p.id)}
+                onQuantityChange={(q) => setRelatedQty(p.id, q)}
+                onProductClick={handleRelatedClick}
+                ivaPct={ivaPct}
+              />
             ))}
           </div>
         </div>
