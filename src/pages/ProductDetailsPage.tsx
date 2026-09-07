@@ -309,9 +309,57 @@ export function ProductDetailsPage({
         />
         <div className="pt-20 lg:pt-24">
           <div className="container mx-auto px-4 sm:px-6 py-5 sm:py-8">
-            <Card className="bg-white border-none shadow-lg rounded-2xl p-3 sm:p-5 animate-pulse">
-              <div className="h-[300px] sm:h-[340px] rounded-xl bg-gray-200" />
-            </Card>
+            <div className="mb-5 sm:mb-7 flex items-center gap-2 animate-pulse">
+              <div className="h-4 w-28 rounded-full bg-gray-200" />
+              <div className="h-3 w-3 rounded-full bg-gray-200" />
+              <div className="h-4 w-20 rounded-full bg-gray-200" />
+              <div className="h-3 w-3 rounded-full bg-gray-200" />
+              <div className="h-4 w-36 rounded-full bg-gray-200" />
+            </div>
+
+            <div className="grid lg:grid-cols-2 gap-6 lg:gap-8 mb-10 sm:mb-14 animate-pulse">
+              <Card className="bg-white border-none shadow-lg rounded-2xl p-3 sm:p-5">
+                <div className="relative h-[300px] sm:h-[340px] lg:h-auto lg:aspect-square rounded-xl bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_200%] animate-[shimmer_2s_ease-in-out_infinite]" />
+              </Card>
+
+              <div className="flex flex-col">
+                <div className="h-4 w-28 rounded-full bg-gray-200 mb-2" />
+                <div className="space-y-3 mb-5">
+                  <div className="h-8 sm:h-10 w-full max-w-xl rounded-xl bg-gray-200" />
+                  <div className="h-8 sm:h-10 w-3/4 rounded-xl bg-gray-200" />
+                </div>
+
+                <div className="mb-4">
+                  <div className="h-9 sm:h-11 w-44 rounded-xl bg-gray-200 mb-2" />
+                  <div className="h-4 w-52 rounded-full bg-gray-200" />
+                </div>
+
+                <div className="h-8 w-56 rounded-full bg-gray-200" />
+
+                <Card className="bg-white border-none shadow-md rounded-2xl p-4 sm:p-5 mt-4">
+                  <div className="flex justify-between items-center mb-3 gap-4 lg:hidden">
+                    <div className="h-11 w-36 rounded-xl bg-gray-200" />
+                    <div className="space-y-2">
+                      <div className="h-3 w-12 rounded-full bg-gray-200 ml-auto" />
+                      <div className="h-6 w-24 rounded-lg bg-gray-200" />
+                    </div>
+                  </div>
+
+                  <div className="hidden lg:flex justify-end mb-3">
+                    <div className="space-y-2">
+                      <div className="h-3 w-12 rounded-full bg-gray-200 ml-auto" />
+                      <div className="h-6 w-24 rounded-lg bg-gray-200" />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 lg:items-center">
+                    <div className="hidden lg:block h-10 w-32 rounded-xl bg-gray-200" />
+                    <div className="h-11 flex-1 rounded-full bg-[#FFD9BF]" />
+                    <div className="h-11 w-11 rounded-full bg-gray-200" />
+                  </div>
+                </Card>
+              </div>
+            </div>
           </div>
         </div>
       </div>
