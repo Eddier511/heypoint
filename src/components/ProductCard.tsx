@@ -111,6 +111,7 @@ export function ProductCard({
   const isFeaturedMobile = variant === "featured-mobile";
   const isFeaturedDesktop = variant === "featured-desktop";
   const isCatalogListMobile = variant === "catalog" && mobileLayout === "list";
+  const isCatalogGrid = variant === "catalog" && mobileLayout === "grid";
   const imageClassName = isFeaturedMobile
     ? "relative h-32 sm:h-36 rounded-xl overflow-hidden flex-shrink-0 bg-white"
     : isFeaturedDesktop
@@ -126,6 +127,12 @@ export function ProductCard({
         ? `group cursor-pointer flex flex-row sm:flex-col gap-3 sm:gap-0 rounded-2xl overflow-hidden bg-white border-none shadow-sm p-3 h-full sm:min-h-[320px] transition-opacity${product.stock === 0 ? " opacity-80" : ""}`
         : `group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-sm p-3 h-full min-h-[300px] sm:min-h-[320px] transition-opacity${product.stock === 0 ? " opacity-80" : ""}`;
   const priceSize = isFeaturedDesktop ? "md" : "sm";
+  const priceBlockClassName = isCatalogGrid
+    ? "mb-1.5 min-h-[3.5rem]"
+    : "mb-1.5";
+  const controlsClassName = isCatalogGrid
+    ? "mt-auto flex flex-col sm:flex-row sm:items-center gap-2 flex-shrink-0"
+    : "flex flex-col sm:flex-row sm:items-center gap-2 flex-shrink-0";
 
   return (
     <Card className={cardClassName} onClick={() => onProductClick(product)}>
@@ -184,7 +191,7 @@ export function ProductCard({
           </h3>
         )}
 
-        <div className="mb-1.5">
+        <div className={priceBlockClassName}>
           <PriceDisplay
             price={product.price}
             originalPrice={product.originalPrice}
@@ -217,7 +224,7 @@ export function ProductCard({
         </div>
 
         <div
-          className="flex flex-col sm:flex-row sm:items-center gap-2 flex-shrink-0"
+          className={controlsClassName}
           onClick={(e) => e.stopPropagation()}
         >
           <QuantitySelector
