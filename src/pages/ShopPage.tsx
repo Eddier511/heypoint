@@ -394,7 +394,7 @@ export function ShopPage({
     return products.filter((p) => p.isFeatured === true);
   }, [products]);
   const shouldShowOffersSection =
-    isCatalogLoading || productosEnOferta.length > 0;
+    !isCatalogLoading && productosEnOferta.length > 0;
 
   const PLACEHOLDER_IMG = "https://placehold.co/600x400?text=Hey!Point";
   const categoryShelfItems = useMemo(
@@ -681,64 +681,17 @@ export function ShopPage({
                 </button>
               </div>
 
-              {isCatalogLoading ? (
-                <div className="overflow-x-auto -mx-4 px-4 pb-4 lg:overflow-visible lg:mx-0 lg:px-0 lg:pb-0 scrollbar-hide">
-                  <div className="flex gap-4 min-w-max lg:grid lg:min-w-0 lg:gap-6" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
-                    {Array.from({ length: 3 }).map((_, i) => (
-                      <div key={i} className="w-[280px] sm:w-[320px] lg:w-auto flex-shrink-0 animate-pulse">
-                        <div className="rounded-2xl bg-white shadow-sm p-4">
-                          <div className="aspect-square rounded-xl bg-gray-200 mb-3" />
-                          <div className="h-4 bg-gray-200 rounded-full mb-2" />
-                          <div className="h-4 bg-gray-200 rounded-full w-3/4 mb-4" />
-                          <div className="h-6 bg-gray-200 rounded-full w-1/2 mb-3" />
-                          <div className="h-10 bg-gray-200 rounded-full" />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <>
-                  {!isLargeViewport ? (
-                    <div className="overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
-                      <div className="flex gap-4 min-w-max">
-                            {productosEnOferta.map((product, index) => (
-                              <div
-                                key={product.id}
-                                className="w-[280px] sm:w-[320px] flex-shrink-0"
-                              >
-                                <ProductCard
-                                  product={product}
-                                  variant="featured-mobile"
-                                  quantity={getQuantity(product.id)}
-                                  onQuantityChange={(newQ) =>
-                                    updateQuantity(product.id, newQ)
-                                  }
-                                  onProductClick={onProductClick}
-                                  isPriorityImage={index === 0}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                    </div>
-                  ) : (
-                    <div
-                      className="grid gap-6"
-                      style={{
-                        gridTemplateColumns:
-                          productosEnOferta.length >= 3
-                            ? "repeat(3, 1fr)"
-                            : `repeat(${productosEnOferta.length}, minmax(0, 420px))`,
-                      }}
-                    >
+              {!isLargeViewport ? (
+                <div className="overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
+                  <div className="flex gap-4 min-w-max">
                     {productosEnOferta.map((product, index) => (
                       <div
                         key={product.id}
-                        className="h-full"
+                        className="w-[280px] sm:w-[320px] flex-shrink-0"
                       >
                         <ProductCard
                           product={product}
-                          variant="featured-desktop"
+                          variant="featured-mobile"
                           quantity={getQuantity(product.id)}
                           onQuantityChange={(newQ) =>
                             updateQuantity(product.id, newQ)
@@ -749,9 +702,36 @@ export function ShopPage({
                       </div>
                     ))}
                   </div>
-                      )}
-                    </>
-                  )}
+                </div>
+              ) : (
+                <div
+                  className="grid gap-6"
+                  style={{
+                    gridTemplateColumns:
+                      productosEnOferta.length >= 3
+                        ? "repeat(3, 1fr)"
+                        : `repeat(${productosEnOferta.length}, minmax(0, 420px))`,
+                  }}
+                >
+                  {productosEnOferta.map((product, index) => (
+                    <div
+                      key={product.id}
+                      className="h-full"
+                    >
+                      <ProductCard
+                        product={product}
+                        variant="featured-desktop"
+                        quantity={getQuantity(product.id)}
+                        onQuantityChange={(newQ) =>
+                          updateQuantity(product.id, newQ)
+                        }
+                        onProductClick={onProductClick}
+                        isPriorityImage={index === 0}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
 
             </div>
           )}
@@ -805,32 +785,35 @@ export function ShopPage({
             </aside>
 
             <main ref={productsGridRef} className="flex-1 min-w-0">
-<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 bg-white p-4 rounded-2xl shadow-sm">
-                <p className="text-[#2E2E2E]" style={{ fontSize: "0.938rem" }}>
-                  {isCatalogLoading ? (
-                    "Cargando productos..."
-                  ) : (
-                    <>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 bg-white p-4 rounded-2xl shadow-sm">
+                {isCatalogLoading ? (
+                  <>
+                    <div className="h-5 w-48 rounded-full bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_200%] animate-[shimmer_2s_ease-in-out_infinite]" />
+                    <div className="h-10 w-full sm:w-48 rounded-full bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_200%] animate-[shimmer_2s_ease-in-out_infinite]" />
+                  </>
+                ) : (
+                  <>
+                    <p className="text-[#2E2E2E]" style={{ fontSize: "0.938rem" }}>
                       Mostrando {filteredProducts.length} de {products.length}{" "}
                       productos
-                    </>
-                  )}
-                </p>
+                    </p>
 
-                <Select defaultValue="name">
-                  <SelectTrigger className="w-full sm:w-48 border-gray-200 rounded-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="name">Nombre</SelectItem>
-                    <SelectItem value="price-low">
-                      Precio: Menor a mayor
-                    </SelectItem>
-                    <SelectItem value="price-high">
-                      Precio: Mayor a menor
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                    <Select defaultValue="name">
+                      <SelectTrigger className="w-full sm:w-48 border-gray-200 rounded-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="name">Nombre</SelectItem>
+                        <SelectItem value="price-low">
+                          Precio: Menor a mayor
+                        </SelectItem>
+                        <SelectItem value="price-high">
+                          Precio: Mayor a menor
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </>
+                )}
               </div>
 
               <div
@@ -840,7 +823,10 @@ export function ShopPage({
               >
                 {isCatalogLoading || isLoadingPage
                   ? Array.from({ length: itemsPerPage }).map((_, index) => (
-                      <ProductCardSkeleton key={`skeleton-${index}`} />
+                      <ProductCardSkeleton
+                        key={`skeleton-${index}`}
+                        mobileLayout={isMobileGridCompact ? "grid" : "list"}
+                      />
                     ))
                   : filteredProducts
                       .slice(
