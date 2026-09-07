@@ -75,6 +75,14 @@ function limitDigits(v: string, maxLength: number) {
   return normalizeDigits(v).slice(0, maxLength);
 }
 
+function normalizeApartmentNumber(v: string) {
+  const digits = limitDigits(v, 3);
+  if (!digits) return "";
+  const value = Number(digits);
+  if (!Number.isInteger(value) || value < 1 || value > 200) return "";
+  return String(value).padStart(3, "0");
+}
+
 function isValidDni(v: string) {
   const dni = String(v || "").trim();
   return /^\d{3,8}$/.test(dni) && !/^(\d)\1+$/.test(dni);
@@ -333,9 +341,9 @@ export function UserProfilePage({
       newErrors.dni = "El DNI debe tener entre 3 y 8 dígitos numéricos válidos";
     }
 
-    const uf = limitDigits(profileData.apartmentNumber, 3);
-    if (!uf || !/^\d{1,3}$/.test(uf)) {
-      newErrors.apartmentNumber = "Ingresá un número de UF válido (máx. 3 dígitos)";
+    const uf = normalizeApartmentNumber(profileData.apartmentNumber);
+    if (!uf) {
+      newErrors.apartmentNumber = "Ingresá una UF válida entre 1 y 200";
     }
 
     if (!residenceAuthorizationAccepted) {
@@ -417,7 +425,7 @@ export function UserProfilePage({
         phone: limitDigits(profileData.phone, 10),
         dni: limitDigits(profileData.dni, 8),
         birthDate: displayToIso(profileData.birthDate),
-        apartmentNumber: limitDigits(profileData.apartmentNumber, 3),
+        apartmentNumber: normalizeApartmentNumber(profileData.apartmentNumber),
         pickupPoint: globalPickupPoint,
         residenceAuthorizationAccepted,
       };

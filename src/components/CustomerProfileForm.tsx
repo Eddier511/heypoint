@@ -327,7 +327,7 @@ export function CustomerProfileForm({
                 type="text"
                 value={profileData.apartmentNumber}
                 onChange={(e) => onInputChange("apartmentNumber", e.target.value)}
-                placeholder="Ej: 101"
+                placeholder="Ej: 1, 25 o 150"
                 inputMode="numeric"
                 maxLength={3}
                 pattern="[0-9]*"

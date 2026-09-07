@@ -71,7 +71,7 @@ function getMissingProfileFields(profile: any): string[] {
   if (!phone) missing.push("phone");
   if (!birthDate) missing.push("birthDate");
   if (!dni) missing.push("dni");
-  if (!/^\d{1,3}$/.test(apartmentNumber)) missing.push("apartmentNumber");
+  if (!/^\d{3}$/.test(apartmentNumber)) missing.push("apartmentNumber");
 
   return missing;
 }
