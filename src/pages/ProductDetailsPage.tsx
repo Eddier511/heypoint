@@ -200,10 +200,10 @@ export function ProductDetailsPage({
           .filter((p) => String(p.categoryId ?? "") === categoryId)
           .map((p) => mapApiToUi(p, currentProduct.category))
           .filter((p) => p.price > 0)
-          .slice(0, 3);
+          .slice(0, 4);
 
         // Fallback: si backend no filtra o vienen pocos, traemos activos y completamos
-        if (related.length < 3) {
+        if (related.length < 4) {
           const allRes = await api.get<any>("/products", {
             params: { status: "active", limit: 60 },
           });
@@ -221,14 +221,14 @@ export function ProductDetailsPage({
 
           const used = new Set(related.map((x) => x.id));
           for (const p of sameCatFill) {
-            if (related.length >= 3) break;
+            if (related.length >= 4) break;
             if (used.has(p.id)) continue;
             related.push(p);
             used.add(p.id);
           }
 
           // si aún faltan, rellenamos con “activos recientes” (cualquier categoría)
-          if (related.length < 3) {
+          if (related.length < 4) {
             const anyFill = allList
               .filter(Boolean)
               .filter((p) => String(p.id) !== String(currentProduct.id))
@@ -237,7 +237,7 @@ export function ProductDetailsPage({
               .filter((p) => p.price > 0);
 
             for (const p of anyFill) {
-              if (related.length >= 3) break;
+              if (related.length >= 4) break;
               if (used.has(p.id)) continue;
               related.push(p);
               used.add(p.id);
@@ -309,9 +309,9 @@ export function ProductDetailsPage({
       <BackToTopButton />
 
       <div className="pt-20 lg:pt-24">
-        <div className="container mx-auto px-4 sm:px-6 py-8">
+        <div className="container mx-auto px-4 sm:px-6 py-5 sm:py-8">
           {/* Breadcrumb */}
-          <div className="flex items-center gap-2 mb-8 text-[#2E2E2E] text-sm">
+          <div className="flex items-center gap-2 mb-5 sm:mb-7 text-[#2E2E2E] text-sm">
             <button
               onClick={onBack}
               className="flex items-center gap-1 hover:text-[#FF6B00]"
@@ -326,18 +326,18 @@ export function ProductDetailsPage({
           </div>
 
           {/* Producto */}
-          <div className="grid lg:grid-cols-2 gap-8 mb-16">
+          <div className="grid lg:grid-cols-2 gap-6 lg:gap-8 mb-10 sm:mb-14">
             {/* Imagen */}
-            <Card className="bg-white border-none shadow-lg rounded-2xl p-6">
-              <div className="relative aspect-square bg-gray-50 rounded-xl overflow-hidden">
+            <Card className="bg-white border-none shadow-lg rounded-2xl p-3 sm:p-5">
+              <div className="relative h-[300px] sm:h-[340px] lg:h-auto lg:aspect-square bg-gray-50 rounded-xl overflow-hidden">
                 <ImageWithFallback
                   src={currentProduct.image}
                   alt={currentProduct.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain p-3 sm:p-4"
                 />
                 {currentProduct.originalPrice &&
                   currentProduct.originalPrice > currentProduct.price && (
-                    <div className="absolute top-4 right-4">
+                    <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
                       <DiscountBadge
                         originalPrice={currentProduct.originalPrice}
                         currentPrice={currentProduct.price}
@@ -350,16 +350,16 @@ export function ProductDetailsPage({
 
             {/* Info */}
             <div className="flex flex-col">
-              <span className="text-[#2E2E2E] text-sm mb-2">
+              <span className="text-[#2E2E2E] text-sm mb-1.5">
                 {currentProduct.category}
               </span>
 
-              <h1 className="text-[#1C2335] text-4xl font-bold mb-6">
+              <h1 className="text-[#1C2335] text-2xl sm:text-3xl lg:text-4xl font-bold mb-4">
                 {currentProduct.name}
               </h1>
 
-              <div className="mb-6">
-                <span className="text-[#FF6B00] text-4xl font-bold">
+              <div className="mb-4">
+                <span className="text-[#FF6B00] text-3xl sm:text-4xl font-bold">
                   {formatPrecioARS(
                     getPrecioFinalConIVA(currentProduct.price, ivaPct),
                   )}
@@ -367,7 +367,7 @@ export function ProductDetailsPage({
 
                 {currentProduct.originalPrice && (
                   <>
-                    <span className="ml-3 line-through text-xl text-[#2E2E2E]">
+                    <span className="ml-2 sm:ml-3 line-through text-lg sm:text-xl text-[#2E2E2E]">
                       {formatPrecioARS(
                         getPrecioFinalConIVA(
                           currentProduct.originalPrice,
@@ -381,24 +381,23 @@ export function ProductDetailsPage({
                   </>
                 )}
 
-                <p className="text-sm mt-2 text-[#2E2E2E]">
+                <p className="text-sm mt-1.5 text-[#2E2E2E]">
                   Precio sin impuestos: {formatPrecioARS(currentProduct.price)}
                 </p>
               </div>
 
-              <StockIndicator stock={currentProduct.stock} variant="detail" />
+              <StockIndicator stock={currentProduct.stock} variant="detail-compact" />
 
-              <Card className="bg-white border-none shadow-md rounded-2xl p-6 mt-6">
-                <div className="flex justify-between items-center mb-4 gap-4">
+              <Card className="bg-white border-none shadow-md rounded-2xl p-4 sm:p-5 mt-4">
+                <div className="flex justify-between items-center mb-3 gap-4">
                   <QuantitySelector
                     quantity={quantity}
                     onQuantityChange={setQuantity}
                     max={currentProduct.stock}
-                    size="large"
                   />
                   <div className="text-right">
                     <div className="text-sm text-[#2E2E2E]">Total</div>
-                    <div className="text-2xl font-bold text-[#1C2335]">
+                    <div className="text-xl sm:text-2xl font-bold text-[#1C2335]">
                       {totalPrice}
                     </div>
                   </div>
@@ -429,31 +428,50 @@ export function ProductDetailsPage({
           </div>
 
           {/* RELACIONADOS */}
-          <h2 className="text-2xl font-bold mb-6 text-[#1C2335]">
+          <h2 className="text-xl sm:text-2xl font-bold mb-4 text-[#1C2335]">
             Productos relacionados
           </h2>
 
           {loadingRelated && (
-            <p className="text-[#2E2E2E]">Cargando productos...</p>
+            <div className="overflow-x-auto -mx-4 px-4 pb-3 md:overflow-visible md:mx-0 md:px-0">
+              <div className="flex gap-4 md:grid md:grid-cols-4 md:gap-4">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="w-[190px] md:w-auto flex-shrink-0 animate-pulse rounded-2xl bg-white p-2.5 shadow-sm"
+                  >
+                    <div className="h-28 sm:h-32 rounded-xl bg-gray-200 mb-2" />
+                    <div className="h-4 bg-gray-200 rounded-full mb-2" />
+                    <div className="h-4 bg-gray-200 rounded-full w-2/3 mb-3" />
+                    <div className="h-10 bg-gray-200 rounded-xl" />
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
           {!loadingRelated && relatedProducts.length === 0 && (
             <p className="text-[#2E2E2E]/70">No hay productos relacionados.</p>
           )}
 
-          <div className="grid md:grid-cols-3 gap-6">
-            {relatedProducts.slice(0, 3).map((p) => (
-              <ProductCard
-                key={p.id}
-                product={p}
-                variant="related"
-                quantity={getRelatedQty(p.id)}
-                onQuantityChange={(q) => setRelatedQty(p.id, q)}
-                onProductClick={handleRelatedClick}
-                ivaPct={ivaPct}
-              />
-            ))}
-          </div>
+          {!loadingRelated && relatedProducts.length > 0 && (
+            <div className="overflow-x-auto -mx-4 px-4 pb-3 md:overflow-visible md:mx-0 md:px-0">
+              <div className="flex gap-4 md:grid md:grid-cols-4 md:gap-4">
+                {relatedProducts.slice(0, 4).map((p) => (
+                  <div key={p.id} className="w-[190px] md:w-auto flex-shrink-0">
+                    <ProductCard
+                      product={p}
+                      variant="related"
+                      quantity={getRelatedQty(p.id)}
+                      onQuantityChange={(q) => setRelatedQty(p.id, q)}
+                      onProductClick={handleRelatedClick}
+                      ivaPct={ivaPct}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

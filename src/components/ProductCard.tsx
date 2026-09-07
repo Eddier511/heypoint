@@ -60,14 +60,14 @@ export function ProductCard({
   if (variant === "related") {
     return (
       <Card
-        className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-md hover:shadow-xl transition-all p-3"
+        className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-sm hover:shadow-md transition-all p-2.5"
         onClick={() => onProductClick(product)}
       >
-        <div className="relative aspect-[4/3] rounded-xl overflow-hidden mb-2 bg-gray-50">
+        <div className="relative h-28 sm:h-32 rounded-xl overflow-hidden mb-2 bg-gray-50">
           <ImageWithFallback
             src={product.image}
             alt={product.name}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+            className="w-full h-full object-contain p-1.5 group-hover:scale-105 transition-transform duration-300"
           />
         </div>
 
@@ -84,7 +84,7 @@ export function ProductCard({
         </div>
 
         <div
-          className="mt-auto flex flex-col sm:flex-row sm:items-center gap-2"
+          className="mt-auto flex flex-col xl:flex-row xl:items-center gap-2"
           onClick={(e) => e.stopPropagation()}
         >
           <QuantitySelector

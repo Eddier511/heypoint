@@ -3,7 +3,7 @@ import { Check, AlertTriangle, X } from "lucide-react";
 
 interface StockIndicatorProps {
   stock: number;
-  variant?: "card" | "detail";
+  variant?: "card" | "detail" | "detail-compact";
   className?: string;
 }
 
@@ -27,6 +27,39 @@ interface StockIndicatorProps {
  * @param className - Optional additional classes
  */
 export function StockIndicator({ stock, variant = "card", className = "" }: StockIndicatorProps) {
+  if (variant === "detail-compact") {
+    if (stock === 0) {
+      return (
+        <div className={`inline-flex items-center gap-1.5 rounded-full bg-[#F3F4F6] px-3 py-1.5 ${className}`}>
+          <X className="w-4 h-4 text-[#999] flex-shrink-0" />
+          <span className="text-[#666]" style={{ fontSize: '0.875rem', fontWeight: 600 }}>
+            Agotado
+          </span>
+        </div>
+      );
+    }
+
+    if (stock >= 10) {
+      return (
+        <div className={`inline-flex items-center gap-1.5 rounded-full bg-[#ECFDF5] px-3 py-1.5 ${className}`}>
+          <Check className="w-4 h-4 text-[#059669] flex-shrink-0" />
+          <span className="text-[#047857]" style={{ fontSize: '0.875rem', fontWeight: 600 }}>
+            Stock disponible: {stock} unidades
+          </span>
+        </div>
+      );
+    }
+
+    return (
+      <div className={`inline-flex items-center gap-1.5 rounded-full bg-[#FFFBEB] px-3 py-1.5 ${className}`}>
+        <AlertTriangle className="w-4 h-4 text-[#F59E0B] flex-shrink-0" />
+        <span className="text-[#D97706]" style={{ fontSize: '0.875rem', fontWeight: 600 }}>
+          Últimas {stock} {stock === 1 ? 'unidad disponible' : 'unidades disponibles'}
+        </span>
+      </div>
+    );
+  }
+
   // DETAIL VARIANT - Always show stock status with full badge system
   if (variant === "detail") {
     // Out of stock
