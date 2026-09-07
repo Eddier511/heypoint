@@ -71,11 +71,14 @@ export function ProductCard({
           />
         </div>
 
-        <h3 className="font-semibold mb-1.5 line-clamp-2 text-[#1C2335] text-sm">
+        <h3
+          className="mb-1.5 line-clamp-2 text-[#1C2335]"
+          style={{ fontSize: "0.938rem", fontWeight: 700, lineHeight: 1.25 }}
+        >
           {product.name}
         </h3>
 
-        <p className="font-bold mb-1.5 text-[#1C2335] text-sm">
+        <p className="mb-1.5 text-[#1C2335]" style={{ fontSize: "1rem", fontWeight: 800 }}>
           {formatPrecioARS(getPrecioFinalConIVA(product.price, ivaPct))}
         </p>
 

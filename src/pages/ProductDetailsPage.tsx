@@ -389,7 +389,7 @@ export function ProductDetailsPage({
               <StockIndicator stock={currentProduct.stock} variant="detail-compact" />
 
               <Card className="bg-white border-none shadow-md rounded-2xl p-4 sm:p-5 mt-4">
-                <div className="flex justify-between items-center mb-3 gap-4">
+                <div className="flex justify-between items-center mb-3 gap-4 lg:hidden">
                   <QuantitySelector
                     quantity={quantity}
                     onQuantityChange={setQuantity}
@@ -403,7 +403,24 @@ export function ProductDetailsPage({
                   </div>
                 </div>
 
-                <div className="flex gap-3">
+                <div className="hidden lg:flex justify-end mb-3">
+                  <div className="text-right">
+                    <div className="text-sm text-[#2E2E2E]">Total</div>
+                    <div className="text-xl font-bold text-[#1C2335]">
+                      {totalPrice}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 lg:items-center">
+                  <div className="hidden lg:block">
+                    <QuantitySelector
+                      quantity={quantity}
+                      onQuantityChange={setQuantity}
+                      max={currentProduct.stock}
+                      size="compact"
+                    />
+                  </div>
                   <AddToCartButton
                     productId={currentProduct.backendId ?? currentProduct.id}
                     productName={currentProduct.name}
