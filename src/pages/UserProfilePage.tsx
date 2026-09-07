@@ -343,7 +343,7 @@ export function UserProfilePage({
 
     const uf = normalizeApartmentNumber(profileData.apartmentNumber);
     if (!uf) {
-      newErrors.apartmentNumber = "Ingresá una UF válida entre 1 y 200";
+      newErrors.apartmentNumber = "Ingresá una UF válida entre 1 y 200.";
     }
 
     if (!residenceAuthorizationAccepted) {

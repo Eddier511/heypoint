@@ -171,7 +171,7 @@ export function CompleteProfilePage({ onNavigate }: CompleteProfilePageProps) {
 
     const uf = normalizeApartmentNumber(profileData.apartmentNumber);
     if (!uf) {
-      nextErrors.apartmentNumber = "Ingresá una UF válida entre 1 y 200";
+      nextErrors.apartmentNumber = "Ingresá una UF válida entre 1 y 200.";
     }
 
     if (!residenceAuthorizationAccepted) {

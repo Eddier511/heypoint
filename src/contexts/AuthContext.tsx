@@ -157,6 +157,12 @@ async function profileErrorFromResponse(res: Response, fallback: string) {
     return "Esta UF ya alcanzó el límite de usuarios registrados. Contactá a soporte si necesitás ayuda.";
   }
   if (
+    data?.error === "Invalid apartmentNumber" ||
+    data?.error === "INVALID_APARTMENT_NUMBER"
+  ) {
+    return "Ingresá una UF válida entre 1 y 200.";
+  }
+  if (
     data?.error === "Terms acceptance required" ||
     data?.error === "Privacy acceptance required"
   ) {
