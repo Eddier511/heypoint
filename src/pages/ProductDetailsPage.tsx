@@ -52,7 +52,8 @@ interface UiProduct {
 }
 
 interface ProductDetailsPageProps {
-  product: UiProduct; // viene “incompleto” desde la tienda, lo usamos como fallback visual
+  product?: UiProduct | null; // viene “incompleto” desde la tienda, lo usamos como fallback visual
+  productId?: string;
   onBack: () => void;
   onNavigate?: (page: string) => void;
   onProductClick?: (product: UiProduct) => void;
@@ -107,17 +108,25 @@ function mapApiToUi(p: ApiProduct, categoryName?: string): UiProduct {
 
 export function ProductDetailsPage({
   product,
+  productId,
   onBack,
   onNavigate,
   onProductClick,
 }: ProductDetailsPageProps) {
   // ✅ estado local: el prop puede venir sin categoryId, acá lo “hidratamos” desde backend
-  const [currentProduct, setCurrentProduct] = useState<UiProduct>(product);
+  const [currentProduct, setCurrentProduct] = useState<UiProduct | null>(
+    product ?? null,
+  );
+  const [loadingProduct, setLoadingProduct] = useState(!product && !!productId);
+  const [productError, setProductError] = useState<string | null>(null);
 
   // cuando cambia el product por props (ej. click a otro), actualizamos fallback visual
   useEffect(() => {
+    if (!product) return;
     setCurrentProduct(product);
-  }, [product.id]);
+    setProductError(null);
+    setLoadingProduct(false);
+  }, [product?.id]);
 
   const [quantity, setQuantity] = useState(1);
 
@@ -135,28 +144,43 @@ export function ProductDetailsPage({
   >({});
 
   useEffect(() => {
+    if (!currentProduct?.id && !productId) return;
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
-  }, [currentProduct.id]);
+  }, [currentProduct?.id, productId]);
 
   // ✅ 1) Hidratar producto real (traer categoryId real, stock real, etc.)
   useEffect(() => {
     let alive = true;
 
     async function hydrate() {
+      const idToLoad = product?.backendId ?? product?.id ?? productId;
+      if (!idToLoad) return;
+
       try {
-        const full = await fetchProductById(currentProduct.id);
+        setLoadingProduct(true);
+        setProductError(null);
+        const full = await fetchProductById(idToLoad);
         if (!alive) return;
 
-        if (!full) return;
+        if (!full) {
+          setCurrentProduct(null);
+          setProductError("No encontramos ese producto.");
+          return;
+        }
 
         // mantenemos el label visual que ya traía (Ej: "Kiosco") como categoryName
         const label =
-          currentProduct.categoryName ?? currentProduct.category ?? "Otros";
+          product?.categoryName ?? product?.category ?? "Otros";
         const mapped = mapApiToUi(full, label);
 
         setCurrentProduct(mapped);
       } catch (e) {
         console.error("[ProductDetails] Error hydrating product", e);
+        if (!alive) return;
+        setCurrentProduct(null);
+        setProductError("No pudimos cargar este producto.");
+      } finally {
+        if (alive) setLoadingProduct(false);
       }
     }
 
@@ -166,7 +190,7 @@ export function ProductDetailsPage({
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentProduct.id]);
+  }, [product?.backendId, product?.id, productId]);
 
   // ✅ 2) Cargar relacionados por categoryId real
   useEffect(() => {
@@ -175,6 +199,11 @@ export function ProductDetailsPage({
     async function loadRelated() {
       try {
         setLoadingRelated(true);
+
+        if (!currentProduct) {
+          if (alive) setRelatedProducts([]);
+          return;
+        }
 
         const categoryId = String(currentProduct.categoryId ?? "");
         if (!categoryId) {
@@ -260,7 +289,7 @@ export function ProductDetailsPage({
     return () => {
       alive = false;
     };
-  }, [currentProduct.id, currentProduct.categoryId, currentProduct.category]);
+  }, [currentProduct?.id, currentProduct?.categoryId, currentProduct?.category]);
 
   const getRelatedQty = (id: string) => relatedQuantities[id] || 1;
   const setRelatedQty = (id: string, q: number) =>
@@ -269,6 +298,56 @@ export function ProductDetailsPage({
   const handleRelatedClick = (p: UiProduct) => {
     onProductClick?.(p);
   };
+
+  if (loadingProduct) {
+    return (
+      <div className="min-h-screen bg-[#FFF4E6]">
+        <UnifiedHeader
+          onNavigate={onNavigate}
+          currentPage="productDetails"
+          isTransparent={false}
+        />
+        <div className="pt-20 lg:pt-24">
+          <div className="container mx-auto px-4 sm:px-6 py-5 sm:py-8">
+            <Card className="bg-white border-none shadow-lg rounded-2xl p-3 sm:p-5 animate-pulse">
+              <div className="h-[300px] sm:h-[340px] rounded-xl bg-gray-200" />
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentProduct) {
+    return (
+      <div className="min-h-screen bg-[#FFF4E6]">
+        <UnifiedHeader
+          onNavigate={onNavigate}
+          currentPage="productDetails"
+          isTransparent={false}
+        />
+        <div className="pt-20 lg:pt-24">
+          <div className="container mx-auto px-4 sm:px-6 py-8">
+            <Card className="bg-white border-none shadow-md rounded-2xl p-6 text-center">
+              <h1 className="text-[#1C2335] text-2xl font-bold mb-2">
+                Producto no disponible
+              </h1>
+              <p className="text-[#2E2E2E] mb-5">
+                {productError ?? "No pudimos cargar este producto."}
+              </p>
+              <Button
+                onClick={onBack}
+                className="bg-[#FF6B00] hover:bg-[#e56000] text-white rounded-full px-6"
+              >
+                Volver a la tienda
+              </Button>
+            </Card>
+          </div>
+        </div>
+        <Footer onNavigate={onNavigate} />
+      </div>
+    );
+  }
 
   const handleShare = async () => {
     const shareData = {

@@ -239,16 +239,22 @@ function pageToPath(page: Page) {
       return "/privacidad";
     case "cookies":
       return "/cookies";
-    // productDetails y success no tienen ruta estable en este MVP
+    // success no tiene ruta estable en este MVP
     default:
       return "/";
   }
+}
+
+function productIdFromPath(pathname: string): string | null {
+  const match = pathname.match(/^\/producto\/([^/?#]+)/i);
+  return match?.[1] ? decodeURIComponent(match[1]) : null;
 }
 
 function pathToPage(pathname: string): Page {
   const p = (pathname || "/").toLowerCase();
 
   if (p === "/" || p === "/home") return "home";
+  if (p.startsWith("/producto/")) return "productDetails";
   if (p.startsWith("/tienda")) return "shop";
   if (p.startsWith("/modelo")) return "business";
   if (p.startsWith("/contacto")) return "contact";
@@ -287,6 +293,9 @@ function AppContent() {
   const [checkoutGateStatus, setCheckoutGateStatus] =
     useState<CheckoutGateStatus>("idle");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(
+    null,
+  );
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -356,6 +365,10 @@ function AppContent() {
   useEffect(() => {
     const applyFromUrl = () => {
       const page = pathToPage(window.location.pathname);
+      if (page === "productDetails") {
+        setSelectedProductId(productIdFromPath(window.location.pathname));
+        setSelectedProduct(null);
+      }
       setCurrentPage(page);
     };
 
@@ -662,12 +675,19 @@ function AppContent() {
   ];
 
   const handleProductClick = (product: Product) => {
+    const productId = product.backendId ?? String(product.id);
     setSelectedProduct(product);
+    setSelectedProductId(productId);
     setCurrentPage("productDetails");
-    // (MVP) no cambiamos URL aquí para no romper
+    const nextPath = `/producto/${encodeURIComponent(productId)}`;
+    if (window.location.pathname !== nextPath) {
+      window.history.pushState({}, "", nextPath);
+    }
   };
 
   const handleBackToShop = () => {
+    setSelectedProduct(null);
+    setSelectedProductId(null);
     setCurrentPage("shop");
     if (window.location.pathname !== "/tienda") {
       window.history.pushState({}, "", "/tienda");
@@ -880,11 +900,16 @@ function AppContent() {
     );
   }
 
-  if (currentPage === "productDetails" && selectedProduct) {
+  if (currentPage === "productDetails" && (selectedProduct || selectedProductId)) {
     return (
       <Suspense fallback={<PageFallback />}>
         <ProductDetailsPage
           product={selectedProduct}
+          productId={
+            selectedProductId ??
+            selectedProduct?.backendId ??
+            (selectedProduct ? String(selectedProduct.id) : undefined)
+          }
           onBack={handleBackToShop}
           onNavigate={handleNavigation}
           onProductClick={handleProductClick}
@@ -1103,11 +1128,7 @@ function AppContent() {
 
               <div className="w-full order-1 sm:col-span-2 sm:order-first">
                 <SmartSearchBar
-                  onProductClick={(product) => {
-                    setSelectedProduct(product);
-                    setCurrentPage("productDetails");
-                    // (MVP) sin URL en details
-                  }}
+                  onProductClick={handleProductClick}
                   onViewAllResults={(q) => {
                     setSearchQuery(q);
                     setSelectedCategory(null);
