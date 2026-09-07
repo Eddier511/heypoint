@@ -95,6 +95,11 @@ export function CheckoutPage({
   const ivaPct = storeSettings?.iva ?? 21;
   const pickupPointName = storeSettings?.pickupPoint?.name;
   const pickupPointAddress = storeSettings?.pickupPoint?.address;
+  const normalizedPickupPointName = String(pickupPointName || "").trim().toLowerCase();
+  const normalizedPickupPointAddress = String(pickupPointAddress || "").trim().toLowerCase();
+  const shouldShowPickupPointAddress =
+    Boolean(normalizedPickupPointAddress) &&
+    normalizedPickupPointAddress !== normalizedPickupPointName;
   const checkoutEmail = currentUser?.email || "";
   const [currentStep] = useState(2);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -430,7 +435,7 @@ export function CheckoutPage({
                       <p className="text-[#2E2E2E] text-sm font-semibold break-words">
                         {pickupPointName}
                       </p>
-                      {pickupPointAddress && (
+                      {shouldShowPickupPointAddress && (
                         <p className="text-[#666666] text-sm break-words">
                           {pickupPointAddress}
                         </p>

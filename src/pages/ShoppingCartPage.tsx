@@ -56,6 +56,11 @@ export function ShoppingCartPage({
   const ivaPct = settings?.iva ?? 21;
   const pickupPointName = settings?.pickupPoint?.name;
   const pickupPointAddress = settings?.pickupPoint?.address;
+  const normalizedPickupPointName = String(pickupPointName || "").trim().toLowerCase();
+  const normalizedPickupPointAddress = String(pickupPointAddress || "").trim().toLowerCase();
+  const shouldShowPickupPointAddress =
+    Boolean(normalizedPickupPointAddress) &&
+    normalizedPickupPointAddress !== normalizedPickupPointName;
 
   const [currentStep] = useState(1);
 
@@ -237,7 +242,7 @@ export function ShoppingCartPage({
                                 >
                                   Retiro en {pickupPointName}
                                 </p>
-                                {pickupPointAddress && (
+                                {shouldShowPickupPointAddress && (
                                   <p className="text-[#6B6B6B] text-[0.7rem] sm:text-xs line-clamp-1">
                                     {pickupPointAddress}
                                   </p>
