@@ -9,6 +9,7 @@ import { Label } from "../components/ui/label";
 import { ChangeEmailModal } from "../components/ChangeEmailModal";
 import { CustomerProfileForm } from "../components/CustomerProfileForm";
 import { useStoreSettings } from "../hooks/useStoreSettings";
+import { toast } from "sonner";
 
 import {
   User,
@@ -148,7 +149,6 @@ export function UserProfilePage({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isModified, setIsModified] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Change email modal
   const [showChangeEmailModal, setShowChangeEmailModal] = useState(false);
@@ -411,7 +411,6 @@ export function UserProfilePage({
   };
 
   const handleSaveChanges = async () => {
-    setSaveSuccess(false);
     setPageError("");
 
     if (!validateForm()) return;
@@ -446,7 +445,7 @@ export function UserProfilePage({
         );
       }
 
-      setSaveSuccess(true);
+      toast.success("¡Tu perfil se actualizó correctamente!");
       setOriginalData({ ...profileData });
 
       // reset password fields
@@ -455,8 +454,6 @@ export function UserProfilePage({
         newPassword: "",
         confirmNewPassword: "",
       });
-
-      setTimeout(() => setSaveSuccess(false), 3000);
 
     } catch (e: any) {
       setPageError(e?.message || "Error guardando cambios.");
@@ -474,7 +471,6 @@ export function UserProfilePage({
     });
     setResidenceAuthorizationAccepted(originalResidenceAuthorizationAccepted);
     setErrors({});
-    setSaveSuccess(false);
   };
 
   const handleEmailChanged = async (newEmail: string) => {
@@ -561,23 +557,6 @@ export function UserProfilePage({
                   </div>
                 ) : (
                   <>
-                    {/* Success */}
-                    {saveSuccess && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mb-6 p-4 bg-green-50 border border-green-200 rounded-2xl flex items-center gap-3"
-                      >
-                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                        <p
-                          className="text-green-700"
-                          style={{ fontSize: "0.938rem", fontWeight: 600 }}
-                        >
-                          ¡Tu perfil se actualizó correctamente!
-                        </p>
-                      </motion.div>
-                    )}
-
                     {profileComplete === false && (
                       <motion.div
                         initial={{ opacity: 0, y: -10 }}
