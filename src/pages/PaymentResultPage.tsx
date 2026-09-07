@@ -48,6 +48,12 @@ export function PaymentResultPage({
   const rawPaymentId = params.get("payment_id") || params.get("collection_id") || "";
   const paymentId = /^\d+$/.test(rawPaymentId) ? rawPaymentId : "";
   const returnStatus = String(params.get("mp_status") || params.get("status") || "").toLowerCase();
+  // Kiosk mobile return: the customer's own phone lands here after paying
+  // via the QR (Fase 3C), with no Firebase session on that device. This
+  // page must never depend on that session to say anything — it's purely
+  // informational; the kiosk's own backend polling remains the only
+  // source of truth for approval.
+  const isKioskChannel = params.get("channel") === "kiosk";
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [state, setState] = useState<PaymentState>("verifying");
   const [failedKind, setFailedKind] = useState<FailedPaymentKind>(null);
@@ -55,6 +61,11 @@ export function PaymentResultPage({
   const [message, setMessage] = useState("Estamos confirmando el pago con Mercado Pago.");
 
   useEffect(() => {
+    // Kiosk mobile return never verifies/syncs anything from this device —
+    // no Firebase Auth here, no order lookup, no pickupToken. See the
+    // early render branch below for what this actually shows.
+    if (isKioskChannel) return;
+
     window.scrollTo({ top: 0, behavior: "instant" });
     let cancelled = false;
 
@@ -141,7 +152,38 @@ export function PaymentResultPage({
       cancelled = true;
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [orderDocId, paymentId, returnStatus]);
+  }, [orderDocId, paymentId, returnStatus, isKioskChannel]);
+
+  if (isKioskChannel) {
+    const kioskTitle =
+      returnStatus === "failure"
+        ? "No pudimos completar el pago"
+        : returnStatus === "success"
+          ? "Pago enviado"
+          : "Pago en proceso";
+    const kioskMessage =
+      returnStatus === "failure"
+        ? "Podés volver al kiosko para intentarlo nuevamente."
+        : returnStatus === "success"
+          ? "Estamos verificando tu pago."
+          : "Estamos verificando el estado de tu pago.";
+
+    // Purely informational: no order lookup, no pickupToken, no way to
+    // confirm/sync payment from this screen. The kiosk's own backend
+    // polling (Fase 3C) is the only source of truth for approval — this
+    // just tells the person holding the phone what to do next.
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center bg-[#FFF4E6] px-4">
+        <Card className="mx-auto w-full max-w-md border border-gray-200 bg-white p-8 text-center shadow-lg">
+          <h1 className="mb-3 text-2xl font-bold text-[#1C2335]">{kioskTitle}</h1>
+          <p className="mx-auto max-w-sm leading-7 text-[#4A4A4A]">{kioskMessage}</p>
+          <p className="mx-auto mt-4 max-w-sm leading-7 text-[#4A4A4A]">
+            Volvé al kiosko para continuar con el retiro.
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
   if (state === "approved" && order) {
     return (
