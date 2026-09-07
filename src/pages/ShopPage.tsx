@@ -27,6 +27,7 @@ import { formatPrecioARS } from "../utils/priceUtils";
 import { api } from "../lib/api";
 import { useCategories } from "../hooks/useCategories";
 import { useQuery } from "@tanstack/react-query";
+import { useCart } from "../contexts/CartContext";
 
 /** =========================
  * UI Types
@@ -133,6 +134,7 @@ export function ShopPage({
   searchQuery,
   onClearSearch,
 }: ShopPageProps) {
+  const { cartItems } = useCart();
   const itemsPerPage = 12;
   const shouldReduceMotion = useReducedMotion();
   const productsGridRef = useRef<HTMLElement>(null);
@@ -201,6 +203,10 @@ export function ShopPage({
   const getQuantity = (productId: number) => productQuantities[productId] || 1;
   const updateQuantity = (productId: number, quantity: number) => {
     setProductQuantities((prev) => ({ ...prev, [productId]: quantity }));
+  };
+  const getCartQuantity = (product: Product) => {
+    const productId = product.backendId ?? String(product.id);
+    return cartItems.find((item) => item.productId === productId)?.quantity ?? 0;
   };
 
   useEffect(() => {
@@ -698,6 +704,7 @@ export function ShopPage({
                           }
                           onProductClick={onProductClick}
                           isPriorityImage={index === 0}
+                          cartQuantity={getCartQuantity(product)}
                         />
                       </div>
                     ))}
@@ -727,6 +734,7 @@ export function ShopPage({
                         }
                         onProductClick={onProductClick}
                         isPriorityImage={index === 0}
+                        cartQuantity={getCartQuantity(product)}
                       />
                     </div>
                   ))}
@@ -849,6 +857,7 @@ export function ShopPage({
                               productosEnOferta.length === 0 &&
                               index === 0
                             }
+                            cartQuantity={getCartQuantity(product)}
                           />
                         </div>
                       ))}

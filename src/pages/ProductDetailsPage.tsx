@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { formatPrecioARS, getPrecioFinalConIVA } from "../utils/priceUtils";
 import { useStoreSettings } from "../hooks/useStoreSettings";
 import { api } from "../lib/api";
+import { useCart } from "../contexts/CartContext";
 
 type ApiProduct = {
   id: string;
@@ -129,6 +130,7 @@ export function ProductDetailsPage({
   }, [product?.id]);
 
   const [quantity, setQuantity] = useState(1);
+  const { cartItems } = useCart();
 
   // ✅ IVA dinámico
   const { settings } = useStoreSettings();
@@ -294,6 +296,10 @@ export function ProductDetailsPage({
   const getRelatedQty = (id: string) => relatedQuantities[id] || 1;
   const setRelatedQty = (id: string, q: number) =>
     setRelatedQuantities((prev) => ({ ...prev, [id]: q }));
+  const getCartQuantity = (product: UiProduct) => {
+    const productId = product.backendId ?? String(product.id);
+    return cartItems.find((item) => item.productId === productId)?.quantity ?? 0;
+  };
 
   const handleRelatedClick = (p: UiProduct) => {
     onProductClick?.(p);
@@ -610,6 +616,7 @@ export function ProductDetailsPage({
                       onQuantityChange={(q) => setRelatedQty(p.id, q)}
                       onProductClick={handleRelatedClick}
                       ivaPct={ivaPct}
+                      cartQuantity={getCartQuantity(p)}
                     />
                   </div>
                 ))}

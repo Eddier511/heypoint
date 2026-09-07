@@ -1,4 +1,5 @@
 import type { ImgHTMLAttributes } from "react";
+import { Check } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
@@ -31,6 +32,7 @@ interface ProductCardProps {
   onProductClick: (product: ProductCardProduct) => void;
   ivaPct?: number;
   isPriorityImage?: boolean;
+  cartQuantity?: number;
 }
 
 export function ProductCard({
@@ -42,6 +44,7 @@ export function ProductCard({
   onProductClick,
   ivaPct,
   isPriorityImage = false,
+  cartQuantity = 0,
 }: ProductCardProps) {
   const hasDiscount =
     product.originalPrice !== undefined && product.originalPrice > product.price;
@@ -56,6 +59,7 @@ export function ProductCard({
   };
 
   const addToCartProductId = product.backendId ?? String(product.id);
+  const hasCartQuantity = cartQuantity > 0;
 
   if (variant === "related") {
     return (
@@ -81,6 +85,15 @@ export function ProductCard({
         <p className="mb-1.5 text-[#1C2335]" style={{ fontSize: "1rem", fontWeight: 800 }}>
           {formatPrecioARS(getPrecioFinalConIVA(product.price, ivaPct))}
         </p>
+
+        <div className="mb-1.5 min-h-[18px]">
+          {hasCartQuantity && (
+            <div className="inline-flex items-center gap-1 rounded-full bg-[#FFF4E6] px-2 py-0.5 text-[0.688rem] font-semibold text-[#5C3A1E]">
+              <Check className="h-3 w-3 text-[#FF6B00]" />
+              En el carrito · {cartQuantity}
+            </div>
+          )}
+        </div>
 
         <div className="mb-2 min-h-[14px]">
           <StockIndicator stock={product.stock} variant="card" />
@@ -220,6 +233,15 @@ export function ProductCard({
               </span>
             )}
           </div>
+        </div>
+
+        <div className="mb-1.5 min-h-[20px]">
+          {hasCartQuantity && (
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-[#FFF4E6] px-2.5 py-1 text-xs font-semibold text-[#5C3A1E]">
+              <Check className="h-3.5 w-3.5 text-[#FF6B00]" />
+              En el carrito · {cartQuantity}
+            </div>
+          )}
         </div>
 
         <div className="mb-2 min-h-[14px]">
