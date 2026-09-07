@@ -54,6 +54,8 @@ export function ShoppingCartPage({
 
   const { settings } = useStoreSettings();
   const ivaPct = settings?.iva ?? 21;
+  const pickupPointName = settings?.pickupPoint?.name;
+  const pickupPointAddress = settings?.pickupPoint?.address;
 
   const [currentStep] = useState(1);
 
@@ -199,10 +201,10 @@ export function ShoppingCartPage({
                   {cartItems.map((item) => (
                     <Card
                       key={item.productId}
-                      className="p-4 sm:p-6 border-none shadow-lg rounded-3xl bg-white hover:shadow-xl transition-shadow"
+                      className="p-3 sm:p-5 border-none shadow-lg rounded-2xl sm:rounded-3xl bg-white hover:shadow-xl transition-shadow"
                     >
-                      <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
-                        <div className="w-full sm:w-32 h-48 sm:h-32 rounded-2xl overflow-hidden bg-gray-100 flex-shrink-0">
+                      <div className="flex gap-3 sm:gap-5">
+                        <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-xl sm:rounded-2xl overflow-hidden bg-gray-100 flex-shrink-0">
                           <ImageWithFallback
                             src={item.image}
                             alt={item.name}
@@ -210,53 +212,62 @@ export function ShoppingCartPage({
                           />
                         </div>
 
-                        <div className="flex-1 flex flex-col justify-between gap-4">
+                        <div className="min-w-0 flex-1 flex flex-col justify-between gap-3">
                           <div>
                             <h3
-                              className="text-[#1C2335] mb-1 text-lg sm:text-xl"
+                              className="text-[#1C2335] mb-1 text-sm sm:text-lg line-clamp-2"
                               style={{ fontWeight: 600 }}
                             >
                               {item.name}
                             </h3>
 
-                            <div className="mb-2">
+                            <div className="mb-1.5">
                               <StockIndicator
                                 stock={item.stock}
                                 variant="card"
                               />
                             </div>
 
-                            <div className="flex items-start gap-2 mb-3">
-                              <CheckCircle className="w-4 h-4 text-[#B6E322] flex-shrink-0 mt-0.5" />
-                              <span
-                                className="text-[#5C3A1E] text-xs sm:text-sm"
-                                style={{ fontWeight: 500 }}
-                              >
-                                Disponible para retiro en tu Hey!Point más
-                                cercano
-                              </span>
+                            <div className="flex items-start gap-1.5">
+                              <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#B6E322] flex-shrink-0 mt-0.5" />
+                              <div className="min-w-0">
+                                <p
+                                  className="text-[#5C3A1E] text-xs sm:text-sm line-clamp-1"
+                                  style={{ fontWeight: 600 }}
+                                >
+                                  Retiro en {pickupPointName}
+                                </p>
+                                {pickupPointAddress && (
+                                  <p className="text-[#6B6B6B] text-[0.7rem] sm:text-xs line-clamp-1">
+                                    {pickupPointAddress}
+                                  </p>
+                                )}
+                              </div>
                             </div>
                           </div>
 
-                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                            <div className="flex items-center justify-between w-full sm:w-auto gap-4">
+                          <div className="flex items-end justify-between gap-3">
+                            <div className="flex-shrink-0">
                               <QuantitySelector
                                 quantity={item.quantity}
                                 onQuantityChange={(newQuantity) =>
                                   updateQuantity(item.productId, newQuantity)
                                 }
                                 max={item.stock}
+                                size="compact"
                               />
+                            </div>
 
+                            <div className="flex items-end gap-2">
                               <div className="text-right">
-                                <div className="text-[#2E2E2E] text-xs sm:text-sm">
+                                <div className="text-[#2E2E2E] text-[0.7rem] sm:text-xs">
                                   {formatPrecioARS(
                                     getPrecioFinalConIVA(item.price, ivaPct),
                                   )}{" "}
-                                  cada uno
+                                  c/u
                                 </div>
                                 <div
-                                  className="text-[#FF6B00] text-lg sm:text-xl"
+                                  className="text-[#FF6B00] text-base sm:text-xl"
                                   style={{ fontWeight: 700 }}
                                 >
                                   {formatPrecioARS(
@@ -265,14 +276,15 @@ export function ShoppingCartPage({
                                   )}
                                 </div>
                               </div>
-                            </div>
 
-                            <button
-                              onClick={() => removeItem(item.productId)}
-                              className="p-2 rounded-full hover:bg-red-50 text-red-500 transition-colors self-end sm:self-auto"
-                            >
-                              <Trash2 className="w-5 h-5" />
-                            </button>
+                              <button
+                                onClick={() => removeItem(item.productId)}
+                                className="p-2 rounded-full hover:bg-red-50 text-red-500 transition-colors"
+                                aria-label={`Eliminar ${item.name}`}
+                              >
+                                <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
