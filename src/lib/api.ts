@@ -1,5 +1,6 @@
 // src/lib/api.ts
 import axios from "axios";
+import { getAuth } from "firebase/auth";
 
 // ✅ Prioriza prod URL y evita caer a localhost en producción
 const raw =
@@ -20,28 +21,15 @@ export const API_URL =
       ? "https://api.heypoint.com.ar/api" // ✅ fallback seguro en producción
       : "http://localhost:4000/api"; // ✅ fallback solo para local
 
-export const STORAGE_KEYS = {
-  idToken: "heypoint_id_token",
-} as const;
-
-export function setIdToken(token: string | null) {
-  if (!token) localStorage.removeItem(STORAGE_KEYS.idToken);
-  else localStorage.setItem(STORAGE_KEYS.idToken, token);
-}
-
-export function getIdTokenFromStorage() {
-  return localStorage.getItem(STORAGE_KEYS.idToken);
-}
-
 export const api = axios.create({
   baseURL: API_URL,
   headers: { "Content-Type": "application/json" },
   withCredentials: false,
 });
 
-// 🔥 mete token automáticamente si existe
-api.interceptors.request.use((config) => {
-  const token = getIdTokenFromStorage();
+// 🔥 mete token Firebase actual automáticamente si existe
+api.interceptors.request.use(async (config) => {
+  const token = await getAuth().currentUser?.getIdToken();
   if (token) {
     config.headers = config.headers ?? {};
     config.headers.Authorization = `Bearer ${token}`;

@@ -70,7 +70,6 @@ function apiBase() {
 }
 
 async function getIdTokenSafe(): Promise<string | null> {
-  // 1) Firebase client SDK
   try {
     const mod = await import("firebase/auth");
     const auth = mod.getAuth();
@@ -78,19 +77,6 @@ async function getIdTokenSafe(): Promise<string | null> {
     if (user) return await user.getIdToken();
   } catch {
     // ignore
-  }
-
-  // 2) LocalStorage fallbacks
-  const keys = [
-    "heypoint:idToken",
-    "heypoint_token",
-    "idToken",
-    "token",
-    "accessToken",
-  ];
-  for (const k of keys) {
-    const v = localStorage.getItem(k);
-    if (v && v.length > 20) return v;
   }
 
   return null;

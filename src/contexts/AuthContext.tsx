@@ -117,7 +117,6 @@ interface AuthContextType {
   updateDisplayName: (fullName: string) => Promise<void>;
 }
 
-const STORAGE_KEY = "heypoint_id_token";
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const AUTH_ONBOARDING_KEYS = [
   "heypoint_pending_email",
@@ -215,34 +214,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
   const isAuthenticated = !!fbUser;
 
-  const persistToken = useCallback(async (forceRefresh = false) => {
+  const getFirebaseToken = useCallback(async (forceRefresh = false) => {
     const u = auth.currentUser;
-    if (!u) {
-      localStorage.removeItem(STORAGE_KEY);
-      return null;
-    }
-
-    const token = await fbGetIdToken(u, forceRefresh);
-    localStorage.setItem(STORAGE_KEY, token);
-    return token;
+    if (!u) return null;
+    return fbGetIdToken(u, forceRefresh);
   }, []);
 
-  // ✅ mantiene token fresco
+  // ✅ mantiene estado Firebase/AuthContext sincronizado
   useEffect(() => {
-    const unsub = onIdTokenChanged(auth, async (u) => {
+    const unsub = onIdTokenChanged(auth, (u) => {
       setFbUser(u);
       setLoadingAuth(false);
-
-      try {
-        if (u) await persistToken(false);
-        else localStorage.removeItem(STORAGE_KEY);
-      } catch {
-        localStorage.removeItem(STORAGE_KEY);
-      }
     });
 
     return () => unsub();
-  }, [persistToken]);
+  }, []);
 
   // Load customer fullName from Firestore in the background whenever the
   // Firebase user changes. This ensures the header always shows the
@@ -289,7 +275,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string,
   ): Promise<User> => {
     const cred = await signInWithEmailAndPassword(auth, email, password);
-    await persistToken(false);
+    await getFirebaseToken(false);
     setFbUser(auth.currentUser);
     return mapFirebaseUser(cred.user);
   };
@@ -300,7 +286,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     legalConsentAccepted = false,
   ) => {
     const token = await fbGetIdToken(firebaseUser, true);
-    localStorage.setItem(STORAGE_KEY, token);
     const url = apiUrl("/customers/bootstrap");
 
     try {
@@ -374,7 +359,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   ): Promise<User> => {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(cred.user, { displayName: fullName });
-    await persistToken(false);
+    await getFirebaseToken(false);
     setFbUser(auth.currentUser);
 
     try {
@@ -428,7 +413,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const info = getAdditionalUserInfo(cred);
     const isNewUser = !!info?.isNewUser;
 
-    await persistToken(false);
+    await getFirebaseToken(false);
     setFbUser(auth.currentUser);
 
     const u = mapFirebaseUser(cred.user);
@@ -453,7 +438,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setFbUser(null);
     setCustomerFullName(null);
     setCustomerProfile(null);
-    localStorage.removeItem(STORAGE_KEY);
     clearAuthOnboardingStorage();
     clearCheckoutAttempt();
     window.dispatchEvent(new CustomEvent("heypoint:logout"));
@@ -461,12 +445,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // token
   const getAuthToken = useCallback(async (forceRefresh = false): Promise<string | null> => {
-    const u = auth.currentUser;
-    if (!u) return null;
-    const token = await fbGetIdToken(u, forceRefresh);
-    localStorage.setItem(STORAGE_KEY, token);
-    return token;
-  }, []);
+    return getFirebaseToken(forceRefresh);
+  }, [getFirebaseToken]);
 
   const getIdTokenFn = useCallback(() => getAuthToken(false), [getAuthToken]);
 
@@ -522,10 +502,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const u = auth.currentUser;
     if (!u) return false;
     await reload(u);
-    await persistToken(true);
+    await getFirebaseToken(true);
     setFbUser(auth.currentUser);
     return !!auth.currentUser?.emailVerified;
-  }, [persistToken]);
+  }, [getFirebaseToken]);
 
   const isEmailVerified = useCallback(async () => {
     const u = auth.currentUser;
@@ -554,8 +534,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(friendlyVerificationError(error));
     }
 
-    await persistToken(false);
-  }, [persistToken]);
+    await getFirebaseToken(false);
+  }, [getFirebaseToken]);
 
   // ✅ Backend: POST /api/customers/profile (alias)
   const saveProfile = useCallback(async (payload: CustomerProfile) => {
@@ -661,7 +641,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!name) throw new Error("El nombre no puede estar vacío.");
 
     await updateProfile(u, { displayName: name });
-    await persistToken(false);
+    await getFirebaseToken(false);
     setFbUser(auth.currentUser);
   };
 

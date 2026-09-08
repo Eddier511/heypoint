@@ -37,55 +37,7 @@ import {
   normalizeOrderTaxBreakdown,
 } from "../utils/taxBreakdown";
 import { motion, AnimatePresence } from "motion/react";
-
-/** =========================
- * API Helper (fixed)
- * - Normaliza /api
- * - Agrega Authorization Bearer automáticamente
- * ========================= */
-const raw =
-  (import.meta.env.VITE_API_URL as string | undefined) ||
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
-  "";
-
-const normalizedBase = raw.split(",")[0].trim().replace(/\/+$/, "");
-
-const API_URL =
-  normalizedBase.length > 0
-    ? normalizedBase.endsWith("/api")
-      ? normalizedBase
-      : `${normalizedBase}/api`
-    : import.meta.env.PROD
-      ? "https://api.heypoint.com.ar/api"
-      : "http://localhost:4000/api";
-
-const STORAGE_KEYS = {
-  idToken: "heypoint_id_token",
-} as const;
-
-function getIdTokenFromStorage() {
-  return localStorage.getItem(STORAGE_KEYS.idToken);
-}
-
-async function apiGet<T>(path: string, opts?: RequestInit): Promise<T> {
-  const token = getIdTokenFromStorage();
-
-  const res = await fetch(`${API_URL}${path}`, {
-    ...opts,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(opts?.headers || {}),
-    },
-  });
-
-  if (!res.ok) {
-    const msg = await res.text().catch(() => "");
-    throw new Error(msg || `HTTP ${res.status} ${res.statusText}`);
-  }
-
-  return res.json() as Promise<T>;
-}
+import { api } from "../lib/api";
 
 /** =========================
  * UI Types (your screen types)
@@ -734,7 +686,7 @@ export function MyOrdersPage({
         setOrdersError(null);
 
         // ✅ Endpoint: GET /orders/me
-        const data = await apiGet<ApiOrdersMeResponse>("/orders/me");
+        const { data } = await api.get<ApiOrdersMeResponse>("/orders/me");
         const apiOrders = normalizeOrdersResponse(data);
 
         const mapped: Order[] = apiOrders.map((o) => {
