@@ -64,7 +64,7 @@ interface LockerGroup {
   subtotal: number;
 }
 
-type UiOrderStatus = "pending" | "completed";
+type UiOrderStatus = "pending" | "picked_up" | "completed" | "unknown";
 
 interface Order {
   id: string;
@@ -144,21 +144,26 @@ function normalizeOrdersResponse(data: ApiOrdersMeResponse): ApiOrder[] {
   return data?.orders || [];
 }
 
+// Every order reaching this page already went through the backend's
+// isRealPurchase() filter (getMyOrders only returns approved/real
+// purchases). This classifier only decides HOW to present that purchase —
+// it must never fall back to "picked_up"/"completed" for a status it
+// doesn't explicitly recognize. Fail closed: an unrecognized status keeps
+// the order visible (it's still a real purchase) but never claims a
+// pickup that isn't confirmed by the data.
 function toUiOrderStatus(status?: string): UiOrderStatus {
   switch (String(status || "").trim().toLowerCase()) {
-    case "picked_up":
-    case "completed":
-    case "complete":
-    case "cancelled":
-    case "canceled":
-    case "expired":
-      return "completed";
     case "pending":
     case "pending_pickup":
     case "ready_for_pickup":
       return "pending";
-    default:
+    case "picked_up":
+      return "picked_up";
+    case "completed":
+    case "complete":
       return "completed";
+    default:
+      return "unknown";
   }
 }
 
@@ -251,7 +256,7 @@ function OrderCard({
   onShowToken,
   onNavigate,
 }: OrderCardProps) {
-  const isCompleted = order.status === "completed";
+  const isCompleted = order.status !== "pending";
   const isExpiredPending =
     order.status === "pending" && isPickupTokenExpired(order);
   const expirationLabel = formatExpirationDate(getPickupTokenExpiration(order));
@@ -292,11 +297,28 @@ function OrderCard({
                     Pendiente de retiro
                   </span>
                 </Badge>
-              ) : (
+              ) : order.status === "picked_up" ? (
                 <Badge className="bg-gradient-to-r from-green-500 to-green-600 text-white border-none px-3 py-1.5 rounded-full">
                   <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
                   <span style={{ fontSize: "0.813rem", fontWeight: 600 }}>
                     Retirado
+                  </span>
+                </Badge>
+              ) : order.status === "completed" ? (
+                <Badge className="bg-[#B6E322] text-[#1C2335] border-none px-3 py-1.5 rounded-full">
+                  <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
+                  <span style={{ fontSize: "0.813rem", fontWeight: 600 }}>
+                    Completado
+                  </span>
+                </Badge>
+              ) : (
+                // Fail closed: a real purchase whose operational status we
+                // don't explicitly recognize (e.g. refunded/charged_back
+                // that was never picked up). Never claim "Retirado" here.
+                <Badge className="bg-gray-100 text-gray-600 border border-gray-300 px-3 py-1.5 rounded-full">
+                  <Package className="w-3.5 h-3.5 mr-1.5" />
+                  <span style={{ fontSize: "0.813rem", fontWeight: 600 }}>
+                    Compra registrada
                   </span>
                 </Badge>
               )}
@@ -601,7 +623,7 @@ function OrderCard({
               <Hash className="w-4 h-4 mr-2" />
               Mostrar token
             </Button>
-          ) : (
+          ) : order.status === "picked_up" ? (
             <Button
               disabled
               className="flex-1 bg-green-500 text-white py-5 rounded-full cursor-not-allowed opacity-75"
@@ -609,6 +631,26 @@ function OrderCard({
             >
               <CheckCircle className="w-4 h-4 mr-2" />
               Retirado
+            </Button>
+          ) : order.status === "completed" ? (
+            <Button
+              disabled
+              className="flex-1 bg-green-500 text-white py-5 rounded-full cursor-not-allowed opacity-75"
+              style={{ fontSize: "0.938rem", fontWeight: 600 }}
+            >
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Completado
+            </Button>
+          ) : (
+            // Fail closed: never claim "Retirado" for a status we don't
+            // explicitly recognize as a confirmed pickup.
+            <Button
+              disabled
+              className="flex-1 bg-gray-300 text-gray-700 py-5 rounded-full cursor-not-allowed opacity-75"
+              style={{ fontSize: "0.938rem", fontWeight: 600 }}
+            >
+              <Package className="w-4 h-4 mr-2" />
+              Compra registrada
             </Button>
           )}
         </div>
@@ -758,8 +800,11 @@ export function MyOrdersPage({
     () => orders.filter((o) => o.status === "pending"),
     [orders],
   );
+  // Every non-pending status here is still a real purchase (getMyOrders
+  // only returns approved purchases) — "picked_up" / "completed" / and
+  // any unrecognized status (fail-closed) all belong in this tab.
   const completedOrders = useMemo(
-    () => orders.filter((o) => o.status === "completed"),
+    () => orders.filter((o) => o.status !== "pending"),
     [orders],
   );
 
