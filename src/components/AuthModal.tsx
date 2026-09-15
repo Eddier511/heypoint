@@ -385,7 +385,7 @@ export default function AuthModal({
     };
 
     try {
-      const { user, isNewUser } = await startGoogleOAuth(legalConsentAccepted);
+      const { user, isNewUser, needsSignup } = await startGoogleOAuth(legalConsentAccepted);
       cleanup();
 
       if (!user?.email)
@@ -399,7 +399,7 @@ export default function AuthModal({
       setPendingEmail(user.email);
       setPendingFullName(user.fullName || "");
 
-      if (isNewUser && !legalConsentAccepted) {
+      if ((needsSignup || isNewUser) && !legalConsentAccepted) {
         setSignupMethod("google");
         setSignUpTermsAccepted(false);
         setActiveTab("signup");

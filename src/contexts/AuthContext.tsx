@@ -42,6 +42,7 @@ interface User {
 type GoogleOAuthResult = {
   user: User;
   isNewUser: boolean;
+  needsSignup?: boolean;
 };
 
 // ✅ Perfil extendido (lo que guardás en Firestore)
@@ -449,14 +450,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const info = getAdditionalUserInfo(cred);
     const isNewUser = !!info?.isNewUser;
 
-    await getFirebaseToken(false);
+    const token = await getFirebaseToken(false);
 
     const u = mapFirebaseUser(cred.user);
-    if (isNewUser && !legalConsentAccepted) {
+    let customerExists = false;
+    if (!legalConsentAccepted) {
+      const res = await fetch(apiUrl("/customers/me"), {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        googleAuthPendingConsentRef.current = false;
+        throw new Error("No pudimos validar tu cuenta de Hey!Point.");
+      }
+      const data = await res.json().catch(() => ({}));
+      customerExists = data?.exists === true;
+    }
+
+    const needsSignup = !legalConsentAccepted && (isNewUser || !customerExists);
+    if (needsSignup) {
       setFbUser(null);
       setCustomerFullName(null);
       setCustomerProfile(null);
-      return { user: u, isNewUser };
+      return { user: u, isNewUser, needsSignup: true };
     }
 
     googleAuthPendingConsentRef.current = false;
