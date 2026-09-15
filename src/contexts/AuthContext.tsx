@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   ReactNode,
   useCallback,
@@ -208,6 +209,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Firestore customer fullName — source of truth (loaded in background).
   const [customerFullName, setCustomerFullName] = useState<string | null>(null);
   const [customerProfile, setCustomerProfile] = useState<CustomerProfile | null>(null);
+  const initialAuthCheckDoneRef = useRef(false);
+  const googleAuthPendingConsentRef = useRef(false);
 
   const user = useMemo(
     () => (fbUser ? mapFirebaseUser(fbUser) : null),
@@ -224,7 +227,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ✅ mantiene estado Firebase/AuthContext sincronizado
   useEffect(() => {
     const unsub = onIdTokenChanged(auth, (u) => {
+      const isInitialAuthCheck = !initialAuthCheckDoneRef.current;
+      initialAuthCheckDoneRef.current = true;
+
       if (
+        isInitialAuthCheck &&
         u &&
         typeof window !== "undefined" &&
         sessionStorage.getItem(PENDING_GOOGLE_SIGNUP_KEY) === "1"
@@ -236,6 +243,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setFbUser(null);
         setCustomerFullName(null);
         setCustomerProfile(null);
+        setLoadingAuth(false);
+        return;
+      }
+
+      if (u && googleAuthPendingConsentRef.current) {
         setLoadingAuth(false);
         return;
       }
@@ -426,14 +438,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: "select_account" });
 
-    const cred = await signInWithPopup(auth, provider);
+    googleAuthPendingConsentRef.current = !legalConsentAccepted;
+    let cred;
+    try {
+      cred = await signInWithPopup(auth, provider);
+    } catch (error) {
+      googleAuthPendingConsentRef.current = false;
+      throw error;
+    }
     const info = getAdditionalUserInfo(cred);
     const isNewUser = !!info?.isNewUser;
 
     await getFirebaseToken(false);
-    setFbUser(auth.currentUser);
 
     const u = mapFirebaseUser(cred.user);
+    if (isNewUser && !legalConsentAccepted) {
+      setFbUser(null);
+      setCustomerFullName(null);
+      setCustomerProfile(null);
+      return { user: u, isNewUser };
+    }
+
+    googleAuthPendingConsentRef.current = false;
+    setFbUser(auth.currentUser);
+
     if (legalConsentAccepted) {
       try {
         await bootstrapCustomerProfile(cred.user, u.fullName, legalConsentAccepted);
