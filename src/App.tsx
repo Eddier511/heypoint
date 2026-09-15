@@ -28,6 +28,7 @@ import { Footer } from "./components/Footer";
 import { CookieBanner } from "./components/CookieBanner";
 import { ShopPage } from "./pages/ShopPage";
 import { useCategories } from "./hooks/useCategories";
+import { getSeoForPage, usePageSeo } from "./lib/seo";
 
 const ProductDetailsPage = lazy(() =>
   import("./pages/ProductDetailsPage").then((module) => ({
@@ -122,7 +123,8 @@ type Page =
   | "orders"
   | "terms"
   | "privacy"
-  | "cookies";
+  | "cookies"
+  | "notFound";
 
 type CheckoutGateStatus = "idle" | "checking" | "allowed";
 
@@ -219,6 +221,8 @@ function pageToPath(page: Page) {
       return "/modelo";
     case "contact":
       return "/contacto";
+    case "ourcompany":
+      return "/ourcompany";
     case "cart":
       return "/carrito";
     case "checkout":
@@ -239,6 +243,8 @@ function pageToPath(page: Page) {
       return "/privacidad";
     case "cookies":
       return "/cookies";
+    case "notFound":
+      return window.location.pathname || "/";
     // success no tiene ruta estable en este MVP
     default:
       return "/";
@@ -258,6 +264,7 @@ function pathToPage(pathname: string): Page {
   if (p.startsWith("/tienda")) return "shop";
   if (p.startsWith("/modelo")) return "business";
   if (p.startsWith("/contacto")) return "contact";
+  if (p.startsWith("/ourcompany")) return "ourcompany";
   if (p.startsWith("/carrito") || p.startsWith("/cart")) return "cart";
   if (p.startsWith("/checkout/resultado")) return "paymentResult";
   if (p.startsWith("/checkout")) return "checkout";
@@ -269,7 +276,7 @@ function pathToPage(pathname: string): Page {
   if (p.startsWith("/privacidad")) return "privacy";
   if (p.startsWith("/cookies")) return "cookies";
 
-  return "home";
+  return "notFound";
 }
 
 export default function App() {
@@ -308,6 +315,7 @@ function AppContent() {
 
   // ✅ Hero image loading (evita salto/flash al entrar por primera vez)
   const [heroLoaded, setHeroLoaded] = useState(false);
+  usePageSeo(currentPage === "productDetails" ? null : getSeoForPage(currentPage));
 
   // ✅ Preload banner para primera visita
   useEffect(() => {
@@ -1026,6 +1034,37 @@ function AppContent() {
       <Suspense fallback={<PageFallback />}>
         <CookiesPage onNavigate={handleNavigation} />
       </Suspense>
+    );
+
+  if (currentPage === "notFound")
+    return (
+      <div className="min-h-screen bg-[#FFF4E6]">
+        <UnifiedHeader
+          onNavigate={handleNavigation}
+          currentPage={currentPage}
+          onCategorySelect={handleCategorySelect}
+          isTransparent={false}
+        />
+        <main className="pt-24 pb-16">
+          <div className="container mx-auto px-4 sm:px-6">
+            <Card className="bg-white border-none shadow-md rounded-2xl p-6 sm:p-8 text-center max-w-xl mx-auto">
+              <h1 className="text-[#1C2335] text-2xl sm:text-3xl font-bold mb-3">
+                Página no encontrada
+              </h1>
+              <p className="text-[#2E2E2E] mb-6">
+                La página que buscás no existe o ya no está disponible.
+              </p>
+              <Button
+                onClick={() => handleNavigation("home")}
+                className="bg-[#FF6B00] hover:bg-[#e56000] text-white rounded-full px-6"
+              >
+                Volver al inicio
+              </Button>
+            </Card>
+          </div>
+        </main>
+        <Footer onNavigate={handleNavigation} />
+      </div>
     );
 
   // Home Page

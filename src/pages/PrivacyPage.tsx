@@ -9,18 +9,7 @@ interface PrivacyPageProps {
 }
 
 export function PrivacyPage({ onNavigate }: PrivacyPageProps) {
-  // Set page title for SEO
   useEffect(() => {
-    document.title = "Privacy Policy | Hey!Point";
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute(
-        "content",
-        "Privacy Policy for Hey!Point smart mini-store system. Learn how we collect, use, protect and manage your personal information."
-      );
-    }
-    
-    // Scroll to top on mount
     window.scrollTo(0, 0);
   }, []);
 

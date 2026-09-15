@@ -10,14 +10,6 @@ interface CookiesPageProps {
 
 export function CookiesPage({ onNavigate }: CookiesPageProps) {
   useEffect(() => {
-    document.title = "Política de Cookies | Hey!Point";
-    const meta = document.querySelector('meta[name="description"]');
-    if (meta) {
-      meta.setAttribute(
-        "content",
-        "Política de Cookies de Hey!Point — cómo usamos cookies para mantener tu sesión segura, recordar preferencias y mejorar la plataforma.",
-      );
-    }
     window.scrollTo(0, 0);
   }, []);
 

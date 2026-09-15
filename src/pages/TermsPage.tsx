@@ -9,18 +9,7 @@ interface TermsPageProps {
 }
 
 export function TermsPage({ onNavigate }: TermsPageProps) {
-  // Set page title for SEO
   useEffect(() => {
-    document.title = "Términos y Privacidad | Hey!Point";
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute(
-        "content",
-        "Términos y Condiciones de uso y Política de Privacidad de Hey!Point. Conocé cómo funciona el servicio y cómo protegemos tus datos."
-      );
-    }
-    
-    // Scroll to top on mount
     window.scrollTo(0, 0);
   }, []);
 

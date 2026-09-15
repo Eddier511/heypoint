@@ -17,6 +17,7 @@ import { formatPrecioARS, getPrecioFinalConIVA } from "../utils/priceUtils";
 import { useStoreSettings } from "../hooks/useStoreSettings";
 import { api } from "../lib/api";
 import { useCart } from "../contexts/CartContext";
+import { getProductSeo, usePageSeo } from "../lib/seo";
 
 type ApiProduct = {
   id: string;
@@ -39,6 +40,7 @@ interface UiProduct {
   // Firestore product document ID used for cart/order stock operations.
   backendId?: string;
   name: string;
+  description?: string;
   image: string;
   price: number;
   originalPrice?: number;
@@ -93,6 +95,7 @@ function mapApiToUi(p: ApiProduct, categoryName?: string): UiProduct {
   return {
     id: String(p.id),
     name: String(p.name ?? "Producto"),
+    description: p.description,
     image: (p.images?.[0] || "").trim() || PLACEHOLDER_IMG,
     price: finalBase,
     originalPrice: discountPct > 0 ? base : undefined,
@@ -300,6 +303,18 @@ export function ProductDetailsPage({
     const productId = product.backendId ?? String(product.id);
     return cartItems.find((item) => item.productId === productId)?.quantity ?? 0;
   };
+  const seoProduct = product ?? currentProduct;
+  const seoProductId =
+    seoProduct?.backendId ?? seoProduct?.id ?? productId;
+  usePageSeo(
+    getProductSeo({
+      id: seoProductId ? String(seoProductId) : undefined,
+      name: seoProduct?.name,
+      description: seoProduct?.description,
+      image: seoProduct?.image,
+      notFound: !loadingProduct && !currentProduct && !!productError,
+    }),
+  );
 
   const handleRelatedClick = (p: UiProduct) => {
     onProductClick?.(p);
