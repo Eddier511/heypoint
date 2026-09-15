@@ -15,6 +15,7 @@ import {
   RefreshCw,
   ExternalLink,
   AlertCircle,
+  Info,
 } from "lucide-react";
 
 import { Button } from "./ui/button";
@@ -216,6 +217,8 @@ export default function AuthModal({
   // Legal consent — signup form (step 1)
   const [signUpTermsAccepted, setSignUpTermsAccepted] = useState(false);
   const [signUpTermsError, setSignUpTermsError] = useState("");
+  const [googleLoginNeedsSignupNotice, setGoogleLoginNeedsSignupNotice] =
+    useState(false);
 
   const shouldReduceMotion = useReducedMotion();
 
@@ -236,6 +239,7 @@ export default function AuthModal({
     setForgotPasswordSent(false);
     setForgotPasswordError("");
     setVerificationNotice("");
+    setGoogleLoginNeedsSignupNotice(false);
 
     const savedEmail = localStorage.getItem(PENDING_EMAIL_KEY);
     const savedName = localStorage.getItem(PENDING_NAME_KEY);
@@ -383,9 +387,7 @@ export default function AuthModal({
         setSignupMethod("google");
         setSignUpTermsAccepted(false);
         setActiveTab("signup");
-        setGlobalError(
-          "Para crear tu cuenta con Google, primero aceptá los Términos y Condiciones y la Política de Privacidad.",
-        );
+        setGoogleLoginNeedsSignupNotice(true);
         return;
       }
 
@@ -642,6 +644,7 @@ export default function AuthModal({
     setForgotPasswordSent(false);
     setForgotPasswordError("");
     setActiveTab("login");
+    setGoogleLoginNeedsSignupNotice(false);
   };
 
   // =========================
@@ -721,6 +724,7 @@ export default function AuthModal({
                     onValueChange={(v) => {
                       setActiveTab(v as any);
                       setGlobalError("");
+                      setGoogleLoginNeedsSignupNotice(false);
                     }}
                     className="w-full flex flex-col flex-1 overflow-hidden"
                   >
@@ -917,6 +921,7 @@ export default function AuthModal({
                               onClick={() => {
                                 setSignupMethod("google");
                                 setGlobalError("");
+                                setGoogleLoginNeedsSignupNotice(false);
                               }}
                               className={`${GOOGLE_CONTROL_BASE_CLASS} ${
                                 signupMethod === "google"
@@ -950,6 +955,7 @@ export default function AuthModal({
                               onClick={() => {
                                 setSignupMethod("email");
                                 setGlobalError("");
+                                setGoogleLoginNeedsSignupNotice(false);
                               }}
                               className={`${GOOGLE_CONTROL_BASE_CLASS} ${
                                 signupMethod === "email"
@@ -1221,6 +1227,20 @@ export default function AuthModal({
                             )}
                           </div>
                           )}
+
+                          {googleLoginNeedsSignupNotice &&
+                            activeTab === "signup" &&
+                            signupMethod === "google" && (
+                              <div className="flex items-start gap-2.5 rounded-2xl border border-[#FF6B00]/20 bg-[#FFF4E6] px-4 py-3">
+                                <Info className="w-4 h-4 text-[#FF6B00] mt-0.5 flex-shrink-0" />
+                                <p className="text-sm text-[#1C2335] leading-snug">
+                                  Parece que todavía no tenés una cuenta en Hey!Point.
+                                  <br />
+                                  <br />
+                                  Podés crearla con tu cuenta de Google. Antes de continuar, aceptá los Términos y Condiciones y la Política de Privacidad.
+                                </p>
+                              </div>
+                            )}
 
                           {/* Contextual error — signup */}
                           {!!globalError && (
