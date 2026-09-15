@@ -37,6 +37,7 @@ interface AuthModalProps {
 
 const PENDING_EMAIL_KEY = "heypoint_pending_email";
 const PENDING_NAME_KEY = "heypoint_pending_name";
+const PENDING_GOOGLE_SIGNUP_KEY = "heypoint_pending_google_signup";
 const RESEND_COOLDOWN_SECONDS = 60;
 const TOO_MANY_REQUESTS_MESSAGE =
   "Hiciste demasiados intentos. Esperá unos minutos antes de volver a intentarlo.";
@@ -171,6 +172,7 @@ export default function AuthModal({
     loginWithEmail,
     signupWithEmail,
     startGoogleOAuth,
+    logout,
     sendResetPassword,
     refreshEmailVerification,
     sendVerifyEmailPro, // ✅ ESTA ES LA CLAVE
@@ -286,12 +288,22 @@ export default function AuthModal({
     return () => clearTimeout(t);
   }, [signUpStep, verificationCountdown, isResendEnabled]);
 
+  const cancelPendingGoogleSignup = useCallback(() => {
+    if (!googleLoginNeedsSignupNotice) return;
+    sessionStorage.removeItem(PENDING_GOOGLE_SIGNUP_KEY);
+    setGoogleLoginNeedsSignupNotice(false);
+    logout().catch((error) => {
+      console.warn("[AuthModal] failed to cancel pending Google signup", error);
+    });
+  }, [googleLoginNeedsSignupNotice, logout]);
+
   const guardedClose = useCallback(() => {
     // Email verification is a hard blocking step — cannot be dismissed.
     if (signUpStep === "verifyEmail") return;
     if (signUpStep === "creating") return;
+    cancelPendingGoogleSignup();
     onClose();
-  }, [onClose, signUpStep]);
+  }, [cancelPendingGoogleSignup, onClose, signUpStep]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -322,6 +334,10 @@ export default function AuthModal({
     setGlobalError("");
     setLoading(true);
     googlePopupActiveRef.current = true;
+    if (legalConsentAccepted) {
+      sessionStorage.removeItem(PENDING_GOOGLE_SIGNUP_KEY);
+      setGoogleLoginNeedsSignupNotice(false);
+    }
 
     // ------------------------------------------------------------------
     // Watchdog 1 — window focus + grace period
@@ -387,6 +403,7 @@ export default function AuthModal({
         setSignupMethod("google");
         setSignUpTermsAccepted(false);
         setActiveTab("signup");
+        sessionStorage.setItem(PENDING_GOOGLE_SIGNUP_KEY, "1");
         setGoogleLoginNeedsSignupNotice(true);
         return;
       }
@@ -722,6 +739,7 @@ export default function AuthModal({
                   <Tabs
                     value={activeTab}
                     onValueChange={(v) => {
+                      if (v === "login") cancelPendingGoogleSignup();
                       setActiveTab(v as any);
                       setGlobalError("");
                       setGoogleLoginNeedsSignupNotice(false);
@@ -921,7 +939,6 @@ export default function AuthModal({
                               onClick={() => {
                                 setSignupMethod("google");
                                 setGlobalError("");
-                                setGoogleLoginNeedsSignupNotice(false);
                               }}
                               className={`${GOOGLE_CONTROL_BASE_CLASS} ${
                                 signupMethod === "google"
@@ -953,6 +970,7 @@ export default function AuthModal({
                             <button
                               type="button"
                               onClick={() => {
+                                cancelPendingGoogleSignup();
                                 setSignupMethod("email");
                                 setGlobalError("");
                                 setGoogleLoginNeedsSignupNotice(false);

@@ -122,6 +122,7 @@ const AUTH_ONBOARDING_KEYS = [
   "heypoint_pending_email",
   "heypoint_pending_name",
 ];
+const PENDING_GOOGLE_SIGNUP_KEY = "heypoint_pending_google_signup";
 
 function clearAuthOnboardingStorage() {
   AUTH_ONBOARDING_KEYS.forEach((key) => localStorage.removeItem(key));
@@ -223,6 +224,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ✅ mantiene estado Firebase/AuthContext sincronizado
   useEffect(() => {
     const unsub = onIdTokenChanged(auth, (u) => {
+      if (
+        u &&
+        typeof window !== "undefined" &&
+        sessionStorage.getItem(PENDING_GOOGLE_SIGNUP_KEY) === "1"
+      ) {
+        sessionStorage.removeItem(PENDING_GOOGLE_SIGNUP_KEY);
+        signOut(auth).catch((error) => {
+          console.warn("[AuthContext] pending Google signup signOut failed", error);
+        });
+        setFbUser(null);
+        setCustomerFullName(null);
+        setCustomerProfile(null);
+        setLoadingAuth(false);
+        return;
+      }
+
       setFbUser(u);
       setLoadingAuth(false);
     });
@@ -417,7 +434,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setFbUser(auth.currentUser);
 
     const u = mapFirebaseUser(cred.user);
-    if (isNewUser || legalConsentAccepted) {
+    if (legalConsentAccepted) {
       try {
         await bootstrapCustomerProfile(cred.user, u.fullName, legalConsentAccepted);
       } catch (bootstrapErr: any) {
