@@ -28,7 +28,6 @@ import { CheckoutStepper } from "../components/CheckoutStepper";
 import { formatPrecioARS, getPrecioFinalConIVA } from "../utils/priceUtils";
 import {
   findServiceChargeRule,
-  formatServiceChargeDisplayLabel,
   formatServiceChargeRuleLabel,
 } from "../utils/serviceCharge";
 import {
@@ -117,11 +116,6 @@ export function ShoppingCartPage({
     () => formatServiceChargeRuleLabel(reglaCargoAplicada),
     [reglaCargoAplicada],
   );
-  const textoCargoServicio = useMemo(
-    () => formatServiceChargeDisplayLabel(reglaCargoAplicada),
-    [reglaCargoAplicada],
-  );
-
   const steps = [
     { number: 1, label: "Carrito", icon: ShoppingBag },
     { number: 2, label: "Pago", icon: CreditCard },
@@ -355,7 +349,7 @@ export function ShoppingCartPage({
                       <div className="flex justify-between items-center gap-4">
                         <div className="flex items-center gap-2">
                           <span className="text-[#2E2E2E] text-sm">
-                            {textoCargoServicio}
+                            Cargo por servicio
                           </span>
                           <Popover>
                             <PopoverTrigger asChild>
@@ -375,30 +369,36 @@ export function ShoppingCartPage({
                                     fontWeight: 600,
                                   }}
                                 >
-                                  ¿Qué incluye este cargo?
+                                  ¿Cómo se calcula este cargo?
                                 </h4>
                                 <p className="text-[#2E2E2E] text-xs leading-relaxed">
-                                  Este cargo cubre el uso de la plataforma
-                                  digital Hey!Point, incluyendo el sistema de
-                                  pagos seguros, tecnología de casilleros
-                                  inteligentes y mantenimiento de la
-                                  infraestructura.
+                                  El cargo por servicio se calcula únicamente
+                                  sobre los productos alcanzados por este cargo.
+                                  Algunos productos pueden estar exentos y no se
+                                  tienen en cuenta para determinar el rango
+                                  aplicable.
                                 </p>
 
                                 {reglaCargoAplicada && (
                                   <div className="pt-2 border-t border-gray-100">
                                     <p className="text-xs text-[#666666]">
-                                      Regla aplicada:
+                                      Rango aplicado
                                     </p>
                                     <p className="text-xs font-medium text-[#1C2335]">
                                       {reglaCargoLabel}
                                     </p>
-                                    <p className="text-xs font-medium text-[#FF6B00]">
-                                      Cargo fijo:{" "}
-                                      {formatPrecioARS(reglaCargoAplicada.fee)}
-                                    </p>
                                   </div>
                                 )}
+
+                                <p className="text-[#2E2E2E] text-xs leading-relaxed">
+                                  Este cargo contribuye al funcionamiento de la
+                                  plataforma Hey!Point, incluyendo el sistema de
+                                  pagos, tecnología e infraestructura.
+                                </p>
+
+                                <p className="text-xs font-medium text-[#FF6B00]">
+                                  Cargo: {formatPrecioARS(cargoServicio)}
+                                </p>
                               </div>
                             </PopoverContent>
                           </Popover>
