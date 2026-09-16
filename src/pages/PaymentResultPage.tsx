@@ -202,6 +202,12 @@ export function PaymentResultPage({
   const isVerifying = state === "verifying";
   const isFailed = state === "failed";
   const isReview = state === "review";
+  // The only remaining PaymentState value once verifying/approved/failed/
+  // review are excluded — a genuinely uncertain outcome (Mercado Pago
+  // hasn't confirmed yet). Never presented as an error: the payment may
+  // still resolve to approved later via webhook/reconciliation exactly as
+  // it does today, so this must not push the customer toward paying again.
+  const isPending = state === "pending";
   const icon = isVerifying ? (
     <LoaderCircle className="h-14 w-14 animate-spin text-[#009EE3]" />
   ) : isFailed || isReview ? (
@@ -217,7 +223,9 @@ export function PaymentResultPage({
         : "No pudimos procesar tu pago"
       : isReview
         ? "Pago en validación"
-        : "Pago pendiente";
+        : isPending
+          ? "Estamos validando tu pago"
+          : "Pago pendiente";
 
   return (
     <div className="min-h-screen w-full bg-[#FFF4E6]">
@@ -234,7 +242,18 @@ export function PaymentResultPage({
         <Card className="mx-auto max-w-xl border border-gray-200 bg-white p-8 text-center shadow-lg sm:p-10">
           <div className="mb-6 flex justify-center">{icon}</div>
           <h1 className="mb-3 text-2xl font-bold text-[#1C2335] sm:text-3xl">{title}</h1>
-          <p className="mx-auto max-w-md leading-7 text-[#4A4A4A]">{message}</p>
+          {isPending ? (
+            <div className="mx-auto max-w-md space-y-3 leading-7 text-[#4A4A4A]">
+              <p>Recibimos tu operación y estamos esperando la confirmación de Mercado Pago.</p>
+              <p className="font-semibold text-[#1C2335]">No necesitás volver a pagar.</p>
+              <p>
+                La validación puede demorar unos minutos. Cuando se confirme, vas a recibir los
+                datos de tu compra por email.
+              </p>
+            </div>
+          ) : (
+            <p className="mx-auto max-w-md leading-7 text-[#4A4A4A]">{message}</p>
+          )}
           {order?.orderId && (
             <p className="mt-4 font-semibold text-[#FF6B00]">{order.orderId}</p>
           )}
@@ -249,7 +268,7 @@ export function PaymentResultPage({
                   <ShoppingCart className="mr-2 h-5 w-5" />
                   Volver al carrito
                 </Button>
-              ) : (
+              ) : !isPending ? (
                 <Button
                   onClick={() => window.location.reload()}
                   className="bg-[#009EE3] px-6 py-5 text-white hover:bg-[#008ac7]"
@@ -257,7 +276,7 @@ export function PaymentResultPage({
                   <RefreshCw className="mr-2 h-5 w-5" />
                   Consultar nuevamente
                 </Button>
-              )}
+              ) : null}
               <Button
                 variant="outline"
                 onClick={() => onNavigate?.("home")}
