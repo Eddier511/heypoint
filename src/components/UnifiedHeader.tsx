@@ -48,6 +48,13 @@ interface UnifiedHeaderProps {
   onLogout?: () => void;
   userName?: string;
   isTransparent?: boolean;
+  /** When true, visually dims the header and blocks all navigation/cart
+   * interaction — used for short transactional-blocking windows (e.g.
+   * PaymentResultPage's "verifying" state). Does not hide or restructure
+   * anything; the guard in handleNavigation/handleCartClick is the real
+   * protection, the dimmed/pointer-events-none styling is just the
+   * matching visual signal. */
+  disableNavigation?: boolean;
 }
 
 export function UnifiedHeader({
@@ -57,6 +64,7 @@ export function UnifiedHeader({
   onLogout,
   userName: userNameProp = "User",
   isTransparent = true,
+  disableNavigation = false,
 }: UnifiedHeaderProps) {
   const {
     isAuthenticated,
@@ -182,6 +190,7 @@ export function UnifiedHeader({
   }, []);
 
   const handleNavigation = (page: string) => {
+    if (disableNavigation) return;
     setActiveLink(page);
     setIsMobileMenuOpen(false);
     setIsAboutDropdownOpen(false);
@@ -202,6 +211,7 @@ export function UnifiedHeader({
   };
 
   const handleCartClick = () => {
+    if (disableNavigation) return;
     if (!effectiveIsLoggedIn) setShowEmptyCartModal(true);
     else handleNavigation("cart");
   };
@@ -268,8 +278,9 @@ export function UnifiedHeader({
           scrolled ? "bg-white backdrop-blur-md" : "bg-transparent"
         } ${borderColor} ${
           scrolled ? "shadow-[0_2px_8px_rgba(0,0,0,0.08)]" : ""
-        }`}
+        } ${disableNavigation ? "opacity-50 pointer-events-none" : ""}`}
         role="banner"
+        aria-disabled={disableNavigation || undefined}
       >
         <div className="container mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16 lg:h-20">

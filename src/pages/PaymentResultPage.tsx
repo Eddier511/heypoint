@@ -234,6 +234,7 @@ export function PaymentResultPage({
         currentPage="checkout"
         isLoggedIn
         isTransparent={false}
+        disableNavigation={isVerifying}
       />
       <main className="mx-auto w-full max-w-4xl px-4 pb-16 pt-28 sm:px-6">
         <div className="mb-10">
@@ -250,6 +251,14 @@ export function PaymentResultPage({
                 La validación puede demorar unos minutos. Cuando se confirme, vas a recibir los
                 datos de tu compra por email.
               </p>
+            </div>
+          ) : isVerifying ? (
+            <div className="mx-auto max-w-md space-y-3 leading-7 text-[#4A4A4A]">
+              <p>{message}</p>
+              <p className="font-semibold text-[#1C2335]">
+                No cierres esta pestaña mientras completamos la validación.
+              </p>
+              <p className="text-sm text-[#666666]">Esto puede tomar unos segundos.</p>
             </div>
           ) : (
             <p className="mx-auto max-w-md leading-7 text-[#4A4A4A]">{message}</p>
