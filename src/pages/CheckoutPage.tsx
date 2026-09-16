@@ -124,14 +124,20 @@ export function CheckoutPage({
     const precioConIVA = getPrecioFinalConIVA(item.price, ivaPct);
     return sum + precioConIVA * item.quantity;
   }, 0);
+  const serviceFeeBase = cartItems.reduce((sum, item) => {
+    if (item.serviceFeeExempt === true) return sum;
+    const precioConIVA = getPrecioFinalConIVA(item.price, ivaPct);
+    return sum + precioConIVA * item.quantity;
+  }, 0);
 
   // Buscar regla de cargo por servicio según subtotal
   const reglaCargoAplicada = useMemo(() => {
+    if (serviceFeeBase <= 0) return null;
     return findServiceChargeRule(
-      subtotalProductos,
+      serviceFeeBase,
       storeSettings?.serviceChargeRules ?? [],
     );
-  }, [storeSettings?.serviceChargeRules, subtotalProductos]);
+  }, [storeSettings?.serviceChargeRules, serviceFeeBase]);
 
   const cargoServicio = reglaCargoAplicada ? Number(reglaCargoAplicada.fee) : 0;
   const totalAPagar = subtotalProductos + cargoServicio;
@@ -164,6 +170,7 @@ export function CheckoutPage({
       checkoutAttemptId: getCheckoutAttemptId(checkoutFingerprint),
       items: orderItems,
       subtotal: subtotalProductos,
+      serviceFeeBase,
       ...taxBreakdown,
       serviceCharge: cargoServicio,
       serviceChargeLabel: reglaCargoLabel,

@@ -45,6 +45,7 @@ interface Product {
   badges?: string[];
   stock: number;
   isFeatured: boolean;
+  serviceFeeExempt?: boolean;
 }
 
 interface ShopPageProps {
@@ -84,6 +85,7 @@ type ApiProduct = {
   stock?: number;
   status?: "active" | "inactive";
   isFeatured?: boolean;
+  serviceFeeExempt?: boolean;
   images?: string[];
   createdAt?: string;
   updatedAt?: string;
@@ -277,6 +279,7 @@ export function ShopPage({
         badges: hasDiscount ? ["Sale"] : undefined,
         stock: typeof p.stock === "number" ? p.stock : 0,
         isFeatured: Boolean(p.isFeatured ?? false),
+        serviceFeeExempt: p.serviceFeeExempt === true,
       };
     });
 

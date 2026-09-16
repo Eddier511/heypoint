@@ -99,10 +99,16 @@ export function ShoppingCartPage({
     0,
   );
   const taxBreakdown = computeTaxBreakdownFromSubtotalWithoutTax(subtotalSinIVA, ivaPct);
+  const serviceFeeBase = cartItems.reduce((sum, item) => {
+    if (item.serviceFeeExempt === true) return sum;
+    const precioConIVA = getPrecioFinalConIVA(item.price, ivaPct);
+    return sum + precioConIVA * item.quantity;
+  }, 0);
 
   const reglaCargoAplicada = useMemo(() => {
-    return findServiceChargeRule(subtotalProductos, settings?.serviceChargeRules ?? []);
-  }, [settings?.serviceChargeRules, subtotalProductos]);
+    if (serviceFeeBase <= 0) return null;
+    return findServiceChargeRule(serviceFeeBase, settings?.serviceChargeRules ?? []);
+  }, [settings?.serviceChargeRules, serviceFeeBase]);
 
   const cargoServicio = reglaCargoAplicada ? Number(reglaCargoAplicada.fee) : 0;
   const totalAPagar = subtotalProductos + cargoServicio;

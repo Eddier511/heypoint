@@ -21,6 +21,7 @@ interface AddToCartButtonProps {
   variant?: "default" | "compact";
   disabled?: boolean;
   stock: number;
+  serviceFeeExempt?: boolean;
 }
 
 export function AddToCartButton({
@@ -33,6 +34,7 @@ export function AddToCartButton({
   variant = "default",
   disabled = false,
   stock,
+  serviceFeeExempt = false,
 }: AddToCartButtonProps) {
   const { isAuthenticated } = useAuth();
   const { openLoginModal } = useModal();
@@ -69,6 +71,7 @@ export function AddToCartButton({
         price: Number(productPrice),
         quantity: Number(quantity),
         stock: Number(stock),
+        serviceFeeExempt: serviceFeeExempt === true,
       });
     } catch (error) {
       console.error("Add to cart failed:", error);

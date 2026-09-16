@@ -21,6 +21,7 @@ interface ProductCardProduct {
   originalPrice?: number;
   badges?: string[];
   stock: number;
+  serviceFeeExempt?: boolean;
 }
 
 interface ProductCardProps {
@@ -118,6 +119,7 @@ export function ProductCard({
             variant="compact"
             stock={product.stock}
             disabled={product.stock === 0}
+            serviceFeeExempt={product.serviceFeeExempt === true}
           />
         </div>
       </Card>
@@ -267,6 +269,7 @@ export function ProductCard({
             variant="compact"
             disabled={product.stock === 0}
             stock={product.stock}
+            serviceFeeExempt={product.serviceFeeExempt === true}
           />
         </div>
       </div>

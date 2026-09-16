@@ -16,6 +16,7 @@ export interface CartItem {
   price: number; // basePrice (sin IVA) -> tu UI le aplica IVA con settings
   quantity: number;
   stock: number;
+  serviceFeeExempt?: boolean;
 }
 
 interface CartContextType {
@@ -184,6 +185,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
               price: basePrice,
               quantity: Number(it.qty ?? 1),
               stock,
+              serviceFeeExempt: p?.serviceFeeExempt === true,
             } as CartItem;
           }),
         );

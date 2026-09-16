@@ -30,6 +30,7 @@ type ApiProduct = {
   discountPct?: number; // %
   stock?: number;
   status?: "active" | "inactive";
+  serviceFeeExempt?: boolean;
   images?: string[];
   createdAt?: string;
   updatedAt?: string;
@@ -52,6 +53,7 @@ interface UiProduct {
   category: string; // label visual
   badges?: string[];
   stock: number;
+  serviceFeeExempt?: boolean;
 }
 
 interface ProductDetailsPageProps {
@@ -107,6 +109,7 @@ function mapApiToUi(p: ApiProduct, categoryName?: string): UiProduct {
 
     badges: discountPct > 0 ? ["Sale"] : [],
     stock: Number(p.stock ?? 0) || 0,
+    serviceFeeExempt: p.serviceFeeExempt === true,
   };
 }
 
@@ -577,6 +580,7 @@ export function ProductDetailsPage({
                     quantity={quantity}
                     className="flex-1"
                     stock={currentProduct.stock}
+                    serviceFeeExempt={currentProduct.serviceFeeExempt === true}
                   />
                   <Button
                     size="icon"
