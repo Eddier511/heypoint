@@ -103,6 +103,10 @@ export function CheckoutPage({
   const [currentStep] = useState(2);
   const [isProcessing, setIsProcessing] = useState(false);
   const [stockError, setStockError] = useState<string | null>(null);
+  // I-01 — a different session/tab/device already has an unresolved
+  // Mercado Pago purchase for this same cart. This is a financial-safety
+  // state, never an error: no "reintentar"/pay-again CTA here on purpose.
+  const [purchaseAlreadyPending, setPurchaseAlreadyPending] = useState(false);
   const checkoutFingerprint = useMemo(() => cartFingerprint(cartItems), [cartItems]);
 
   useEffect(() => {
@@ -254,6 +258,8 @@ export function CheckoutPage({
           description: body?.message || "Esperá unos segundos y volvé a intentar.",
           duration: 4000,
         });
+      } else if (body?.error === "PURCHASE_ALREADY_PENDING") {
+        setPurchaseAlreadyPending(true);
       } else {
         if (body?.error === "PROFILE_INCOMPLETE") {
           sessionStorage.setItem(PROFILE_RETURN_TO_KEY, "checkout");
@@ -658,9 +664,40 @@ export function CheckoutPage({
                     </div>
                   )}
 
+                  {purchaseAlreadyPending && (
+                    <div className="mb-6 p-4 bg-[#E8F4FA] border-2 border-[#B8E2F2] rounded-2xl">
+                      <div className="flex gap-3 mb-3">
+                        <Shield className="w-5 h-5 text-[#009EE3] flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p
+                            className="text-[#1C2335] mb-1"
+                            style={{ fontSize: "0.938rem", fontWeight: 600 }}
+                          >
+                            Ya existe una compra en proceso con estos productos.
+                          </p>
+                          <p
+                            className="text-[#4A4A4A]"
+                            style={{ fontSize: "0.813rem", lineHeight: 1.5 }}
+                          >
+                            No necesitás volver a pagar. Esperá unos minutos mientras
+                            confirmamos el pago.
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => onNavigate?.("home")}
+                        variant="outline"
+                        className="w-full py-3 rounded-full border-[#009EE3] text-[#009EE3]"
+                        style={{ fontSize: "0.938rem", fontWeight: 600 }}
+                      >
+                        Volver al inicio
+                      </Button>
+                    </div>
+                  )}
+
                   <Button
                     onClick={handleMercadoPagoPayment}
-                    disabled={isProcessing || !!stockError}
+                    disabled={isProcessing || !!stockError || purchaseAlreadyPending}
                     className="hidden w-full py-7 rounded-full shadow-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none lg:flex"
                     style={{
                       fontSize: "1.125rem",
@@ -755,7 +792,7 @@ export function CheckoutPage({
           </div>
           <Button
             onClick={handleMercadoPagoPayment}
-            disabled={isProcessing || !!stockError}
+            disabled={isProcessing || !!stockError || purchaseAlreadyPending}
             className="min-w-[11rem] rounded-full px-5 py-6 text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
               fontSize: "0.95rem",
