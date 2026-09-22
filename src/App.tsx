@@ -27,6 +27,7 @@ import { SmartSearchBar } from "./components/SmartSearchBar";
 import { Footer } from "./components/Footer";
 import { CookieBanner } from "./components/CookieBanner";
 import { ShopPage } from "./pages/ShopPage";
+import { NotFoundPage } from "./pages/NotFoundPage";
 import { MaintenancePage } from "./pages/MaintenancePage";
 import { useCategories } from "./hooks/useCategories";
 import { useStoreSettings } from "./hooks/useStoreSettings";
@@ -1082,35 +1083,7 @@ function AppContent() {
     );
 
   if (currentPage === "notFound")
-    return (
-      <div className="min-h-screen bg-[#FFF4E6]">
-        <UnifiedHeader
-          onNavigate={handleNavigation}
-          currentPage={currentPage}
-          onCategorySelect={handleCategorySelect}
-          isTransparent={false}
-        />
-        <main className="pt-24 pb-16">
-          <div className="container mx-auto px-4 sm:px-6">
-            <Card className="bg-white border-none shadow-md rounded-2xl p-6 sm:p-8 text-center max-w-xl mx-auto">
-              <h1 className="text-[#1C2335] text-2xl sm:text-3xl font-bold mb-3">
-                Página no encontrada
-              </h1>
-              <p className="text-[#2E2E2E] mb-6">
-                La página que buscás no existe o ya no está disponible.
-              </p>
-              <Button
-                onClick={() => handleNavigation("home")}
-                className="bg-[#FF6B00] hover:bg-[#e56000] text-white rounded-full px-6"
-              >
-                Volver al inicio
-              </Button>
-            </Card>
-          </div>
-        </main>
-        <Footer onNavigate={handleNavigation} />
-      </div>
-    );
+    return <NotFoundPage onNavigate={handleNavigation} />;
 
   // Home Page
   return (

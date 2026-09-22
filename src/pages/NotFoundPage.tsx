@@ -1,5 +1,4 @@
-import { motion } from "motion/react";
-import { Home, Search } from "lucide-react";
+import { Home, SearchX, ShoppingBag } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { UnifiedHeader } from "../components/UnifiedHeader";
 import { Footer } from "../components/Footer";
@@ -10,63 +9,42 @@ interface NotFoundPageProps {
 
 export function NotFoundPage({ onNavigate }: NotFoundPageProps) {
   return (
-    <div className="min-h-screen bg-[#FFF4E6] flex flex-col">
-      <UnifiedHeader 
-        onNavigate={onNavigate}
-        currentPage="404"
-        onCategorySelect={() => {}}
-        isTransparent={false}
-      />
+    <div className="flex min-h-screen flex-col bg-[#FFF4E6]">
+      <UnifiedHeader onNavigate={onNavigate} currentPage="notFound" isTransparent={false} />
 
-      <main className="flex-1 flex items-center justify-center px-4 py-16">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="max-w-2xl text-center"
-        >
-          {/* 404 Number */}
-          <motion.h1
-            initial={{ scale: 0.8 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="text-[#FF6B00] mb-6"
-            style={{ fontSize: 'clamp(6rem, 20vw, 12rem)', fontWeight: 700, lineHeight: 1 }}
-          >
+      <main className="flex flex-1 items-center justify-center px-4 pb-14 pt-28 sm:px-6 sm:pb-20 sm:pt-32">
+        <section className="w-full max-w-2xl rounded-2xl border border-[#FF6B00]/15 bg-white px-6 py-10 text-center shadow-lg sm:px-12 sm:py-14">
+          <div aria-hidden="true" className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-[#FFF4E6] text-[#FF6B00]">
+            <SearchX size={28} strokeWidth={2} />
+          </div>
+          <p className="mb-4 text-7xl font-bold leading-none text-[#D95700] sm:text-8xl">
             404
-          </motion.h1>
-
-          {/* Message */}
-          <h2 className="text-[#1C2335] mb-4" style={{ fontSize: 'clamp(1.5rem, 4vw, 2.5rem)', fontWeight: 600 }}>
-            Página no encontrada
-          </h2>
-          
-          <p className="text-[#2E2E2E] mb-8 max-w-md mx-auto" style={{ fontSize: 'clamp(1rem, 2vw, 1.125rem)' }}>
-            La página que estás buscando no existe o fue movida.
+          </p>
+          <h1 className="mb-4 text-2xl font-bold text-[#1C2335] sm:text-3xl">
+            ¡Ups! Esta página no está por acá
+          </h1>
+          <p className="mx-auto mb-8 max-w-md text-base leading-relaxed text-[#2E2E2E] sm:text-lg">
+            La página que buscás no existe, cambió de lugar o ya no está disponible.
           </p>
 
-          {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col justify-center gap-3 sm:flex-row">
             <Button
               onClick={() => onNavigate("home")}
-              className="bg-[#FF6B00] hover:bg-[#e56000] text-white px-8 py-6 rounded-full shadow-lg transition-all"
-              style={{ fontSize: '1rem', fontWeight: 600 }}
+              className="min-h-12 rounded-full bg-[#FF6B00] px-6 font-semibold text-white hover:bg-[#D95700] focus-visible:ring-2 focus-visible:ring-[#1C2335] focus-visible:ring-offset-2"
             >
-              <Home className="w-5 h-5 mr-2" />
+              <Home size={18} aria-hidden="true" />
               Volver al inicio
             </Button>
-            
             <Button
               onClick={() => onNavigate("shop")}
               variant="outline"
-              className="border-2 border-[#FF6B00] text-[#FF6B00] hover:bg-[#FFF4E6] px-8 py-6 rounded-full transition-all"
-              style={{ fontSize: '1rem', fontWeight: 600 }}
+              className="min-h-12 rounded-full border-2 border-[#D95700] px-6 font-semibold text-[#B84700] hover:bg-[#FFF4E6] hover:text-[#933900] focus-visible:ring-2 focus-visible:ring-[#1C2335] focus-visible:ring-offset-2"
             >
-              <Search className="w-5 h-5 mr-2" />
+              <ShoppingBag size={18} aria-hidden="true" />
               Ir a la tienda
             </Button>
           </div>
-        </motion.div>
+        </section>
       </main>
 
       <Footer onNavigate={onNavigate} />
