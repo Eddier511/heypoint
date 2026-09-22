@@ -22,7 +22,6 @@ export function Footer({ onNavigate }: FooterProps) {
   };
 
   const footerLinks = [
-    { id: "business", label: "El Modelo Hey!Point" },
     { id: "contact", label: "Contacto" },
     { id: "contact#preguntas-frecuentes", label: "Preguntas Frecuentes" },
     { id: "terms", label: "Términos y Condiciones" },

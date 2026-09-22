@@ -7,7 +7,6 @@ import {
   ChevronDown,
   Home,
   Store,
-  Info,
   Mail,
   Package,
   LogOut,
@@ -332,18 +331,6 @@ export function UnifiedHeader({
                 style={{ fontSize: "0.938rem", fontWeight: 500 }}
               >
                 Tienda
-              </button>
-
-              <button
-                onClick={() => handleNavigation("business")}
-                className={`px-5 py-2 rounded-full transition-colors ${
-                  activeLink === "business"
-                    ? "bg-[#FF6B00] text-white"
-                    : `${textColor} hover:bg-[#FF6B00]/10`
-                }`}
-                style={{ fontSize: "0.938rem", fontWeight: 500 }}
-              >
-                El Modelo Hey!Point
               </button>
 
               <button
@@ -698,19 +685,6 @@ export function UnifiedHeader({
                   </button>
 
                   <button
-                    onClick={() => handleNavigation("business")}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors ${
-                      activeLink === "business"
-                        ? "bg-[#FFF4E6] text-[#FF6B00]"
-                        : "hover:bg-gray-50 text-[#1C2335]"
-                    }`}
-                    style={{ fontSize: "0.98rem", fontWeight: 700 }}
-                  >
-                    <Info className="w-5 h-5" />
-                    El Modelo Hey!Point
-                  </button>
-
-                  <button
                     onClick={() => handleNavigation("contact")}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors ${
                       activeLink === "contact"
@@ -795,5 +769,4 @@ export function UnifiedHeader({
     </>
   );
 }
-
 
