@@ -155,33 +155,56 @@ export function PaymentResultPage({
   }, [orderDocId, paymentId, returnStatus, isKioskChannel]);
 
   if (isKioskChannel) {
+    const isFailure = returnStatus === "failure";
+    const isSuccess = returnStatus === "success";
     const kioskTitle =
-      returnStatus === "failure"
+      isFailure
         ? "No pudimos completar el pago"
-        : returnStatus === "success"
+        : isSuccess
           ? "Pago enviado"
           : "Pago en proceso";
     const kioskMessage =
-      returnStatus === "failure"
-        ? "Podés volver al kiosko para intentarlo nuevamente."
-        : returnStatus === "success"
-          ? "Estamos verificando tu pago."
-          : "Estamos verificando el estado de tu pago.";
+      isFailure
+        ? "El pago no pudo completarse."
+        : isSuccess
+          ? "Mercado Pago está confirmando tu pago."
+          : "Tu pago todavía está siendo procesado.";
+    const kioskInstruction = isFailure
+      ? "Volvé al kiosko para intentarlo nuevamente"
+      : isSuccess
+        ? "Volvé al kiosko para continuar"
+        : "Volvé al kiosko";
+    const kioskSupportingText = isFailure
+      ? null
+      : isSuccess
+        ? "La pantalla del kiosko se actualizará automáticamente cuando confirmemos el pago."
+        : "Podés seguir el estado de tu compra desde la pantalla del kiosko.";
 
     // Purely informational: no order lookup, no pickupToken, no way to
     // confirm/sync payment from this screen. The kiosk's own backend
     // polling (Fase 3C) is the only source of truth for approval — this
     // just tells the person holding the phone what to do next.
     return (
-      <div className="flex min-h-screen w-full items-center justify-center bg-[#FFF4E6] px-4">
-        <Card className="mx-auto w-full max-w-md border border-gray-200 bg-white p-8 text-center shadow-lg">
-          <h1 className="mb-3 text-2xl font-bold text-[#1C2335]">{kioskTitle}</h1>
+      <main className="flex min-h-screen w-full flex-col items-center justify-center bg-[#FFF4E6] px-4 py-10 sm:px-6">
+        <img
+          src="https://firebasestorage.googleapis.com/v0/b/heymarket-35d03.firebasestorage.app/o/images%2FHeypoint-header-logo-100x60-orange.svg?alt=media&token=9ee36f7e-ee0d-4dba-9d7b-3af1688b8f94"
+          alt="Hey!Point"
+          className="mb-8 h-[60px] w-[100px] object-contain"
+        />
+        <Card className="mx-auto w-full max-w-md gap-0 border border-[#FF6B00]/15 bg-white px-6 py-9 text-center shadow-lg sm:px-10 sm:py-11">
+          <div aria-hidden="true" className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[#FFF4E6] text-[#D95700]">
+            {isFailure ? <AlertTriangle className="h-8 w-8" /> : isSuccess ? <Clock3 className="h-8 w-8" /> : <LoaderCircle className="h-8 w-8" />}
+          </div>
+          <h1 className="mb-3 text-2xl font-bold text-[#1C2335] sm:text-3xl">{kioskTitle}</h1>
           <p className="mx-auto max-w-sm leading-7 text-[#4A4A4A]">{kioskMessage}</p>
-          <p className="mx-auto mt-4 max-w-sm leading-7 text-[#4A4A4A]">
-            Volvé al kiosko para continuar con el retiro.
-          </p>
+          <div className="mt-8 rounded-lg border border-[#FF6B00]/20 bg-[#FFF4E6] px-4 py-5">
+            <p className="text-lg font-semibold leading-6 text-[#A84200]">{kioskInstruction}</p>
+            {kioskSupportingText && (
+              <p className="mt-3 text-sm leading-6 text-[#3F4145]">{kioskSupportingText}</p>
+            )}
+          </div>
         </Card>
-      </div>
+      </main>
     );
   }
 
