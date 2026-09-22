@@ -27,7 +27,14 @@ import { SmartSearchBar } from "./components/SmartSearchBar";
 import { Footer } from "./components/Footer";
 import { CookieBanner } from "./components/CookieBanner";
 import { ShopPage } from "./pages/ShopPage";
+import { MaintenancePage } from "./pages/MaintenancePage";
 import { useCategories } from "./hooks/useCategories";
+import { useStoreSettings } from "./hooks/useStoreSettings";
+import {
+  CHECKOUT_ATTEMPT_ID_KEY,
+  CHECKOUT_ATTEMPT_FINGERPRINT_KEY,
+  cartFingerprint,
+} from "./lib/checkoutAttempt";
 import { getSeoForPage, usePageSeo } from "./lib/seo";
 
 const ProductDetailsPage = lazy(() =>
@@ -297,6 +304,8 @@ export default function App() {
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>("home");
+  const { settings: storeSettings, loading: settingsLoading, refresh: refreshStoreSettings } = useStoreSettings();
+  const [maintenanceBlocked, setMaintenanceBlocked] = useState(false);
   const [checkoutGateStatus, setCheckoutGateStatus] =
     useState<CheckoutGateStatus>("idle");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -316,6 +325,13 @@ function AppContent() {
   // ✅ Hero image loading (evita salto/flash al entrar por primera vez)
   const [heroLoaded, setHeroLoaded] = useState(false);
   usePageSeo(currentPage === "productDetails" ? null : getSeoForPage(currentPage));
+
+  useEffect(() => {
+    const interval = window.setInterval(async () => {
+      if ((await refreshStoreSettings()) !== null) setMaintenanceBlocked(false);
+    }, 30_000);
+    return () => window.clearInterval(interval);
+  }, [refreshStoreSettings]);
 
   // ✅ Preload banner para primera visita
   useEffect(() => {
@@ -355,7 +371,13 @@ function AppContent() {
   } = useAuth();
   const { openLoginModal, openSignupModal, closeAllModals, openedAt } =
     useModal();
-  const { clearCart } = useCart();
+  const { clearCart, cartItems } = useCart();
+  const hasCheckoutAttemptForCart = Boolean(
+    cartItems.length > 0 &&
+    sessionStorage.getItem(CHECKOUT_ATTEMPT_ID_KEY) &&
+    sessionStorage.getItem(CHECKOUT_ATTEMPT_FINGERPRINT_KEY) ===
+      cartFingerprint(cartItems.map((item) => ({ productId: item.productId, quantity: item.quantity }))),
+  );
 
   const userName = user?.fullName || "User";
   const userEmail = user?.email || "";
@@ -722,6 +744,8 @@ function AppContent() {
   }, []);
 
   const handleCheckoutIntent = useCallback(async () => {
+    if ((storeSettings.maintenanceMode || maintenanceBlocked) &&
+        !hasCheckoutAttemptForCart) return;
     if (loadingAuth) return;
 
     if (!currentUser) {
@@ -760,6 +784,9 @@ function AppContent() {
     }
   }, [
     loadingAuth,
+    storeSettings.maintenanceMode,
+    maintenanceBlocked,
+    hasCheckoutAttemptForCart,
     currentUser,
     customerProfile,
     fetchMe,
@@ -770,6 +797,11 @@ function AppContent() {
   useEffect(() => {
     if (currentPage !== "checkout") {
       setCheckoutGateStatus("idle");
+      return;
+    }
+
+    if ((storeSettings.maintenanceMode || maintenanceBlocked) && !hasCheckoutAttemptForCart) {
+      setCheckoutGateStatus("checking");
       return;
     }
 
@@ -847,6 +879,9 @@ function AppContent() {
     };
   }, [
     currentPage,
+    storeSettings.maintenanceMode,
+    maintenanceBlocked,
+    hasCheckoutAttemptForCart,
     loadingAuth,
     currentUser,
     customerProfile,
@@ -895,6 +930,15 @@ function AppContent() {
   };
 
   // Render pages
+  const commercePage = ["home", "shop", "productDetails", "cart", "checkout"].includes(currentPage);
+  const existingCheckout = (currentPage === "checkout" || currentPage === "cart") &&
+    hasCheckoutAttemptForCart;
+  if (commercePage && settingsLoading) return <PageFallback />;
+  if (commercePage && (storeSettings.maintenanceMode || maintenanceBlocked) &&
+      (maintenanceBlocked || !existingCheckout)) {
+    return <MaintenancePage />;
+  }
+
   if (currentPage === "shop") {
     return (
       <ShopPage
@@ -976,6 +1020,7 @@ function AppContent() {
       <Suspense fallback={<PageFallback />}>
         <CheckoutPage
           onNavigate={handleNavigation}
+          onMaintenanceBlocked={() => setMaintenanceBlocked(true)}
           onOrderSuccess={(data) => setLastOrder(data)}
         />
       </Suspense>

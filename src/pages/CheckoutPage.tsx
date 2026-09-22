@@ -55,6 +55,7 @@ interface OrderSuccessData {
 
 interface CheckoutPageProps {
   onNavigate?: (page: string) => void;
+  onMaintenanceBlocked?: () => void;
   isLoggedIn?: boolean;
   onOrderSuccess?: (data: OrderSuccessData) => void;
 }
@@ -85,6 +86,7 @@ function isCustomerProfileComplete(profile: any): boolean {
 
 export function CheckoutPage({
   onNavigate,
+  onMaintenanceBlocked,
   isLoggedIn = true,
   onOrderSuccess,
 }: CheckoutPageProps) {
@@ -245,10 +247,16 @@ export function CheckoutPage({
           await createMercadoPagoPreference();
           return;
         } catch (retryError: any) {
-          toast.error("Error al procesar el pedido", {
-            description: retryError?.response?.data?.message || "Por favor intentá nuevamente",
-            duration: 3000,
-          });
+          if (retryError?.response?.data?.error === "MAINTENANCE_MODE") {
+            onMaintenanceBlocked?.();
+          } else if (retryError?.response?.data?.error === "MAINTENANCE_STATUS_UNAVAILABLE") {
+            toast.error("No pudimos verificar la disponibilidad de la tienda. Intentá nuevamente.");
+          } else {
+            toast.error("Error al procesar el pedido", {
+              description: retryError?.response?.data?.message || "Por favor intentá nuevamente",
+              duration: 3000,
+            });
+          }
         }
       } else if (
         body?.error === "CHECKOUT_ATTEMPT_PROCESSING" ||
@@ -260,6 +268,10 @@ export function CheckoutPage({
         });
       } else if (body?.error === "PURCHASE_ALREADY_PENDING") {
         setPurchaseAlreadyPending(true);
+      } else if (body?.error === "MAINTENANCE_MODE") {
+        onMaintenanceBlocked?.();
+      } else if (body?.error === "MAINTENANCE_STATUS_UNAVAILABLE") {
+        toast.error("No pudimos verificar la disponibilidad de la tienda. Intentá nuevamente.");
       } else {
         if (body?.error === "PROFILE_INCOMPLETE") {
           sessionStorage.setItem(PROFILE_RETURN_TO_KEY, "checkout");
@@ -809,5 +821,3 @@ export function CheckoutPage({
     </div>
   );
 }
-
-

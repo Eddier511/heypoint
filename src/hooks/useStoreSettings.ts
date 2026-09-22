@@ -8,6 +8,7 @@ export type ServiceChargeRule = {
 };
 
 export type StoreSettings = {
+  maintenanceMode: boolean;
   iva: number;
   serviceChargeRules: ServiceChargeRule[];
   pickupPoint: {
@@ -18,6 +19,7 @@ export type StoreSettings = {
 };
 
 const DEFAULTS: StoreSettings = {
+  maintenanceMode: false,
   iva: 21,
   serviceChargeRules: [
     { id: "1", min: 0, max: 15000, fee: 500 },
@@ -57,7 +59,8 @@ export function useStoreSettings() {
       const data = await res.json();
       const s = data?.settings ?? data;
 
-      setSettings({
+      const next: StoreSettings = {
+        maintenanceMode: s?.maintenanceMode === true,
         iva: Number(s?.iva ?? DEFAULTS.iva),
         serviceChargeRules: Array.isArray(s?.serviceChargeRules)
           ? s.serviceChargeRules.map((rule: any, index: number) => ({
@@ -73,9 +76,11 @@ export function useStoreSettings() {
           status:
             s?.pickupPoint?.status === "Inactivo" ? "Inactivo" : "Activo",
         },
-      });
+      };
+      setSettings(next);
+      return next.maintenanceMode;
     } catch {
-      setSettings(DEFAULTS);
+      return null;
     } finally {
       setLoading(false);
     }
