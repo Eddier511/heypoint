@@ -13,23 +13,23 @@ export function ProductCardSkeleton({
     <Card
       className={`rounded-2xl overflow-hidden bg-white border-none shadow-sm p-3 h-full animate-pulse ${
         isListMobile
-          ? "flex flex-row sm:flex-col gap-3 sm:gap-0 sm:min-h-[320px]"
-          : "flex flex-col min-h-[300px] sm:min-h-[320px]"
+          ? "flex flex-row sm:flex-col gap-3 sm:gap-0 sm:min-h-[300px]"
+          : "flex flex-col min-h-[280px] sm:min-h-[300px]"
       }`}
     >
       {/* Image Skeleton */}
       <div
         className={`relative rounded-xl bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 flex-shrink-0 bg-[length:200%_200%] animate-[shimmer_2s_ease-in-out_infinite] ${
           isListMobile
-            ? "w-32 h-32 sm:w-auto sm:h-auto sm:aspect-square"
-            : "aspect-[4/3] sm:aspect-square"
+            ? "w-32 h-32 sm:w-auto sm:h-auto sm:aspect-[4/3]"
+            : "aspect-[4/3]"
         }`}
       />
       
       {/* Product Info */}
       <div className="flex-1 flex flex-col pt-2 min-w-0">
         {/* Product Name - 2 lines */}
-        <div className="space-y-2 mb-2">
+        <div className="space-y-2 mb-1.5">
           <div className="h-4 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 rounded-lg w-full bg-[length:200%_200%] animate-[shimmer_2s_ease-in-out_infinite]" />
           <div className="h-4 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 rounded-lg w-3/4 bg-[length:200%_200%] animate-[shimmer_2s_ease-in-out_infinite]" />
         </div>

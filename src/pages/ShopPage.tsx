@@ -16,7 +16,6 @@ import { UnifiedHeader } from "../components/UnifiedHeader";
 import { Footer } from "../components/Footer";
 import { ProductCardSkeleton } from "../components/ProductCardSkeleton";
 import { ProductCard } from "../components/ProductCard";
-import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import {
   Collapsible,
@@ -144,11 +143,9 @@ export function ShopPage({
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 20000]);
   const [priceMax, setPriceMax] = useState(20000);
 
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(
-    selectedCategory ? [selectedCategory] : [],
-  );
+  const [activeCategory, setActiveCategory] = useState<string | null>(selectedCategory);
+  const [sortBy, setSortBy] = useState<"default" | "name" | "price-low" | "price-high">("default");
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isMobileGridCompact, setIsMobileGridCompact] = useState(true);
   const [isLargeViewport, setIsLargeViewport] = useState(() =>
     typeof window !== "undefined"
@@ -212,12 +209,12 @@ export function ShopPage({
   };
 
   useEffect(() => {
-    if (selectedCategory) setSelectedCategories([selectedCategory]);
+    setActiveCategory(selectedCategory);
   }, [selectedCategory]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCategories, priceRange, searchQuery, isOfertasFilterActive]);
+  }, [activeCategory, priceRange, searchQuery, isOfertasFilterActive, sortBy]);
 
   useEffect(() => {
     const query = window.matchMedia("(min-width: 1024px)");
@@ -339,27 +336,22 @@ export function ShopPage({
     }
   }, [catalog.priceMax, isCatalogLoading]);
 
-  const toggleCategory = (category: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(category)
-        ? prev.filter((c) => c !== category)
-        : [...prev, category],
-    );
-    onCategorySelect?.(category);
-  };
-
   const clearAllFilters = () => {
-    setSelectedCategories([]);
+    setActiveCategory(null);
     setPriceRange([0, priceMax]);
     setIsOfertasFilterActive(false);
     onClearSearch?.();
   };
 
+  const selectCategory = (category: string | null) => {
+    setActiveCategory(category);
+    setIsOfertasFilterActive(false);
+  };
+
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
       const categoryMatch =
-        selectedCategories.length === 0 ||
-        selectedCategories.includes(product.category);
+        activeCategory === null || product.category === activeCategory;
 
       const priceMatch =
         product.price >= priceRange[0] && product.price <= priceRange[1];
@@ -377,17 +369,25 @@ export function ShopPage({
     });
   }, [
     products,
-    selectedCategories,
+    activeCategory,
     priceRange,
     searchQuery,
     isOfertasFilterActive,
   ]);
 
   const activeFiltersCount =
-    selectedCategories.length +
     (priceRange[0] !== 0 || priceRange[1] !== priceMax ? 1 : 0) +
     (isOfertasFilterActive ? 1 : 0) +
     (searchQuery ? 1 : 0);
+
+  const sortedProducts = useMemo(() => {
+    if (sortBy === "default") return filteredProducts;
+    const sorted = [...filteredProducts];
+    if (sortBy === "name") sorted.sort((a, b) => a.name.localeCompare(b.name, "es-AR"));
+    if (sortBy === "price-low") sorted.sort((a, b) => a.price - b.price);
+    if (sortBy === "price-high") sorted.sort((a, b) => b.price - a.price);
+    return sorted;
+  }, [filteredProducts, sortBy]);
 
   const handlePageChange = (newPage: number) => {
     setIsLoadingPage(true);
@@ -405,23 +405,7 @@ export function ShopPage({
   const shouldShowOffersSection =
     !isCatalogLoading && productosEnOferta.length > 0;
 
-  const PLACEHOLDER_IMG = "https://placehold.co/600x400?text=Hey!Point";
-  const categoryShelfItems = useMemo(
-    () =>
-      apiCats.map((c) => ({
-        id: c.id,
-        name: c.name,
-        image: (c.imageUrl || c.image || PLACEHOLDER_IMG),
-        count: typeof c.productCount === "number" ? c.productCount : typeof c.items === "number" ? c.items : 0,
-      })),
-    [apiCats],
-  );
-
-  const handleCategoryCardClick = (categoryName: string) => {
-    setSelectedCategories([categoryName]);
-    setIsOfertasFilterActive(false);
-    productsGridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
+  const categoryNavigation = [{ name: "Todos los productos", count: products.length }, ...categories];
 
   const FilterPanel = ({ onClose }: { onClose?: () => void }) => (
     <div className="space-y-6">
@@ -443,43 +427,6 @@ export function ShopPage({
           Limpiar todo
         </Button>
       </div>
-
-      <Collapsible defaultOpen>
-        <CollapsibleTrigger className="flex items-center justify-between w-full group">
-          <h4 className="text-[#1C2335] text-base">Categoría</h4>
-          <ChevronDown className="w-5 h-5 text-[#2E2E2E] transition-transform group-data-[state=open]:rotate-180" />
-        </CollapsibleTrigger>
-        <CollapsibleContent className="mt-4">
-          <div className="space-y-3">
-            {categories.map((category) => (
-              <div
-                key={category.name}
-                className="flex items-center justify-between"
-              >
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    checked={selectedCategories.includes(category.name)}
-                    onCheckedChange={() => toggleCategory(category.name)}
-                  />
-                  <label
-                    className="text-[#2E2E2E] cursor-pointer text-sm"
-                    onClick={() => toggleCategory(category.name)}
-                  >
-                    {category.name}
-                  </label>
-                </div>
-                <span className="text-[#2E2E2E] text-sm">
-                  ({category.count})
-                </span>
-              </div>
-            ))}
-
-            {categories.length === 0 && !isCatalogLoading && (
-              <p className="text-[#2E2E2E] text-sm">No hay categorías</p>
-            )}
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
 
       <Collapsible defaultOpen>
         <CollapsibleTrigger className="flex items-center justify-between w-full group">
@@ -558,114 +505,24 @@ export function ShopPage({
             </Card>
           )}
 
-          {/* Category shelf */}
-          {(isCatalogLoading || categoryShelfItems.length > 0) && (
-            <div className="mb-6 sm:mb-8">
-              <h2
-                className="text-[#1C2335] mb-3"
-                style={{ fontSize: "1.125rem", fontWeight: 700 }}
-              >
-                Explorá por categoría
-              </h2>
-              {/* Mobile: horizontal scroll. Desktop: flex-wrap row that fills width */}
-              <div className="lg:hidden overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide">
-                <div className="flex gap-3 min-w-max">
-                  {isCatalogLoading
-                    ? Array.from({ length: 5 }).map((_, i) => (
-                        <div key={i} className="w-[100px] flex-shrink-0 animate-pulse">
-                          <div className="rounded-2xl bg-white shadow-sm p-3">
-                            <div className="aspect-square rounded-xl bg-gray-200 mb-2" />
-                            <div className="h-3 bg-gray-200 rounded-full" />
-                          </div>
-                        </div>
-                      ))
-                    : categoryShelfItems.map((cat) => {
-                        const isActive = selectedCategories.includes(cat.name);
-                        return (
-                          <button
-                            key={cat.id}
-                            onClick={() => handleCategoryCardClick(cat.name)}
-                            className={`w-[100px] flex-shrink-0 group text-left focus:outline-none rounded-2xl transition-all duration-200 bg-white shadow-sm border ${
-                              isActive
-                                ? "border-[#FF6B00] shadow-md ring-2 ring-[#FF6B00]/20"
-                                : "border-transparent"
-                            }`}
-                          >
-                            <div className="p-3">
-                              <div className="relative aspect-square rounded-xl overflow-hidden bg-[#F9FAFB] flex items-center justify-center mb-2">
-                                <ImageWithFallback
-                                  src={cat.image}
-                                  alt={cat.name}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-[#1C2335]/40 to-transparent" />
-                                {cat.count > 0 && (
-                                  <span
-                                    className="absolute top-1.5 right-1.5 bg-white/90 backdrop-blur-sm text-[#1C2335] rounded-full px-2 py-0.5 leading-none shadow-sm"
-                                    style={{ fontSize: "0.625rem", fontWeight: 700 }}
-                                  >
-                                    {cat.count}
-                                  </span>
-                                )}
-                              </div>
-                              <p className={`text-center truncate leading-tight text-sm font-medium ${isActive ? "text-[#FF6B00]" : "text-[#1A1A1A]"}`}>
-                                {cat.name}
-                              </p>
-                            </div>
-                          </button>
-                        );
-                      })}
-                </div>
-              </div>
-              <div className="hidden lg:flex flex-wrap gap-3">
-                {isCatalogLoading
-                  ? Array.from({ length: 5 }).map((_, i) => (
-                      <div key={i} className="w-[152px] animate-pulse">
-                        <div className="rounded-2xl bg-white shadow-sm p-3">
-                          <div className="aspect-square rounded-xl bg-gray-200 mb-2" />
-                          <div className="h-3 bg-gray-200 rounded-full" />
-                        </div>
-                      </div>
-                    ))
-                  : categoryShelfItems.map((cat) => {
-                      const isActive = selectedCategories.includes(cat.name);
-                      return (
-                        <button
-                          key={cat.id}
-                          onClick={() => handleCategoryCardClick(cat.name)}
-                          className={`w-[152px] group text-left focus:outline-none rounded-2xl transition-all duration-200 bg-white shadow-sm border hover:-translate-y-[1px] hover:shadow-md ${
-                            isActive
-                              ? "border-[#FF6B00] shadow-md ring-2 ring-[#FF6B00]/20"
-                              : "border-transparent"
-                          }`}
-                        >
-                          <div className="p-3">
-                            <div className="relative aspect-square rounded-xl overflow-hidden bg-[#F9FAFB] flex items-center justify-center mb-2">
-                              <ImageWithFallback
-                                src={cat.image}
-                                alt={cat.name}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-t from-[#1C2335]/40 to-transparent" />
-                              {cat.count > 0 && (
-                                <span
-                                  className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm text-[#1C2335] rounded-full px-2 py-0.5 leading-none shadow-sm"
-                                  style={{ fontSize: "0.688rem", fontWeight: 700 }}
-                                >
-                                  {cat.count}
-                                </span>
-                              )}
-                            </div>
-                            <p className={`text-center truncate leading-tight font-semibold ${isActive ? "text-[#FF6B00]" : "text-[#1A1A1A]"}`} style={{ fontSize: "0.813rem" }}>
-                              {cat.name}
-                            </p>
-                          </div>
-                        </button>
-                      );
-                    })}
-              </div>
+          <nav aria-label="Categorías" className="xl:hidden mb-4 -mx-4 px-4 overflow-x-auto">
+            <div className="flex w-max gap-2 pb-2">
+              {categoryNavigation.map((category) => {
+                const isActive = activeCategory === (category.name === "Todos los productos" ? null : category.name);
+                return (
+                  <button
+                    key={category.name}
+                    type="button"
+                    onClick={() => selectCategory(category.name === "Todos los productos" ? null : category.name)}
+                    aria-pressed={isActive}
+                    className={`min-h-11 rounded-full border px-4 text-sm font-semibold whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] ${isActive ? "border-[#FF6B00] bg-[#FF6B00] text-white" : "border-[#D6D8DC] bg-white text-[#1C2335] hover:border-[#FF6B00]"}`}
+                  >
+                    {category.name}
+                  </button>
+                );
+              })}
             </div>
-          )}
+          </nav>
 
           {/* Ofertas */}
           {shouldShowOffersSection && (
@@ -751,19 +608,14 @@ export function ShopPage({
           <div ref={filterBarSentinelRef} className="xl:hidden h-px -mt-px" aria-hidden="true" />
 
           {/* Mobile Filter + Grid Toggle */}
-          <div className={`xl:hidden sticky top-16 lg:top-20 z-30 -mx-4 px-4 py-3 mb-4 bg-[#FFF4E6] flex gap-3 transition-shadow${isFilterBarStuck ? " shadow-md" : ""}`}>
+          <div className={`xl:hidden sticky top-16 lg:top-20 z-30 -mx-4 px-4 py-2 mb-3 bg-[#FFF4E6] flex gap-3 transition-shadow${isFilterBarStuck ? " shadow-md" : ""}`}>
             <Button
               onClick={() => setIsMobileFiltersOpen(true)}
-              className="flex-1 sm:flex-initial sm:w-auto bg-white text-[#1C2335] border-2 border-[#FF6B00] hover:bg-[#FFF4E6] rounded-full shadow-sm"
+              className="min-h-11 flex-1 sm:flex-initial sm:w-auto bg-white text-[#1C2335] border-2 border-[#FF6B00] hover:bg-[#FFF4E6] rounded-full shadow-sm"
               style={{ fontSize: "0.938rem", fontWeight: 700 }}
             >
               <Filter className="w-4 h-4 mr-2 flex-shrink-0" />
               Filtrar productos
-              {categories.length > 0 && activeFiltersCount === 0 && (
-                <span className="ml-1.5 text-[#FF6B00]/70" style={{ fontWeight: 500 }}>
-                  ({categories.length})
-                </span>
-              )}
               {activeFiltersCount > 0 && (
                 <Badge className="ml-2 bg-[#FF6B00] text-white border-none">
                   {activeFiltersCount}
@@ -773,7 +625,7 @@ export function ShopPage({
 
             <Button
               onClick={() => setIsMobileGridCompact(!isMobileGridCompact)}
-              className="sm:hidden bg-white text-[#1C2335] border-2 border-[#FF6B00] hover:bg-[#FFF4E6] rounded-full shadow-sm px-4"
+              className="sm:hidden min-h-11 min-w-11 bg-white text-[#1C2335] border-2 border-[#FF6B00] hover:bg-[#FFF4E6] rounded-full shadow-sm px-4"
               aria-label={
                 isMobileGridCompact
                   ? "Cambiar a vista expandida"
@@ -790,30 +642,51 @@ export function ShopPage({
 
           <div className="flex gap-8">
             <aside className="hidden xl:block w-72 flex-shrink-0">
-              <Card className="p-6 bg-white border-none shadow-md rounded-2xl sticky top-24">
+              <Card className="p-6 bg-white border-none shadow-md rounded-2xl sticky top-24 max-h-[calc(100dvh-7rem)] overflow-y-auto">
+                <nav aria-label="Categorías" className="mb-6 border-b border-gray-200 pb-5">
+                  <h3 className="mb-3 text-lg font-semibold text-[#1C2335]">Categorías</h3>
+                  <div className="space-y-1">
+                    {categoryNavigation.map((category) => {
+                      const isActive = activeCategory === (category.name === "Todos los productos" ? null : category.name);
+                      return (
+                        <button
+                          key={category.name}
+                          type="button"
+                          onClick={() => selectCategory(category.name === "Todos los productos" ? null : category.name)}
+                          aria-current={isActive ? "page" : undefined}
+                          className={`flex min-h-11 w-full items-center justify-between gap-2 rounded-md px-3 text-left text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] ${isActive ? "bg-[#FFF4E6] text-[#B84B00]" : "text-[#1C2335] hover:bg-gray-50"}`}
+                        >
+                          <span className="truncate">{category.name}</span>
+                          <span className="shrink-0 text-xs text-[#5B6472]">{category.count}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </nav>
                 <FilterPanel />
               </Card>
             </aside>
 
             <main ref={productsGridRef} className="flex-1 min-w-0">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 bg-white p-4 rounded-2xl shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3 py-1">
                 {isCatalogLoading ? (
                   <>
                     <div className="h-5 w-48 rounded-full bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_200%] animate-[shimmer_2s_ease-in-out_infinite]" />
-                    <div className="h-10 w-full sm:w-48 rounded-full bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_200%] animate-[shimmer_2s_ease-in-out_infinite]" />
+                    <div className="h-10 w-40 sm:w-48 rounded-full bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_200%] animate-[shimmer_2s_ease-in-out_infinite]" />
                   </>
                 ) : (
                   <>
-                    <p className="text-[#2E2E2E]" style={{ fontSize: "0.938rem" }}>
+                    <p className="text-[#2E2E2E] text-sm">
                       Mostrando {filteredProducts.length} de {products.length}{" "}
                       productos
                     </p>
 
-                    <Select defaultValue="name">
-                      <SelectTrigger className="w-full sm:w-48 border-gray-200 rounded-full">
+                    <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
+                      <SelectTrigger aria-label="Ordenar productos" className="w-40 sm:w-48 border-gray-200 rounded-full">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="default">Relevancia</SelectItem>
                         <SelectItem value="name">Nombre</SelectItem>
                         <SelectItem value="price-low">
                           Precio: Menor a mayor
@@ -839,7 +712,7 @@ export function ShopPage({
                         mobileLayout={isMobileGridCompact ? "grid" : "list"}
                       />
                     ))
-                  : filteredProducts
+                  : sortedProducts
                       .slice(
                         (currentPage - 1) * itemsPerPage,
                         currentPage * itemsPerPage,

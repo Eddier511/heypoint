@@ -135,15 +135,15 @@ export function ProductCard({
     : isFeaturedDesktop
       ? "relative h-40 rounded-xl overflow-hidden flex-shrink-0 bg-white"
       : isCatalogListMobile
-        ? "relative w-32 h-32 sm:w-auto sm:h-auto sm:aspect-square rounded-xl overflow-hidden flex-shrink-0 bg-white"
-        : "relative aspect-[4/3] sm:aspect-square rounded-xl overflow-hidden flex-shrink-0 bg-white";
+        ? "relative w-32 h-32 sm:w-auto sm:h-auto sm:aspect-[4/3] rounded-xl overflow-hidden flex-shrink-0 bg-white"
+        : "relative aspect-[4/3] rounded-xl overflow-hidden flex-shrink-0 bg-white";
   const cardClassName = isFeaturedMobile
     ? `group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-sm p-3 min-h-[260px] transition-opacity${product.stock === 0 ? " opacity-80" : ""}`
     : isFeaturedDesktop
       ? `group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-sm p-3 h-full transition-opacity${product.stock === 0 ? " opacity-80" : ""}`
       : isCatalogListMobile
-        ? `group cursor-pointer flex flex-row sm:flex-col gap-3 sm:gap-0 rounded-2xl overflow-hidden bg-white border-none shadow-sm p-3 h-full sm:min-h-[320px] transition-opacity${product.stock === 0 ? " opacity-80" : ""}`
-        : `group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-sm p-3 h-full min-h-[300px] sm:min-h-[320px] transition-opacity${product.stock === 0 ? " opacity-80" : ""}`;
+        ? `group cursor-pointer flex flex-row sm:flex-col gap-3 sm:gap-0 rounded-2xl overflow-hidden bg-white border-none shadow-sm p-3 h-full sm:min-h-[300px] transition-opacity${product.stock === 0 ? " opacity-80" : ""}`
+        : `group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-sm p-3 h-full min-h-[280px] sm:min-h-[300px] transition-opacity${product.stock === 0 ? " opacity-80" : ""}`;
   const priceSize = isFeaturedDesktop ? "md" : "sm";
   const priceBlockClassName = isCatalogGrid
     ? "mb-1.5 min-h-[3.5rem]"
@@ -197,7 +197,7 @@ export function ProductCard({
           </h3>
         ) : (
           <h3
-            className={`text-[#1C2335] mb-2 line-clamp-2${variant === "catalog" ? " md:line-clamp-3" : ""}`}
+            className={`text-[#1C2335] ${variant === "catalog" ? "mb-1.5" : "mb-2"} line-clamp-2${variant === "catalog" ? " md:line-clamp-3" : ""}`}
             style={{
               fontSize: "0.938rem",
               fontWeight: 600,
