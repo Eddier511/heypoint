@@ -16,6 +16,7 @@ import { UnifiedHeader } from "../components/UnifiedHeader";
 import { Footer } from "../components/Footer";
 import { ProductCardSkeleton } from "../components/ProductCardSkeleton";
 import { ProductCard } from "../components/ProductCard";
+import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import {
   Collapsible,
@@ -288,11 +289,12 @@ export function ShopPage({
       );
     }
 
-    const mappedCategories: { name: string; count: number }[] =
+    const mappedCategories: { name: string; count: number; image?: string }[] =
       apiCats.length > 0
         ? apiCats
             .map((c) => ({
               name: c.name,
+              image: c.imageUrl || c.image || undefined,
               count:
                 typeof c.productCount === "number"
                   ? c.productCount
@@ -405,7 +407,8 @@ export function ShopPage({
   const shouldShowOffersSection =
     !isCatalogLoading && productosEnOferta.length > 0;
 
-  const categoryNavigation = [{ name: "Todos los productos", count: products.length }, ...categories];
+  const categoryNavigation = [{ name: "Todos los productos", count: products.length, image: undefined as string | undefined }, ...categories];
+  const featuredShelfProducts = productosEnOferta.slice(0, 5);
 
   const FilterPanel = ({ onClose }: { onClose?: () => void }) => (
     <div className="space-y-6">
@@ -549,11 +552,11 @@ export function ShopPage({
 
               {!isLargeViewport ? (
                 <div className="overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
-                  <div className="flex gap-4 min-w-max">
+                  <div className="flex gap-3 min-w-max">
                     {productosEnOferta.map((product, index) => (
                       <div
                         key={product.id}
-                        className="w-[280px] sm:w-[320px] flex-shrink-0"
+                        className="w-[240px] sm:w-[280px] flex-shrink-0"
                       >
                         <ProductCard
                           product={product}
@@ -571,19 +574,11 @@ export function ShopPage({
                   </div>
                 </div>
               ) : (
-                <div
-                  className="grid gap-6"
-                  style={{
-                    gridTemplateColumns:
-                      productosEnOferta.length >= 3
-                        ? "repeat(3, 1fr)"
-                        : `repeat(${productosEnOferta.length}, minmax(0, 420px))`,
-                  }}
-                >
-                  {productosEnOferta.map((product, index) => (
+                <div className="flex gap-4 overflow-x-auto pb-2">
+                  {featuredShelfProducts.map((product, index) => (
                     <div
                       key={product.id}
-                      className="h-full"
+                      className="min-w-[210px] max-w-[280px] flex-1 flex-shrink-0"
                     >
                       <ProductCard
                         product={product}
@@ -656,8 +651,15 @@ export function ShopPage({
                           aria-current={isActive ? "page" : undefined}
                           className={`flex min-h-11 w-full items-center justify-between gap-2 rounded-md px-3 text-left text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] ${isActive ? "bg-[#FFF4E6] text-[#B84B00]" : "text-[#1C2335] hover:bg-gray-50"}`}
                         >
+                          <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-md bg-[#F3F4F6] text-[#5B6472]">
+                            {category.image ? (
+                              <ImageWithFallback src={category.image} alt="" className="h-full w-full object-cover" />
+                            ) : (
+                              <Grid3x3 className="h-4 w-4" aria-hidden="true" />
+                            )}
+                          </span>
                           <span className="truncate">{category.name}</span>
-                          <span className="shrink-0 text-xs text-[#5B6472]">{category.count}</span>
+                          <span className="ml-auto shrink-0 text-xs text-[#5B6472]">{category.count}</span>
                         </button>
                       );
                     })}

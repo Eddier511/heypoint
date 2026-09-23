@@ -131,26 +131,30 @@ export function ProductCard({
   const isCatalogListMobile = variant === "catalog" && mobileLayout === "list";
   const isCatalogGrid = variant === "catalog" && mobileLayout === "grid";
   const imageClassName = isFeaturedMobile
-    ? "relative h-32 sm:h-36 rounded-xl overflow-hidden flex-shrink-0 bg-white"
+    ? "relative h-28 sm:h-32 rounded-xl overflow-hidden flex-shrink-0 bg-white"
     : isFeaturedDesktop
-      ? "relative h-40 rounded-xl overflow-hidden flex-shrink-0 bg-white"
+      ? "relative h-28 rounded-xl overflow-hidden flex-shrink-0 bg-white"
       : isCatalogListMobile
         ? "relative w-32 h-32 sm:w-auto sm:h-auto sm:aspect-[4/3] rounded-xl overflow-hidden flex-shrink-0 bg-white"
         : "relative aspect-[4/3] rounded-xl overflow-hidden flex-shrink-0 bg-white";
   const cardClassName = isFeaturedMobile
-    ? `group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-sm p-3 min-h-[260px] transition-opacity${product.stock === 0 ? " opacity-80" : ""}`
+    ? `group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-sm p-2.5 min-h-[240px] transition-opacity${product.stock === 0 ? " opacity-80" : ""}`
     : isFeaturedDesktop
-      ? `group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-sm p-3 h-full transition-opacity${product.stock === 0 ? " opacity-80" : ""}`
+      ? `group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-sm p-2.5 h-full transition-opacity${product.stock === 0 ? " opacity-80" : ""}`
       : isCatalogListMobile
         ? `group cursor-pointer flex flex-row sm:flex-col gap-3 sm:gap-0 rounded-2xl overflow-hidden bg-white border-none shadow-sm p-3 h-full sm:min-h-[300px] transition-opacity${product.stock === 0 ? " opacity-80" : ""}`
-        : `group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-sm p-3 h-full min-h-[280px] sm:min-h-[300px] transition-opacity${product.stock === 0 ? " opacity-80" : ""}`;
+        : `group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-sm p-2.5 h-full min-h-[280px] sm:min-h-[300px] transition-opacity${product.stock === 0 ? " opacity-80" : ""}`;
   const priceSize = isFeaturedDesktop ? "md" : "sm";
   const priceBlockClassName = isCatalogGrid
-    ? "mb-1.5 min-h-[3.5rem]"
-    : "mb-1.5";
+    ? "mb-1 min-h-[4rem] sm:min-h-[3.5rem]"
+    : "mb-1";
   const controlsClassName = isCatalogGrid
     ? "mt-auto flex flex-col sm:flex-row sm:items-center gap-2 flex-shrink-0"
-    : "flex flex-col sm:flex-row sm:items-center gap-2 flex-shrink-0";
+    : isFeaturedDesktop
+      ? "mt-auto flex flex-col 2xl:flex-row 2xl:items-center gap-2 flex-shrink-0"
+      : isFeaturedMobile
+        ? "mt-auto flex flex-col sm:flex-row sm:items-center gap-2 flex-shrink-0"
+        : "flex flex-col sm:flex-row sm:items-center gap-2 flex-shrink-0";
 
   return (
     <Card className={cardClassName} onClick={() => onProductClick(product)}>
@@ -190,14 +194,14 @@ export function ProductCard({
         )}
       </div>
 
-      <div className="flex-1 flex flex-col pt-2 min-w-0">
+      <div className={`flex-1 flex flex-col min-w-0 ${isCatalogListMobile ? "pt-2" : "pt-1.5"}`}>
         {isFeaturedDesktop ? (
-          <h3 className="text-[#1C2335] mb-2 line-clamp-2 text-base">
+          <h3 className="text-[#1C2335] mb-1.5 line-clamp-2 text-base">
             {product.name}
           </h3>
         ) : (
           <h3
-            className={`text-[#1C2335] ${variant === "catalog" ? "mb-1.5" : "mb-2"} line-clamp-2${variant === "catalog" ? " md:line-clamp-3" : ""}`}
+            className={`text-[#1C2335] ${isCatalogListMobile ? "mb-1.5" : "mb-1"} line-clamp-2${variant === "catalog" ? " md:line-clamp-3" : ""}`}
             style={{
               fontSize: "0.938rem",
               fontWeight: 600,
@@ -237,7 +241,7 @@ export function ProductCard({
           </div>
         </div>
 
-        <div className="mb-1.5 min-h-[20px]">
+        <div className={`${isCatalogListMobile ? "mb-1.5" : "mb-1"} min-h-6`}>
           {hasCartQuantity && (
             <div className="inline-flex items-center gap-1.5 rounded-full bg-[#FFF4E6] px-2.5 py-1 text-xs font-semibold text-[#5C3A1E]">
               <Check className="h-3.5 w-3.5 text-[#FF6B00]" />
@@ -246,7 +250,7 @@ export function ProductCard({
           )}
         </div>
 
-        <div className="mb-2 min-h-[14px]">
+        <div className={`${isCatalogListMobile ? "mb-2" : "mb-1"} min-h-[14px]`}>
           <StockIndicator stock={product.stock} variant="card" />
         </div>
 
