@@ -948,6 +948,7 @@ function AppContent() {
         selectedCategory={selectedCategory}
         onCategorySelect={handleCategorySelect}
         searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
         onClearSearch={() => setSearchQuery("")}
       />
     );

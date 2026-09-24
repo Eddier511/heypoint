@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Filter, X, ChevronDown, Grid3x3, LayoutList } from "lucide-react";
+import { Filter, X, Search, ChevronDown, Grid3x3, LayoutList } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Card } from "../components/ui/card";
@@ -54,6 +54,7 @@ interface ShopPageProps {
   selectedCategory?: string | null;
   onCategorySelect?: (category: string) => void;
   searchQuery?: string;
+  onSearchChange: (query: string) => void;
   onClearSearch?: () => void;
 }
 
@@ -96,6 +97,48 @@ type ApiProductsResponse = ApiProduct[] | { products: ApiProduct[] };
 const PRODUCT_STALE_TIME = 60_000;
 const PRODUCT_CACHE_TIME = 10 * 60_000;
 
+function normalizeSearchText(value: string): string {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLocaleLowerCase("es-AR");
+}
+
+function CatalogSearchField({
+  id,
+  value,
+  onChange,
+}: {
+  id: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="relative w-full">
+      <label htmlFor={id} className="sr-only">Buscar productos en la tienda</label>
+      <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5B6472]" aria-hidden="true" />
+      <input
+        id={id}
+        type="text"
+        inputMode="search"
+        enterKeyHint="search"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder="Buscar productos"
+        className="h-11 w-full rounded-full border border-[#D6D8DC] bg-white pl-10 pr-10 text-sm text-[#1C2335] outline-none placeholder:text-[#5B6472] focus-visible:border-[#FF6B00] focus-visible:ring-2 focus-visible:ring-[#FF6B00]/30"
+      />
+      {value.length > 0 && (
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          aria-label="Limpiar búsqueda"
+          title="Limpiar búsqueda"
+          className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-[#5B6472] hover:bg-[#FFF4E6] hover:text-[#1C2335] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00]"
+        >
+          <X className="h-4 w-4" aria-hidden="true" />
+        </button>
+      )}
+    </div>
+  );
+}
+
 function normalizeProducts(data: ApiProductsResponse): ApiProduct[] {
   return Array.isArray(data) ? data : data?.products || [];
 }
@@ -133,7 +176,8 @@ export function ShopPage({
   onNavigate,
   selectedCategory = null,
   onCategorySelect,
-  searchQuery,
+  searchQuery = "",
+  onSearchChange,
   onClearSearch,
 }: ShopPageProps) {
   const { cartItems } = useCart();
@@ -160,6 +204,7 @@ export function ShopPage({
 
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoadingPage, setIsLoadingPage] = useState(false);
+  const pageTransitionTimeoutRef = useRef<number | null>(null);
   const [isOfertasFilterActive, setIsOfertasFilterActive] = useState(false);
   const [isFilterBarStuck, setIsFilterBarStuck] = useState(false);
   const filterBarSentinelRef = useRef<HTMLDivElement>(null);
@@ -214,7 +259,18 @@ export function ShopPage({
   }, [selectedCategory]);
 
   useEffect(() => {
+    if (pageTransitionTimeoutRef.current !== null) {
+      window.clearTimeout(pageTransitionTimeoutRef.current);
+      pageTransitionTimeoutRef.current = null;
+    }
+    setIsLoadingPage(false);
     setCurrentPage(1);
+    return () => {
+      if (pageTransitionTimeoutRef.current !== null) {
+        window.clearTimeout(pageTransitionTimeoutRef.current);
+        pageTransitionTimeoutRef.current = null;
+      }
+    };
   }, [activeCategory, priceRange, searchQuery, isOfertasFilterActive, sortBy]);
 
   useEffect(() => {
@@ -345,10 +401,24 @@ export function ShopPage({
     onClearSearch?.();
   };
 
+  const handleSearchChange = (value: string) => {
+    if (pageTransitionTimeoutRef.current !== null) {
+      window.clearTimeout(pageTransitionTimeoutRef.current);
+      pageTransitionTimeoutRef.current = null;
+    }
+    setIsLoadingPage(false);
+    setCurrentPage(1);
+    onSearchChange(value);
+  };
+
   const selectCategory = (category: string | null) => {
     setActiveCategory(category);
     setIsOfertasFilterActive(false);
   };
+
+  const normalizedSearchQuery = normalizeSearchText(searchQuery);
+  const hasRefinementFilters =
+    activeCategory !== null || priceRange[0] !== 0 || priceRange[1] !== priceMax || isOfertasFilterActive;
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
@@ -359,8 +429,8 @@ export function ShopPage({
         product.price >= priceRange[0] && product.price <= priceRange[1];
 
       const searchMatch =
-        !searchQuery ||
-        product.name.toLowerCase().includes(searchQuery.toLowerCase());
+        !normalizedSearchQuery ||
+        normalizeSearchText(product.name).includes(normalizedSearchQuery);
 
       const ofertaMatch =
         !isOfertasFilterActive ||
@@ -373,14 +443,14 @@ export function ShopPage({
     products,
     activeCategory,
     priceRange,
-    searchQuery,
+    normalizedSearchQuery,
     isOfertasFilterActive,
   ]);
 
   const activeFiltersCount =
     (priceRange[0] !== 0 || priceRange[1] !== priceMax ? 1 : 0) +
     (isOfertasFilterActive ? 1 : 0) +
-    (searchQuery ? 1 : 0);
+    (normalizedSearchQuery ? 1 : 0);
 
   const sortedProducts = useMemo(() => {
     if (sortBy === "default") return filteredProducts;
@@ -392,10 +462,14 @@ export function ShopPage({
   }, [filteredProducts, sortBy]);
 
   const handlePageChange = (newPage: number) => {
+    if (pageTransitionTimeoutRef.current !== null) {
+      window.clearTimeout(pageTransitionTimeoutRef.current);
+    }
     setIsLoadingPage(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
 
-    setTimeout(() => {
+    pageTransitionTimeoutRef.current = window.setTimeout(() => {
+      pageTransitionTimeoutRef.current = null;
       setCurrentPage(newPage);
       setIsLoadingPage(false);
     }, 600);
@@ -526,6 +600,14 @@ export function ShopPage({
               })}
             </div>
           </nav>
+
+          <div className="xl:hidden mb-3">
+            <CatalogSearchField
+              id="catalog-search-mobile"
+              value={searchQuery}
+              onChange={handleSearchChange}
+            />
+          </div>
 
           {/* Ofertas */}
           {shouldShowOffersSection && (
@@ -672,17 +754,25 @@ export function ShopPage({
             <main ref={productsGridRef} className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center justify-between gap-2 mb-3 py-1">
                 {isCatalogLoading ? (
-                  <>
-                    <div className="h-5 w-48 rounded-full bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_200%] animate-[shimmer_2s_ease-in-out_infinite]" />
-                    <div className="h-10 w-40 sm:w-48 rounded-full bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_200%] animate-[shimmer_2s_ease-in-out_infinite]" />
-                  </>
+                  <div className="h-5 w-48 rounded-full bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_200%] animate-[shimmer_2s_ease-in-out_infinite]" />
                 ) : (
-                  <>
-                    <p className="text-[#2E2E2E] text-sm">
-                      Mostrando {filteredProducts.length} de {products.length}{" "}
-                      productos
-                    </p>
+                  <p className="text-[#2E2E2E] text-sm" aria-live="polite">
+                    Mostrando {filteredProducts.length} de {products.length}{" "}
+                    productos
+                  </p>
+                )}
 
+                <div className="hidden xl:block min-w-[200px] max-w-xl flex-1 ml-auto">
+                  <CatalogSearchField
+                    id="catalog-search-desktop"
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                  />
+                </div>
+
+                {isCatalogLoading ? (
+                  <div className="h-10 w-40 sm:w-48 rounded-full bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_200%] animate-[shimmer_2s_ease-in-out_infinite]" />
+                ) : (
                     <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
                       <SelectTrigger aria-label="Ordenar productos" className="w-40 sm:w-48 border-gray-200 rounded-full">
                         <SelectValue />
@@ -698,7 +788,6 @@ export function ShopPage({
                         </SelectItem>
                       </SelectContent>
                     </Select>
-                  </>
                 )}
               </div>
 
@@ -740,6 +829,44 @@ export function ShopPage({
                         </div>
                       ))}
               </div>
+
+              {!isCatalogLoading && !isLoadingPage && !error && filteredProducts.length === 0 && (
+                <div className="flex flex-col items-center px-4 py-12 text-center" role="status">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-white text-[#FF6B00]">
+                    <Search className="h-5 w-5" aria-hidden="true" />
+                  </div>
+                  <h2 className="max-w-full break-words text-lg font-semibold text-[#1C2335]">
+                    {normalizedSearchQuery
+                      ? hasRefinementFilters
+                        ? "No hay productos que coincidan con tu búsqueda y filtros"
+                        : `No encontramos productos para “${searchQuery.trim()}”`
+                      : hasRefinementFilters
+                        ? "No hay productos con estos filtros"
+                        : "Todavía no hay productos disponibles"}
+                  </h2>
+                  <p className="mt-1 max-w-md text-sm text-[#4B5563]">
+                    {normalizedSearchQuery
+                      ? "Probá con otro nombre o quitá la búsqueda para ver más productos."
+                      : hasRefinementFilters
+                        ? "Probá ajustando la categoría o los filtros seleccionados."
+                        : "Volvé a visitar la tienda más tarde."}
+                  </p>
+                  {(normalizedSearchQuery || hasRefinementFilters) && (
+                    <div className="mt-5 flex flex-wrap justify-center gap-2">
+                      {normalizedSearchQuery && (
+                        <Button type="button" onClick={() => handleSearchChange("")} className="rounded-full bg-[#FF6B00] px-5 text-white hover:bg-[#e56000]">
+                          Limpiar búsqueda
+                        </Button>
+                      )}
+                      {hasRefinementFilters && (
+                        <Button type="button" variant="outline" onClick={clearAllFilters} className="rounded-full border-[#FF6B00] px-5 text-[#B84B00] hover:bg-white">
+                          Limpiar todo
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {Math.ceil(filteredProducts.length / itemsPerPage) > 1 && (
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8 sm:mt-12">
