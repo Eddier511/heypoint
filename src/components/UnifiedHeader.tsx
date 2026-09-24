@@ -22,6 +22,7 @@ import { useModal } from "../contexts/ModalContext";
 import { useCart } from "../contexts/CartContext";
 import { useHasPendingOrders } from "../hooks/useHasPendingOrders";
 import { toast } from "sonner";
+import { SupportModal } from "./SupportModal";
 
 const EmptyCartModal = lazy(() =>
   import("./EmptyCartModal").then((module) => ({
@@ -31,11 +32,6 @@ const EmptyCartModal = lazy(() =>
 const GlobalSearchModal = lazy(() =>
   import("./GlobalSearchModal").then((module) => ({
     default: module.GlobalSearchModal,
-  })),
-);
-const SupportModal = lazy(() =>
-  import("./SupportModal").then((module) => ({
-    default: module.SupportModal,
   })),
 );
 
@@ -98,6 +94,7 @@ export function UnifiedHeader({
   const accountDropdownRef = useRef<HTMLDivElement>(null);
   const accountButtonRef = useRef<HTMLButtonElement>(null);
   const aboutHoverCloseTimer = useRef<NodeJS.Timeout | null>(null);
+  const openSupportAfterMobileMenu = useRef(false);
 
   // Sticky header on scroll
   useEffect(() => {
@@ -217,12 +214,14 @@ export function UnifiedHeader({
   };
 
   const handleSupportClick = () => {
-    if (isMobileMenuOpen) setIsMobileMenuOpen(false);
     setIsAboutDropdownOpen(false);
     setIsAccountMenuOpen(false);
-    requestAnimationFrame(() => {
+    if (isMobileMenuOpen) {
+      openSupportAfterMobileMenu.current = true;
+      setIsMobileMenuOpen(false);
+    } else {
       setShowSupportModal(true);
-    });
+    }
   };
 
   const handleAboutClick = () => {
@@ -530,7 +529,12 @@ export function UnifiedHeader({
       </header>
 
       {/* Mobile Menu */}
-      <AnimatePresence>
+      <AnimatePresence onExitComplete={() => {
+        if (openSupportAfterMobileMenu.current) {
+          openSupportAfterMobileMenu.current = false;
+          setShowSupportModal(true);
+        }
+      }}>
         {isMobileMenuOpen && (
           <>
             <motion.div
@@ -795,4 +799,3 @@ export function UnifiedHeader({
     </>
   );
 }
-

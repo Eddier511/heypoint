@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { X, MessageCircle, UserPlus, Zap } from "lucide-react";
 import type { ReactNode, ComponentType } from "react";
 import { createPortal } from "react-dom";
@@ -23,6 +23,7 @@ export function SupportModal({
   onClose,
   onNavigate,
 }: SupportModalProps) {
+  const shouldReduceMotion = useReducedMotion();
   if (typeof document === "undefined") return null;
 
   const phoneNumber = "5491131475522";
@@ -97,30 +98,21 @@ export function SupportModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.18, ease: "easeOut" }}
+            transition={{ duration: shouldReduceMotion ? 0 : 0.18, ease: "easeOut" }}
             className="fixed inset-0 bg-black/40 z-[20000]"
             onClick={onClose}
           />
 
           <motion.div
             variants={{
-              hidden: { opacity: 0, scale: 0.97, y: 14 },
-              visible: {
-                opacity: 1,
-                scale: 1,
-                y: 0,
-                transition: { type: "spring", stiffness: 380, damping: 28 },
-              },
-              exit: {
-                opacity: 0,
-                scale: 0.97,
-                y: 8,
-                transition: { duration: 0.15, ease: "easeIn" },
-              },
+              hidden: { opacity: 0, y: shouldReduceMotion ? 0 : 6 },
+              visible: { opacity: 1, y: 0 },
+              exit: { opacity: 0, y: shouldReduceMotion ? 0 : 6 },
             }}
             initial="hidden"
             animate="visible"
             exit="exit"
+            transition={{ duration: shouldReduceMotion ? 0 : 0.18, ease: "easeOut" }}
             className="fixed inset-0 z-[20010] flex items-start sm:items-center justify-center p-4"
           >
             <Card
