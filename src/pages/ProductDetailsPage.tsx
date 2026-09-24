@@ -341,7 +341,7 @@ export function ProductDetailsPage({
               <div className="h-4 w-36 rounded-full bg-gray-200" />
             </div>
 
-            <div className="grid lg:grid-cols-2 gap-6 lg:gap-8 mb-10 sm:mb-14 animate-pulse">
+            <div className="grid lg:grid-cols-2 xl:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] 2xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-6 lg:gap-8 mb-10 sm:mb-14 animate-pulse">
               <Card className="bg-white border-none shadow-lg rounded-2xl p-3 sm:p-5">
                 <div className="relative h-[300px] sm:h-[340px] lg:h-auto lg:aspect-square rounded-xl overflow-hidden bg-white">
                   <div className="absolute inset-3 sm:inset-4 rounded-lg bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_200%] animate-[shimmer_2s_ease-in-out_infinite]" />
@@ -479,7 +479,7 @@ export function ProductDetailsPage({
           </div>
 
           {/* Producto */}
-          <div className="grid lg:grid-cols-2 gap-6 lg:gap-8 mb-10 sm:mb-14">
+          <div className="grid lg:grid-cols-2 xl:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] 2xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-6 lg:gap-8 mb-10 sm:mb-14">
             {/* Imagen */}
             <Card className="bg-white border-none shadow-lg rounded-2xl p-3 sm:p-5">
               <div className="relative h-[300px] sm:h-[340px] lg:h-auto lg:aspect-square bg-white rounded-xl overflow-hidden">
