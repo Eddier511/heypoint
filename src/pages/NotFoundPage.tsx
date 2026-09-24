@@ -30,17 +30,17 @@ export function NotFoundPage({ onNavigate }: NotFoundPageProps) {
           <div className="flex flex-col justify-center gap-3 sm:flex-row">
             <Button
               onClick={() => onNavigate("home")}
-              className="min-h-12 rounded-full bg-[#FF6B00] px-6 font-semibold text-white hover:bg-[#D95700] focus-visible:ring-2 focus-visible:ring-[#1C2335] focus-visible:ring-offset-2"
+              className="h-12 rounded-full bg-[#FF6B00] px-6 font-semibold text-white hover:bg-[#D95700] focus-visible:ring-2 focus-visible:ring-[#1C2335] focus-visible:ring-offset-2"
             >
-              <Home size={18} aria-hidden="true" />
+              <Home size={20} aria-hidden="true" />
               Volver al inicio
             </Button>
             <Button
               onClick={() => onNavigate("shop")}
               variant="outline"
-              className="min-h-12 rounded-full border-2 border-[#D95700] px-6 font-semibold text-[#B84700] hover:bg-[#FFF4E6] hover:text-[#933900] focus-visible:ring-2 focus-visible:ring-[#1C2335] focus-visible:ring-offset-2"
+              className="h-12 rounded-full border-2 border-[#D95700] px-6 font-semibold text-[#B84700] hover:bg-[#FFF4E6] hover:text-[#933900] focus-visible:ring-2 focus-visible:ring-[#1C2335] focus-visible:ring-offset-2"
             >
-              <ShoppingBag size={18} aria-hidden="true" />
+              <ShoppingBag size={20} aria-hidden="true" />
               Ir a la tienda
             </Button>
           </div>

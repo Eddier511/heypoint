@@ -854,7 +854,7 @@ export function UserProfilePage({
                       <Button
                         onClick={handleSaveChanges}
                         disabled={!isModified || isSaving}
-                        className={`w-full sm:flex-none sm:ml-auto min-h-[52px] sm:h-14 px-8 rounded-full transition-all shadow-lg
+                        className={`w-full sm:w-auto sm:flex-none sm:ml-auto h-12 px-6 rounded-full transition-all shadow-lg
                           ${
                             !isModified || isSaving
                               ? "bg-gray-300 text-gray-500 cursor-not-allowed hover:bg-gray-300"
@@ -864,7 +864,7 @@ export function UserProfilePage({
                       >
                         {isSaving ? (
                           <>
-                            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                            <Loader2 className="w-5 h-5 animate-spin" />
                             Guardando...
                           </>
                         ) : (
@@ -876,7 +876,7 @@ export function UserProfilePage({
                         onClick={handleCancel}
                         disabled={!isModified || isSaving}
                         variant="ghost"
-                        className="w-full sm:w-auto sm:flex-none min-h-[44px] sm:h-14 px-8 text-[#2E2E2E] hover:text-[#FF6B00] hover:bg-[#FFF4E6] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full sm:w-auto sm:flex-none h-12 px-6 text-[#2E2E2E] hover:text-[#FF6B00] hover:bg-[#FFF4E6] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         style={{ fontSize: "1rem", fontWeight: 700 }}
                       >
                         Cancelar

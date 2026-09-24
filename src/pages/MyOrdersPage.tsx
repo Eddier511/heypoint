@@ -689,10 +689,10 @@ function OrdersStateCard({
       <div className="flex justify-center">
         <Button
           onClick={() => onNavigate?.("shop")}
-          className="w-auto bg-[#FF6B00] hover:bg-[#e56000] text-white px-8 py-4 rounded-full shadow-lg transition-all transform hover:scale-105"
+          className="w-auto h-12 px-6 gap-2 bg-[#FF6B00] hover:bg-[#e56000] text-white rounded-full shadow-lg transition-all transform hover:scale-105"
           style={{ fontSize: "1rem", fontWeight: 600 }}
         >
-          <ShoppingBag className="w-5 h-5 mr-2" />
+          <ShoppingBag className="w-5 h-5" />
           {buttonText}
         </Button>
       </div>

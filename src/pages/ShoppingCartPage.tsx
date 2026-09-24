@@ -187,7 +187,7 @@ export function ShoppingCartPage({
                 </p>
                 <Button
                   onClick={() => onNavigate?.("shop")}
-                  className="bg-[#FF6B00] hover:bg-[#e56000] text-white px-8 py-6 rounded-full shadow-lg transition-all transform hover:scale-105"
+                  className="h-12 px-6 bg-[#FF6B00] hover:bg-[#e56000] text-white rounded-full shadow-lg transition-all transform hover:scale-105"
                   style={{ fontSize: "1rem", fontWeight: 600 }}
                 >
                   Seguir comprando
@@ -498,7 +498,7 @@ export function ShoppingCartPage({
                         <Button
                           onClick={() => onNavigate?.("shop")}
                           variant="outline"
-                          className="w-full py-5 sm:py-6 rounded-full border-2 border-gray-200 hover:border-[#FF6B00] hover:bg-[#FFF4E6] transition-all text-sm sm:text-base"
+                          className="w-full h-12 px-6 rounded-full border-2 border-gray-200 hover:border-[#FF6B00] hover:bg-[#FFF4E6] transition-all text-sm sm:text-base"
                           style={{ fontWeight: 600 }}
                         >
                           Seguir comprando

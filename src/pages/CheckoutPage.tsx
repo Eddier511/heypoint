@@ -323,7 +323,7 @@ export function CheckoutPage({
               </p>
               <Button
                 onClick={() => onNavigate?.("shop")}
-                className="bg-[#FF6B00] hover:bg-[#e56000] text-white px-8 py-6 rounded-full shadow-lg transition-all transform hover:scale-105"
+                className="h-12 px-6 bg-[#FF6B00] hover:bg-[#e56000] text-white rounded-full shadow-lg transition-all transform hover:scale-105"
                 style={{ fontSize: "1rem", fontWeight: 600 }}
               >
                 Ir a la tienda
@@ -699,7 +699,7 @@ export function CheckoutPage({
                       <Button
                         onClick={() => onNavigate?.("home")}
                         variant="outline"
-                        className="w-full py-3 rounded-full border-[#009EE3] text-[#009EE3]"
+                        className="w-full h-12 px-6 rounded-full border-[#009EE3] text-[#009EE3]"
                         style={{ fontSize: "0.938rem", fontWeight: 600 }}
                       >
                         Volver al inicio

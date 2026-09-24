@@ -291,11 +291,11 @@ export function ContactPage({ onNavigate }: ContactPageProps) {
                     <Button
                       type="submit"
                       disabled={isSending}
-                      className="w-full bg-[#FF6B00] hover:bg-[#e56000] text-white rounded-full py-6 disabled:opacity-60"
+                      className="w-full h-12 px-6 gap-2 bg-[#FF6B00] hover:bg-[#e56000] text-white rounded-full disabled:opacity-60"
                       style={{ fontSize: "1.125rem", fontWeight: 600 }}
                       aria-label="Enviar mensaje"
                     >
-                      <Send className="w-5 h-5 mr-2" />
+                      <Send className="w-5 h-5" />
                       {isSending ? "Enviando..." : "Enviar mensaje"}
                     </Button>
                   </form>
