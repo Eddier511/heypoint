@@ -65,10 +65,10 @@ export function ProductCard({
   if (variant === "related") {
     return (
       <Card
-        className="group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-sm hover:shadow-md transition-all p-2.5"
+        className="group cursor-pointer flex h-full flex-col rounded-2xl overflow-hidden bg-white border-none shadow-sm hover:shadow-md transition-all p-2.5"
         onClick={() => onProductClick(product)}
       >
-        <div className="relative h-28 sm:h-32 rounded-xl overflow-hidden mb-2 bg-gray-50">
+        <div className="relative h-28 sm:h-32 rounded-xl overflow-hidden mb-1.5 bg-white">
           <ImageWithFallback
             src={product.image}
             alt={product.name}
@@ -77,17 +77,17 @@ export function ProductCard({
         </div>
 
         <h3
-          className="mb-1.5 line-clamp-2 text-[#1C2335]"
+          className="mb-1 min-h-[2.35rem] line-clamp-2 text-[#1C2335]"
           style={{ fontSize: "0.938rem", fontWeight: 700, lineHeight: 1.25 }}
         >
           {product.name}
         </h3>
 
-        <p className="mb-1.5 text-[#1C2335]" style={{ fontSize: "1rem", fontWeight: 800 }}>
+        <p className="mb-1 min-h-6 text-[#1C2335]" style={{ fontSize: "1rem", fontWeight: 800 }}>
           {formatPrecioARS(getPrecioFinalConIVA(product.price, ivaPct))}
         </p>
 
-        <div className="mb-1.5 min-h-[18px]">
+        <div className="mb-0.5 min-h-[22px]">
           {hasCartQuantity && (
             <div className="inline-flex items-center gap-1 rounded-full bg-[#FFF4E6] px-2 py-0.5 text-[0.688rem] font-semibold text-[#5C3A1E]">
               <Check className="h-3 w-3 text-[#FF6B00]" />
@@ -96,12 +96,12 @@ export function ProductCard({
           )}
         </div>
 
-        <div className="mb-2 min-h-[14px]">
+        <div className="mb-1 min-h-5">
           <StockIndicator stock={product.stock} variant="card" />
         </div>
 
         <div
-          className="mt-auto flex flex-col xl:flex-row xl:items-center gap-2"
+          className="flex flex-col xl:flex-row xl:items-center gap-2"
           onClick={(e) => e.stopPropagation()}
         >
           <QuantitySelector

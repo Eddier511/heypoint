@@ -343,7 +343,9 @@ export function ProductDetailsPage({
 
             <div className="grid lg:grid-cols-2 gap-6 lg:gap-8 mb-10 sm:mb-14 animate-pulse">
               <Card className="bg-white border-none shadow-lg rounded-2xl p-3 sm:p-5">
-                <div className="relative h-[300px] sm:h-[340px] lg:h-auto lg:aspect-square rounded-xl bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_200%] animate-[shimmer_2s_ease-in-out_infinite]" />
+                <div className="relative h-[300px] sm:h-[340px] lg:h-auto lg:aspect-square rounded-xl overflow-hidden bg-white">
+                  <div className="absolute inset-3 sm:inset-4 rounded-lg bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_200%] animate-[shimmer_2s_ease-in-out_infinite]" />
+                </div>
               </Card>
 
               <div className="flex flex-col">
@@ -480,7 +482,7 @@ export function ProductDetailsPage({
           <div className="grid lg:grid-cols-2 gap-6 lg:gap-8 mb-10 sm:mb-14">
             {/* Imagen */}
             <Card className="bg-white border-none shadow-lg rounded-2xl p-3 sm:p-5">
-              <div className="relative h-[300px] sm:h-[340px] lg:h-auto lg:aspect-square bg-gray-50 rounded-xl overflow-hidden">
+              <div className="relative h-[300px] sm:h-[340px] lg:h-auto lg:aspect-square bg-white rounded-xl overflow-hidden">
                 <ImageWithFallback
                   src={currentProduct.image}
                   alt={currentProduct.name}
@@ -539,7 +541,7 @@ export function ProductDetailsPage({
 
               <StockIndicator stock={currentProduct.stock} variant="detail-compact" />
 
-              <Card className="bg-white border-none shadow-md rounded-2xl p-4 sm:p-5 mt-4">
+              <Card className="bg-white border-none shadow-md rounded-2xl p-4 sm:p-5 lg:p-4 mt-4">
                 <div className="flex justify-between items-center mb-3 gap-4 lg:hidden">
                   <QuantitySelector
                     quantity={quantity}
@@ -554,7 +556,7 @@ export function ProductDetailsPage({
                   </div>
                 </div>
 
-                <div className="hidden lg:flex justify-end mb-3">
+                <div className="hidden lg:flex justify-end mb-2">
                   <div className="text-right">
                     <div className="text-sm text-[#2E2E2E]">Total</div>
                     <div className="text-xl font-bold text-[#1C2335]">
@@ -563,7 +565,7 @@ export function ProductDetailsPage({
                   </div>
                 </div>
 
-                <div className="flex gap-3 lg:items-center">
+                <div className="flex gap-3 lg:items-center lg:justify-end lg:gap-2.5">
                   <div className="hidden lg:block">
                     <QuantitySelector
                       quantity={quantity}
@@ -578,14 +580,14 @@ export function ProductDetailsPage({
                     productImage={currentProduct.image}
                     productPrice={currentProduct.price}
                     quantity={quantity}
-                    className="flex-1"
+                    className="flex-1 lg:flex-none lg:w-40"
                     stock={currentProduct.stock}
                     serviceFeeExempt={currentProduct.serviceFeeExempt === true}
                   />
                   <Button
                     size="icon"
                     variant="outline"
-                    className="rounded-full"
+                    className="rounded-full lg:size-11"
                     onClick={handleShare}
                     aria-label="Compartir producto"
                   >
@@ -607,12 +609,22 @@ export function ProductDetailsPage({
                 {Array.from({ length: 4 }).map((_, index) => (
                   <div
                     key={index}
-                    className="w-[190px] md:w-auto flex-shrink-0 animate-pulse rounded-2xl bg-white p-2.5 shadow-sm"
+                    className="flex h-full w-[190px] flex-shrink-0 flex-col rounded-2xl bg-white p-2.5 shadow-sm animate-pulse md:w-auto"
                   >
-                    <div className="h-28 sm:h-32 rounded-xl bg-gray-200 mb-2" />
-                    <div className="h-4 bg-gray-200 rounded-full mb-2" />
-                    <div className="h-4 bg-gray-200 rounded-full w-2/3 mb-3" />
-                    <div className="h-10 bg-gray-200 rounded-xl" />
+                    <div className="relative h-28 sm:h-32 rounded-xl bg-white mb-1.5 overflow-hidden">
+                      <div className="absolute inset-1.5 rounded-lg bg-gray-200" />
+                    </div>
+                    <div className="mb-1 min-h-[2.35rem] space-y-1.5">
+                      <div className="h-4 bg-gray-200 rounded-full" />
+                      <div className="h-4 bg-gray-200 rounded-full w-2/3" />
+                    </div>
+                    <div className="h-5 w-24 bg-gray-200 rounded-full mb-1" />
+                    <div className="h-[22px] mb-0.5" />
+                    <div className="h-5 mb-1" />
+                    <div className="flex flex-col xl:flex-row gap-2">
+                      <div className="h-10 w-28 rounded-xl bg-gray-200" />
+                      <div className="h-11 flex-1 rounded-full bg-[#FFD9BF]" />
+                    </div>
                   </div>
                 ))}
               </div>
