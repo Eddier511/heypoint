@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Filter, X, Search, ChevronDown, Grid3x3, LayoutList } from "lucide-react";
+import { Filter, X, Search, ChevronDown, ChevronLeft, ChevronRight, Grid3x3, LayoutList } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Card } from "../components/ui/card";
@@ -11,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
-import { Slider } from "../components/ui/slider";
 import { UnifiedHeader } from "../components/UnifiedHeader";
 import { Footer } from "../components/Footer";
 import { ProductCardSkeleton } from "../components/ProductCardSkeleton";
@@ -23,7 +22,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "../components/ui/collapsible";
-import { formatPrecioARS } from "../utils/priceUtils";
+import { formatPrecioARS, getPrecioFinalConIVA } from "../utils/priceUtils";
 import { api } from "../lib/api";
 import { useCategories } from "../hooks/useCategories";
 import { useQuery } from "@tanstack/react-query";
@@ -99,6 +98,22 @@ const PRODUCT_CACHE_TIME = 10 * 60_000;
 
 function normalizeSearchText(value: string): string {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLocaleLowerCase("es-AR");
+}
+
+type PriceRange = [number | null, number | null];
+type PriceDraft = { min: string; max: string };
+
+const emptyPriceDraft = (): PriceDraft => ({ min: "", max: "" });
+const visiblePrice = (basePrice: number) => Number(getPrecioFinalConIVA(basePrice).toFixed(2));
+const formatPriceInput = (value: number | null) =>
+  value === null ? "" : value.toLocaleString("es-AR", { maximumFractionDigits: 2 });
+
+function parsePriceInput(value: string): number | null | "invalid" {
+  const text = value.trim().replace(/\s/g, "").replace(/^\$/, "");
+  if (!text) return null;
+  if (!/^(?:\d+|\d{1,3}(?:\.\d{3})+)(?:,\d{1,2})?$/.test(text)) return "invalid";
+  const amount = Number(text.replace(/\./g, "").replace(",", "."));
+  return Number.isFinite(amount) && amount >= 0 ? amount : "invalid";
 }
 
 function CatalogSearchField({
@@ -185,8 +200,11 @@ export function ShopPage({
   const shouldReduceMotion = useReducedMotion();
   const productsGridRef = useRef<HTMLElement>(null);
 
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 20000]);
-  const [priceMax, setPriceMax] = useState(20000);
+  const [priceRange, setPriceRange] = useState<PriceRange>([null, null]);
+  const [desktopPriceDraft, setDesktopPriceDraft] = useState<PriceDraft>(emptyPriceDraft);
+  const [mobilePriceDraft, setMobilePriceDraft] = useState<PriceDraft>(emptyPriceDraft);
+  const [desktopPriceError, setDesktopPriceError] = useState<string | null>(null);
+  const [mobilePriceError, setMobilePriceError] = useState<string | null>(null);
 
   const [activeCategory, setActiveCategory] = useState<string | null>(selectedCategory);
   const [sortBy, setSortBy] = useState<"default" | "name" | "price-low" | "price-high">("default");
@@ -243,7 +261,6 @@ export function ShopPage({
       : "Error cargando productos"
     : null;
   const isCatalogLoading = loading || categoriesLoading;
-  const didInitPriceRange = useRef(false);
 
   const getQuantity = (productId: number) => productQuantities[productId] || 1;
   const updateQuantity = (productId: number, quantity: number) => {
@@ -362,41 +379,77 @@ export function ShopPage({
             count,
           }));
 
-    const maxPriceFromProducts =
-      mappedProducts.length > 0
-        ? Math.max(...mappedProducts.map((x) => x.price || 0))
-        : 20000;
-
-    const roundedMax = Math.max(
-      20000,
-      Math.ceil(maxPriceFromProducts / 500) * 500,
-    );
+    const maxPriceFromProducts = mappedProducts.length > 0
+      ? Math.max(...mappedProducts.map((product) => visiblePrice(product.price)))
+      : 20000;
 
     return {
       products: mappedProducts,
       categories: mappedCategories,
-      priceMax: roundedMax,
+      priceMax: maxPriceFromProducts,
     };
   }, [apiProducts, apiCats]);
-  const { products, categories } = catalog;
+  const { products, categories, priceMax } = catalog;
 
   useEffect(() => {
-    if (isCatalogLoading) return;
+    setDesktopPriceDraft({
+      min: formatPriceInput(priceRange[0]),
+      max: formatPriceInput(priceRange[1]),
+    });
+  }, [priceRange]);
 
-    setPriceMax(catalog.priceMax);
-    if (!didInitPriceRange.current) {
-      didInitPriceRange.current = true;
-      setPriceRange(([min, max]) => {
-        const newMax =
-          max === 20000 ? catalog.priceMax : Math.min(max, catalog.priceMax);
-        return [min, newMax];
-      });
+  const applyPriceDraft = (draft: PriceDraft, isMobile: boolean): boolean => {
+    const min = parsePriceInput(draft.min);
+    const max = parsePriceInput(draft.max);
+    const setError = isMobile ? setMobilePriceError : setDesktopPriceError;
+
+    if (min === "invalid" || max === "invalid") {
+      setError("Ingresá un precio válido (por ejemplo, 1.500,50).");
+      return false;
     }
-  }, [catalog.priceMax, isCatalogLoading]);
+    if ((min !== null && min > priceMax) || (max !== null && max > priceMax)) {
+      setError(`El precio máximo disponible es ${formatPrecioARS(priceMax)}.`);
+      return false;
+    }
+    if (min !== null && max !== null && min > max) {
+      setError("El precio mínimo no puede superar al máximo.");
+      return false;
+    }
+
+    setError(null);
+    setPriceRange((current) =>
+      current[0] === min && current[1] === max ? current : [min, max],
+    );
+    return true;
+  };
+
+  const clearPrice = (isMobile: boolean) => {
+    if (isMobile) {
+      setMobilePriceDraft(emptyPriceDraft());
+      setMobilePriceError(null);
+    } else {
+      setDesktopPriceDraft(emptyPriceDraft());
+      setDesktopPriceError(null);
+      setPriceRange([null, null]);
+    }
+  };
+
+  const openMobileFilters = () => {
+    setMobilePriceDraft({
+      min: formatPriceInput(priceRange[0]),
+      max: formatPriceInput(priceRange[1]),
+    });
+    setMobilePriceError(null);
+    setIsMobileFiltersOpen(true);
+  };
 
   const clearAllFilters = () => {
     setActiveCategory(null);
-    setPriceRange([0, priceMax]);
+    setPriceRange([null, null]);
+    setDesktopPriceDraft(emptyPriceDraft());
+    setMobilePriceDraft(emptyPriceDraft());
+    setDesktopPriceError(null);
+    setMobilePriceError(null);
     setIsOfertasFilterActive(false);
     onClearSearch?.();
   };
@@ -417,16 +470,19 @@ export function ShopPage({
   };
 
   const normalizedSearchQuery = normalizeSearchText(searchQuery);
+  const hasPriceFilter = priceRange[0] !== null || priceRange[1] !== null;
   const hasRefinementFilters =
-    activeCategory !== null || priceRange[0] !== 0 || priceRange[1] !== priceMax || isOfertasFilterActive;
+    activeCategory !== null || hasPriceFilter || isOfertasFilterActive;
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
       const categoryMatch =
         activeCategory === null || product.category === activeCategory;
 
+      const finalPrice = visiblePrice(product.price);
       const priceMatch =
-        product.price >= priceRange[0] && product.price <= priceRange[1];
+        (priceRange[0] === null || finalPrice >= priceRange[0]) &&
+        (priceRange[1] === null || finalPrice <= priceRange[1]);
 
       const searchMatch =
         !normalizedSearchQuery ||
@@ -448,7 +504,7 @@ export function ShopPage({
   ]);
 
   const activeFiltersCount =
-    (priceRange[0] !== 0 || priceRange[1] !== priceMax ? 1 : 0) +
+    (hasPriceFilter ? 1 : 0) +
     (isOfertasFilterActive ? 1 : 0) +
     (normalizedSearchQuery ? 1 : 0);
 
@@ -460,6 +516,7 @@ export function ShopPage({
     if (sortBy === "price-high") sorted.sort((a, b) => b.price - a.price);
     return sorted;
   }, [filteredProducts, sortBy]);
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
 
   const handlePageChange = (newPage: number) => {
     if (pageTransitionTimeoutRef.current !== null) {
@@ -484,7 +541,12 @@ export function ShopPage({
   const categoryNavigation = [{ name: "Todos los productos", count: products.length, image: undefined as string | undefined }, ...categories];
   const featuredShelfProducts = productosEnOferta.slice(0, 5);
 
-  const FilterPanel = ({ onClose }: { onClose?: () => void }) => (
+  const renderFilterPanel = (isMobile: boolean) => {
+    const draft = isMobile ? mobilePriceDraft : desktopPriceDraft;
+    const setDraft = isMobile ? setMobilePriceDraft : setDesktopPriceDraft;
+    const error = isMobile ? mobilePriceError : desktopPriceError;
+    const inputPrefix = isMobile ? "mobile" : "desktop";
+    return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-[#1C2335] text-lg md:text-xl">
@@ -507,21 +569,50 @@ export function ShopPage({
 
       <Collapsible defaultOpen>
         <CollapsibleTrigger className="flex items-center justify-between w-full group">
-          <h4 className="text-[#1C2335] text-base">Rango de precio</h4>
+          <h4 className="text-[#1C2335] text-base">Precio</h4>
           <ChevronDown className="w-5 h-5 text-[#2E2E2E] transition-transform group-data-[state=open]:rotate-180" />
         </CollapsibleTrigger>
-        <CollapsibleContent className="mt-4">
-          <Slider
-            value={priceRange}
-            onValueChange={(v) => setPriceRange(v as [number, number])}
-            max={priceMax}
-            step={500}
-            className="mb-4"
-          />
-          <div className="flex items-center justify-between text-[#2E2E2E] text-sm">
-            <span>{formatPrecioARS(priceRange[0])}</span>
-            <span>{formatPrecioARS(priceRange[1])}</span>
+        <CollapsibleContent className="mt-3">
+          <div className="grid grid-cols-2 gap-2">
+            {(["min", "max"] as const).map((field) => (
+              <div key={field} className="min-w-0">
+                <label htmlFor={`${inputPrefix}-price-${field}`} className="mb-1 block text-xs font-medium text-[#5B6472]">
+                  {field === "min" ? "Mínimo" : "Máximo"}
+                </label>
+                <div className="relative">
+                  <span aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#5B6472]">$</span>
+                  <input
+                    id={`${inputPrefix}-price-${field}`}
+                    type="text"
+                    inputMode="decimal"
+                    value={draft[field]}
+                    onChange={(event) => {
+                      setDraft((current) => ({ ...current, [field]: event.target.value }));
+                      if (isMobile) setMobilePriceError(null);
+                      else setDesktopPriceError(null);
+                    }}
+                    onBlur={isMobile ? undefined : () => applyPriceDraft(draft, false)}
+                    onKeyDown={isMobile ? undefined : (event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        applyPriceDraft(draft, false);
+                      }
+                    }}
+                    aria-invalid={Boolean(error)}
+                    aria-describedby={error ? `${inputPrefix}-price-error` : undefined}
+                    placeholder={field === "min" ? "Mínimo" : "Máximo"}
+                    className="h-11 w-full min-w-0 rounded-lg border border-[#D1D5DB] bg-white pl-7 pr-2 text-base text-[#1C2335] outline-none focus-visible:border-[#FF6B00] focus-visible:ring-2 focus-visible:ring-[#FF6B00]/25"
+                  />
+                </div>
+              </div>
+            ))}
           </div>
+          {error && <p id={`${inputPrefix}-price-error`} role="alert" className="mt-2 text-sm text-[#B42318]">{error}</p>}
+          {(draft.min.trim() || draft.max.trim()) && (
+            <button type="button" onClick={() => clearPrice(isMobile)} className="mt-2 text-sm font-medium text-[#B84B00] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00]">
+              Limpiar
+            </button>
+          )}
         </CollapsibleContent>
       </Collapsible>
 
@@ -548,17 +639,20 @@ export function ShopPage({
         </CollapsibleContent>
       </Collapsible>
 
-      {onClose && (
+      {isMobile && (
         <Button
-          onClick={onClose}
+          onClick={() => {
+            if (applyPriceDraft(mobilePriceDraft, true)) setIsMobileFiltersOpen(false);
+          }}
           className="w-full bg-[#FF6B00] hover:bg-[#e56000] text-white rounded-full py-6 shadow-lg"
           style={{ fontSize: "1rem", fontWeight: 600 }}
         >
-          Aplicar filtros ({filteredProducts.length} productos)
+          Aplicar filtros
         </Button>
       )}
     </div>
-  );
+    );
+  };
 
   return (
     <div className="min-h-screen bg-[#FFF4E6]">
@@ -687,7 +781,7 @@ export function ShopPage({
           {/* Mobile Filter + Grid Toggle */}
           <div className={`xl:hidden sticky top-16 lg:top-20 z-30 -mx-4 px-4 py-2 mb-3 bg-[#FFF4E6] flex gap-3 transition-shadow${isFilterBarStuck ? " shadow-md" : ""}`}>
             <Button
-              onClick={() => setIsMobileFiltersOpen(true)}
+              onClick={openMobileFilters}
               className="min-h-11 flex-1 sm:flex-initial sm:w-auto bg-white text-[#1C2335] border-2 border-[#FF6B00] hover:bg-[#FFF4E6] rounded-full shadow-sm"
               style={{ fontSize: "0.938rem", fontWeight: 700 }}
             >
@@ -747,7 +841,7 @@ export function ShopPage({
                     })}
                   </div>
                 </nav>
-                <FilterPanel />
+                {renderFilterPanel(false)}
               </Card>
             </aside>
 
@@ -868,50 +962,35 @@ export function ShopPage({
                 </div>
               )}
 
-              {Math.ceil(filteredProducts.length / itemsPerPage) > 1 && (
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8 sm:mt-12">
-                  <Button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="w-full sm:w-auto h-12 px-6 bg-white text-[#FF6B00] border-2 border-[#FF6B00] hover:bg-[#FF6B00] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-[#FF6B00] rounded-full shadow-md transition-colors"
-                    style={{ fontSize: "1rem", fontWeight: 600 }}
-                  >
-                    Anterior
-                  </Button>
-
-                  <div className="flex items-center gap-2 bg-white px-6 py-3 rounded-full shadow-md">
-                    <span
-                      className="text-[#2E2E2E]"
-                      style={{ fontSize: "1rem" }}
+              {totalPages > 1 && (
+                <nav aria-label="Paginación de productos" className="mt-8 flex justify-center sm:mt-12">
+                  <div className="inline-flex max-w-full items-center gap-1 rounded-full border border-[#E5E7EB] bg-white p-1 shadow-sm">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1 || isLoadingPage}
+                      className="h-11 min-w-11 gap-1 rounded-full px-2 text-sm font-semibold text-[#B84B00] hover:bg-[#FFF4E6] disabled:opacity-40 sm:px-4"
                     >
-                      Página
+                      <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                      Anterior
+                    </Button>
+                    <span className="shrink-0 px-1 text-xs font-medium text-[#5B6472] sm:px-3 sm:text-sm" aria-live="polite">
+                      <span className="sm:hidden">{currentPage} / {totalPages}</span>
+                      <span className="hidden sm:inline">Página {currentPage} de {totalPages}</span>
                     </span>
-                    <Badge
-                      className="bg-[#FF6B00] text-white border-none px-3 py-1"
-                      style={{ fontSize: "1rem", fontWeight: 600 }}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages || isLoadingPage}
+                      className="h-11 min-w-11 gap-1 rounded-full px-2 text-sm font-semibold text-[#B84B00] hover:bg-[#FFF4E6] disabled:opacity-40 sm:px-4"
                     >
-                      {currentPage}
-                    </Badge>
-                    <span
-                      className="text-[#2E2E2E]"
-                      style={{ fontSize: "1rem" }}
-                    >
-                      de {Math.ceil(filteredProducts.length / itemsPerPage)}
-                    </span>
+                      Siguiente
+                      <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                    </Button>
                   </div>
-
-                  <Button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={
-                      currentPage ===
-                      Math.ceil(filteredProducts.length / itemsPerPage)
-                    }
-                    className="w-full sm:w-auto h-12 px-6 bg-white text-[#FF6B00] border-2 border-[#FF6B00] hover:bg-[#FF6B00] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-[#FF6B00] rounded-full shadow-md transition-colors"
-                    style={{ fontSize: "1rem", fontWeight: 600 }}
-                  >
-                    Siguiente
-                  </Button>
-                </div>
+                </nav>
               )}
             </main>
           </div>
@@ -956,7 +1035,7 @@ export function ShopPage({
               </div>
 
               <div className="p-6">
-                <FilterPanel onClose={() => setIsMobileFiltersOpen(false)} />
+                {renderFilterPanel(true)}
               </div>
             </motion.div>
           </>
