@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Search, X, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "./ui/button";
-import { ImageWithFallback } from "./figma/ImageWithFallback";
+import { ProductImage } from "./ProductImage";
 import { formatPrecioARS, getPrecioFinalConIVA } from "../utils/priceUtils";
 import { motion, AnimatePresence } from "motion/react";
 import { createPortal } from "react-dom";
@@ -25,9 +25,6 @@ interface SmartSearchBarProps {
   placeholder?: string;
   onClose?: () => void;
 }
-
-const DEFAULT_IMG =
-  "https://images.unsplash.com/photo-1580915411954-282cb1b0d780?auto=format&fit=crop&w=1200&q=80";
 
 // Rotating placeholder examples — cycle every 3.5 s, pause while user is typing
 const SEARCH_PLACEHOLDERS = [
@@ -142,8 +139,7 @@ export function SmartSearchBar({
           const images: any[] = Array.isArray(p?.images) ? p.images : [];
           const image =
             String(images?.[0] ?? "").trim() ||
-            String(p?.imageUrl ?? "").trim() ||
-            DEFAULT_IMG;
+            String(p?.imageUrl ?? "").trim();
 
           const price = toNumber(p?.basePrice ?? p?.price ?? 0);
 
@@ -495,7 +491,7 @@ export function SmartSearchBar({
                     type="button"
                   >
                     <div className="flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden bg-white shadow-sm">
-                      <ImageWithFallback
+                      <ProductImage
                         src={product.image}
                         alt={product.name}
                         className="w-full h-full object-cover"
@@ -682,7 +678,7 @@ export function SmartSearchBar({
                         type="button"
                       >
                         <div className="w-14 h-14 rounded-2xl overflow-hidden bg-white shadow-sm">
-                          <ImageWithFallback
+                          <ProductImage
                             src={product.image}
                             alt={product.name}
                             className="w-full h-full object-cover"

@@ -2,7 +2,7 @@ import type { ImgHTMLAttributes } from "react";
 import { Check } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
-import { ImageWithFallback } from "./figma/ImageWithFallback";
+import { ProductImage } from "./ProductImage";
 import { QuantitySelector } from "./QuantitySelector";
 import { AddToCartButton } from "./AddToCartButton";
 import { SaleChip } from "./SaleChip";
@@ -69,7 +69,7 @@ export function ProductCard({
         onClick={() => onProductClick(product)}
       >
         <div className="relative h-36 md:h-40 rounded-xl overflow-hidden mb-2 bg-white">
-          <ImageWithFallback
+          <ProductImage
             src={product.image}
             alt={product.name}
             className="w-full h-full object-contain p-1.5 group-hover:scale-105 transition-transform duration-300"
@@ -159,7 +159,7 @@ export function ProductCard({
   return (
     <Card className={cardClassName} onClick={() => onProductClick(product)}>
       <div className={imageClassName}>
-        <ImageWithFallback
+        <ProductImage
           src={product.image}
           alt={product.name}
           width={600}

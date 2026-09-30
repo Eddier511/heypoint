@@ -19,7 +19,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "../components/ui/popover";
-import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+import { ProductImage } from "../components/ProductImage";
 import { UnifiedHeader } from "../components/UnifiedHeader";
 import { BackToTopButton } from "../components/BackToTopButton";
 import { Footer } from "../components/Footer";
@@ -404,7 +404,7 @@ export function CheckoutPage({
                       className="flex gap-3 sm:gap-4 p-3 sm:p-4 bg-[#FFF4E6] rounded-2xl"
                     >
                       <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
-                        <ImageWithFallback
+                        <ProductImage
                           src={item.image}
                           alt={item.name}
                           className="w-full h-full object-cover"

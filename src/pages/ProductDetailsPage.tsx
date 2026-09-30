@@ -3,7 +3,7 @@ import { ArrowLeft, Share2 } from "lucide-react";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
-import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+import { ProductImage } from "../components/ProductImage";
 import { UnifiedHeader } from "../components/UnifiedHeader";
 import { Footer } from "../components/Footer";
 import { QuantitySelector } from "../components/QuantitySelector";
@@ -64,7 +64,6 @@ interface ProductDetailsPageProps {
   onProductClick?: (product: UiProduct) => void;
 }
 
-const PLACEHOLDER_IMG = "https://placehold.co/600x400?text=Hey!Point";
 
 function normalizeArray(raw: any): any[] {
   if (Array.isArray(raw)) return raw;
@@ -98,7 +97,7 @@ function mapApiToUi(p: ApiProduct, categoryName?: string): UiProduct {
     id: String(p.id),
     name: String(p.name ?? "Producto"),
     description: p.description,
-    image: (p.images?.[0] || "").trim() || PLACEHOLDER_IMG,
+    image: (p.images?.[0] || "").trim(),
     price: finalBase,
     originalPrice: discountPct > 0 ? base : undefined,
     rating: 0,
@@ -483,7 +482,8 @@ export function ProductDetailsPage({
             {/* Imagen */}
             <Card className="bg-white border-none shadow-lg rounded-2xl p-3 sm:p-5">
               <div className="relative h-[300px] sm:h-[340px] lg:h-auto lg:aspect-square bg-white rounded-xl overflow-hidden">
-                <ImageWithFallback
+                <ProductImage
+                  detail
                   src={currentProduct.image}
                   alt={currentProduct.name}
                   className="w-full h-full object-contain p-3 sm:p-4"
@@ -540,6 +540,12 @@ export function ProductDetailsPage({
               </div>
 
               <StockIndicator stock={currentProduct.stock} variant="detail-compact" />
+
+              {currentProduct.description?.trim() && (
+                <p className="mt-4 whitespace-pre-line text-sm leading-relaxed text-[#5B6472] sm:text-base">
+                  {currentProduct.description.trim()}
+                </p>
+              )}
 
               <Card className="bg-white border-none shadow-md rounded-2xl p-4 sm:p-5 lg:p-4 mt-4">
                 <div className="flex justify-between items-center mb-3 gap-4 lg:hidden">

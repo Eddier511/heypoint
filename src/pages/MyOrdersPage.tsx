@@ -28,7 +28,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "../components/ui/dialog";
-import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+import { ProductImage } from "../components/ProductImage";
 import { UnifiedHeader } from "../components/UnifiedHeader";
 import { Footer } from "../components/Footer";
 import { formatPrecioARS } from "../utils/priceUtils";
@@ -442,7 +442,7 @@ function OrderCard({
                             className="w-12 h-12 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0"
                             style={{ transform: "translateZ(0)" }}
                           >
-                            <ImageWithFallback
+                            <ProductImage
                               src={item.image}
                               alt={item.name}
                               className="w-full h-full object-cover"
@@ -506,7 +506,7 @@ function OrderCard({
                                 className="w-16 h-16 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0"
                                 style={{ transform: "translateZ(0)" }}
                               >
-                                <ImageWithFallback
+                                <ProductImage
                                   src={item.image}
                                   alt={item.name}
                                   className="w-full h-full object-cover"
@@ -959,7 +959,7 @@ export function MyOrdersPage({
                             className="flex items-center gap-3"
                           >
                             <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
-                              <ImageWithFallback
+                              <ProductImage
                                 src={item.image}
                                 alt={item.name}
                                 className="w-full h-full object-cover"
@@ -1024,7 +1024,7 @@ export function MyOrdersPage({
                                 className="flex items-center gap-4"
                               >
                                 <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
-                                  <ImageWithFallback
+                                  <ProductImage
                                     src={item.image}
                                     alt={item.name}
                                     className="w-full h-full object-cover"
@@ -1510,7 +1510,7 @@ export function MyOrdersPage({
                                 className="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0"
                                 style={{ transform: "translateZ(0)" }}
                               >
-                                <ImageWithFallback
+                                <ProductImage
                                   src={item.image}
                                   alt={item.name}
                                   className="w-full h-full object-cover"

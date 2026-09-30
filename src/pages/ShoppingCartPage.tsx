@@ -18,7 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "../components/ui/popover";
-import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+import { ProductImage } from "../components/ProductImage";
 import { UnifiedHeader } from "../components/UnifiedHeader";
 import { QuantitySelector } from "../components/QuantitySelector";
 import { StockIndicator } from "../components/StockIndicator";
@@ -210,7 +210,7 @@ export function ShoppingCartPage({
                     >
                       <div className="flex gap-3 sm:gap-5">
                         <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-xl sm:rounded-2xl overflow-hidden bg-gray-100 flex-shrink-0">
-                          <ImageWithFallback
+                          <ProductImage
                             src={item.image}
                             alt={item.name}
                             className="w-full h-full object-cover"
