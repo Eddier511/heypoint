@@ -7,7 +7,7 @@ interface PriceDisplayProps {
   /** Precio original (sin IVA) si el producto está en oferta */
   originalPrice?: number;
   /** Tamaño del precio - afecta font size */
-  size?: "xs" | "sm" | "md" | "lg" | "xl";
+  size?: "xs" | "sm" | "md" | "lg" | "xl" | "card";
   /** Mostrar chip de oferta si hay originalPrice */
   showSaleChip?: boolean;
   /** Alineación del precio */
@@ -76,9 +76,9 @@ export function PriceDisplay({
     <div className={`flex ${layoutClass} ${alignClass} flex-wrap ${className}`}>
       {/* Precio Final - Siempre negro/gris oscuro */}
       <span
-        className="text-[#111]"
+        className={`text-[#111]${size === "card" ? " text-[17px] sm:text-[18px] xl:text-[20px]" : ""}`}
         style={{
-          fontSize: fontSizes[size].final,
+          fontSize: size === "card" ? undefined : fontSizes[size].final,
           fontWeight: 700,
           lineHeight: 1.2
         }}
@@ -89,9 +89,9 @@ export function PriceDisplay({
       {/* Precio Original (Tachado) - Solo si está en oferta */}
       {isOnSale && precioOriginal && (
         <span
-          className="text-[#999] line-through"
+          className={`text-[#999] line-through${size === "card" ? " text-xs sm:text-[13px]" : ""}`}
           style={{
-            fontSize: fontSizes[size].original,
+            fontSize: size === "card" ? undefined : fontSizes[size].original,
             fontWeight: 400,
             lineHeight: 1.2
           }}

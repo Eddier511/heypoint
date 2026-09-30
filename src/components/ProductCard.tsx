@@ -65,10 +65,10 @@ export function ProductCard({
   if (variant === "related") {
     return (
       <Card
-        className="group cursor-pointer flex h-full flex-col rounded-2xl overflow-hidden bg-white border-none shadow-sm hover:shadow-md transition-all p-2.5"
+        className="group cursor-pointer flex h-full flex-col gap-0 rounded-2xl overflow-hidden bg-white border-none shadow-sm hover:shadow-md transition-all p-2.5"
         onClick={() => onProductClick(product)}
       >
-        <div className="relative h-28 sm:h-32 rounded-xl overflow-hidden mb-1.5 bg-white">
+        <div className="relative h-36 md:h-40 rounded-xl overflow-hidden mb-2 bg-white">
           <ImageWithFallback
             src={product.image}
             alt={product.name}
@@ -83,7 +83,7 @@ export function ProductCard({
           {product.name}
         </h3>
 
-        <p className="mb-1 min-h-6 text-[#1C2335]" style={{ fontSize: "1rem", fontWeight: 800 }}>
+        <p className="mb-1 min-h-6 min-w-0 break-words text-[#1C2335] text-[18px] md:text-[19px] font-extrabold leading-tight">
           {formatPrecioARS(getPrecioFinalConIVA(product.price, ivaPct))}
         </p>
 
@@ -101,7 +101,7 @@ export function ProductCard({
         </div>
 
         <div
-          className="flex flex-col xl:flex-row xl:items-center gap-2"
+          className="mt-auto flex flex-col xl:flex-row xl:items-center gap-2"
           onClick={(e) => e.stopPropagation()}
         >
           <QuantitySelector
@@ -136,17 +136,17 @@ export function ProductCard({
       ? "relative h-28 rounded-xl overflow-hidden flex-shrink-0 bg-white"
       : isCatalogListMobile
         ? "relative w-32 h-32 sm:w-auto sm:h-auto sm:aspect-[4/3] rounded-xl overflow-hidden flex-shrink-0 bg-white"
-        : "relative aspect-[4/3] rounded-xl overflow-hidden flex-shrink-0 bg-white";
+        : "relative aspect-[6/5] sm:aspect-[5/4] rounded-xl overflow-hidden flex-shrink-0 bg-white";
   const cardClassName = isFeaturedMobile
-    ? `group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-sm p-2.5 min-h-[240px] transition-opacity${product.stock === 0 ? " opacity-80" : ""}`
+    ? `group cursor-pointer flex flex-col gap-0 rounded-2xl overflow-hidden bg-white border-none shadow-sm p-2.5 min-h-[240px] transition-opacity${product.stock === 0 ? " opacity-80" : ""}`
     : isFeaturedDesktop
-      ? `group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-sm p-2.5 h-full transition-opacity${product.stock === 0 ? " opacity-80" : ""}`
+      ? `group cursor-pointer flex flex-col gap-0 rounded-2xl overflow-hidden bg-white border-none shadow-sm p-2.5 h-full transition-opacity${product.stock === 0 ? " opacity-80" : ""}`
       : isCatalogListMobile
         ? `group cursor-pointer flex flex-row sm:flex-col gap-3 sm:gap-0 rounded-2xl overflow-hidden bg-white border-none shadow-sm p-3 h-full sm:min-h-[300px] transition-opacity${product.stock === 0 ? " opacity-80" : ""}`
-        : `group cursor-pointer flex flex-col rounded-2xl overflow-hidden bg-white border-none shadow-sm p-2.5 h-full min-h-[280px] sm:min-h-[300px] transition-opacity${product.stock === 0 ? " opacity-80" : ""}`;
-  const priceSize = isFeaturedDesktop ? "md" : "sm";
+        : `group cursor-pointer flex flex-col gap-0 rounded-2xl overflow-hidden bg-white border-none shadow-sm p-2.5 h-full transition-opacity${product.stock === 0 ? " opacity-80" : ""}`;
+  const priceSize = isCatalogGrid ? "card" : isFeaturedDesktop ? "md" : "sm";
   const priceBlockClassName = isCatalogGrid
-    ? "mb-1 min-h-[4rem] sm:min-h-[3.5rem]"
+    ? "mb-1 min-h-[3.25rem] sm:min-h-[3rem]"
     : "mb-1";
   const controlsClassName = isCatalogGrid
     ? "mt-auto flex flex-col sm:flex-row sm:items-center gap-2 flex-shrink-0"
@@ -201,7 +201,7 @@ export function ProductCard({
           </h3>
         ) : (
           <h3
-            className={`text-[#1C2335] ${isCatalogListMobile ? "mb-1.5" : "mb-1"} line-clamp-2${variant === "catalog" ? " md:line-clamp-3" : ""}`}
+            className={`text-[#1C2335] ${isCatalogListMobile ? "mb-1.5 md:line-clamp-3" : "mb-1"} line-clamp-2`}
             style={{
               fontSize: "0.938rem",
               fontWeight: 600,
@@ -219,6 +219,7 @@ export function ProductCard({
             originalPrice={product.originalPrice}
             size={priceSize}
             showSaleChip={false}
+            className={isCatalogGrid ? "min-w-0 [&>span]:break-words" : undefined}
           />
           {/* Reserved height — keeps all cards equal regardless of discount */}
           <div className="min-h-[1rem] mt-0.5">
@@ -250,7 +251,7 @@ export function ProductCard({
           )}
         </div>
 
-        <div className={`${isCatalogListMobile ? "mb-2" : "mb-1"} min-h-[14px]`}>
+        <div className={`${isCatalogListMobile ? "mb-2 min-h-[14px]" : "mb-1 min-h-5"}`}>
           <StockIndicator stock={product.stock} variant="card" />
         </div>
 

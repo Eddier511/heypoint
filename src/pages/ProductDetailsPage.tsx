@@ -611,17 +611,17 @@ export function ProductDetailsPage({
                     key={index}
                     className="flex h-full w-[190px] flex-shrink-0 flex-col rounded-2xl bg-white p-2.5 shadow-sm animate-pulse md:w-auto"
                   >
-                    <div className="relative h-28 sm:h-32 rounded-xl bg-white mb-1.5 overflow-hidden">
+                    <div className="relative h-36 md:h-40 rounded-xl bg-white mb-2 overflow-hidden">
                       <div className="absolute inset-1.5 rounded-lg bg-gray-200" />
                     </div>
                     <div className="mb-1 min-h-[2.35rem] space-y-1.5">
                       <div className="h-4 bg-gray-200 rounded-full" />
                       <div className="h-4 bg-gray-200 rounded-full w-2/3" />
                     </div>
-                    <div className="h-5 w-24 bg-gray-200 rounded-full mb-1" />
+                    <div className="h-6 w-24 bg-gray-200 rounded-full mb-1" />
                     <div className="h-[22px] mb-0.5" />
                     <div className="h-5 mb-1" />
-                    <div className="flex flex-col xl:flex-row gap-2">
+                    <div className="mt-auto flex flex-col xl:flex-row gap-2">
                       <div className="h-10 w-28 rounded-xl bg-gray-200" />
                       <div className="h-11 flex-1 rounded-full bg-[#FFD9BF]" />
                     </div>

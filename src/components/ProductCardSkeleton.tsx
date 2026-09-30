@@ -14,7 +14,7 @@ export function ProductCardSkeleton({
       className={`rounded-2xl overflow-hidden bg-white border-none shadow-sm ${isListMobile ? "p-3" : "p-2.5"} h-full animate-pulse ${
         isListMobile
           ? "flex flex-row sm:flex-col gap-3 sm:gap-0 sm:min-h-[300px]"
-          : "flex flex-col min-h-[280px] sm:min-h-[300px]"
+          : "flex flex-col gap-0"
       }`}
     >
       {/* Image Skeleton */}
@@ -22,7 +22,7 @@ export function ProductCardSkeleton({
         className={`relative rounded-xl bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 flex-shrink-0 bg-[length:200%_200%] animate-[shimmer_2s_ease-in-out_infinite] ${
           isListMobile
             ? "w-32 h-32 sm:w-auto sm:h-auto sm:aspect-[4/3]"
-            : "aspect-[4/3]"
+            : "aspect-[6/5] sm:aspect-[5/4]"
         }`}
       />
       
@@ -34,8 +34,8 @@ export function ProductCardSkeleton({
           <div className="h-4 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 rounded-lg w-3/4 bg-[length:200%_200%] animate-[shimmer_2s_ease-in-out_infinite]" />
         </div>
 
-        <div className={`${isListMobile ? "mb-1" : "mb-1 min-h-[4rem] sm:min-h-[3.5rem]"}`}>
-          <div className="h-5 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 rounded-lg w-24 mb-2 bg-[length:200%_200%] animate-[shimmer_2s_ease-in-out_infinite]" />
+        <div className={`${isListMobile ? "mb-1" : "mb-1 min-h-[3.25rem] sm:min-h-[3rem]"}`}>
+          <div className={`${isListMobile ? "h-5" : "h-5 sm:h-6"} bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 rounded-lg w-24 mb-2 bg-[length:200%_200%] animate-[shimmer_2s_ease-in-out_infinite]`} />
           <div className="h-3.5 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 rounded-lg w-20 bg-[length:200%_200%] animate-[shimmer_2s_ease-in-out_infinite]" />
         </div>
 
@@ -43,7 +43,7 @@ export function ProductCardSkeleton({
           <div className="h-5 w-24 rounded-full bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_200%] animate-[shimmer_2s_ease-in-out_infinite]" />
         </div>
 
-        <div className={`${isListMobile ? "mb-2" : "mb-1"} min-h-[14px]`}>
+        <div className={`${isListMobile ? "mb-2 min-h-[14px]" : "mb-1 min-h-5"}`}>
           <div className="h-3 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 rounded-lg w-16 bg-[length:200%_200%] animate-[shimmer_2s_ease-in-out_infinite]" />
         </div>
 
