@@ -28,16 +28,6 @@ export default function ModalRoot() {
     });
     closeAllModals();
   };
-  const onSignUpSuccess = (email?: string, fullName?: string) => {
-    // DO NOT authenticate here - user must verify email and complete profile first
-    // The AuthModal will handle the multi-step flow internally
-    console.log("✅ Sign Up submitted (not authenticated yet):", email);
-  };
-  const onGoogleSignUpSuccess = (fullName: string) => {
-    // Google sign up is pre-verified, but still needs profile completion
-    // The AuthModal will advance to Step 2 (Complete Profile)
-    console.log("✅ Google Sign Up (advancing to Complete Profile):", fullName);
-  };
 
   return createPortal(
     <Suspense fallback={null}>
@@ -45,8 +35,6 @@ export default function ModalRoot() {
         isOpen={isOpen}
         onClose={onClose}
         onLoginSuccess={onLoginSuccess}
-        onSignUpSuccess={onSignUpSuccess}
-        onGoogleSignUpSuccess={onGoogleSignUpSuccess}
         defaultMode={defaultMode}
       />
     </Suspense>,

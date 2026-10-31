@@ -61,7 +61,7 @@ export function ShoppingCartPage({
     Boolean(normalizedPickupPointAddress) &&
     normalizedPickupPointAddress !== normalizedPickupPointName;
 
-  const [currentStep] = useState(1);
+  const [currentStep] = useState<1 | 2 | 3>(1);
 
   const updateQuantity = async (productId: string, newQuantity: number) => {
     if (newQuantity < 1) return;

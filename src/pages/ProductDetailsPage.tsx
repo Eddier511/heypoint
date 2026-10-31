@@ -56,8 +56,24 @@ interface UiProduct {
   serviceFeeExempt?: boolean;
 }
 
+// Search results can arrive before the API provides inventory and rating.
+type ProductPreview = Omit<UiProduct, "id" | "stock" | "rating"> & {
+  id: string | number;
+  stock?: number;
+  rating?: number;
+};
+
+function toDetailProduct(product: ProductPreview): UiProduct {
+  return {
+    ...product,
+    id: String(product.id),
+    stock: product.stock ?? 0,
+    rating: product.rating ?? 0,
+  };
+}
+
 interface ProductDetailsPageProps {
-  product?: UiProduct | null; // viene “incompleto” desde la tienda, lo usamos como fallback visual
+  product?: ProductPreview | null; // fallback mientras se hidrata desde la API
   productId?: string;
   onBack: () => void;
   onNavigate?: (page: string) => void;
@@ -121,7 +137,7 @@ export function ProductDetailsPage({
 }: ProductDetailsPageProps) {
   // ✅ estado local: el prop puede venir sin categoryId, acá lo “hidratamos” desde backend
   const [currentProduct, setCurrentProduct] = useState<UiProduct | null>(
-    product ?? null,
+    () => product ? toDetailProduct(product) : null,
   );
   const [loadingProduct, setLoadingProduct] = useState(!product && !!productId);
   const [productError, setProductError] = useState<string | null>(null);
@@ -129,7 +145,7 @@ export function ProductDetailsPage({
   // cuando cambia el product por props (ej. click a otro), actualizamos fallback visual
   useEffect(() => {
     if (!product) return;
-    setCurrentProduct(product);
+    setCurrentProduct(toDetailProduct(product));
     setProductError(null);
     setLoadingProduct(false);
   }, [product?.id]);
@@ -166,7 +182,7 @@ export function ProductDetailsPage({
       try {
         setLoadingProduct(true);
         setProductError(null);
-        const full = await fetchProductById(idToLoad);
+        const full = await fetchProductById(String(idToLoad));
         if (!alive) return;
 
         if (!full) {

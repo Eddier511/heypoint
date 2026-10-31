@@ -16,6 +16,7 @@ import {
   ExternalLink,
   AlertCircle,
   Info,
+  ArrowLeft,
 } from "lucide-react";
 
 import { Button } from "./ui/button";

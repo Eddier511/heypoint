@@ -24,19 +24,19 @@ interface ProductCardProduct {
   serviceFeeExempt?: boolean;
 }
 
-interface ProductCardProps {
-  product: ProductCardProduct;
+interface ProductCardProps<TProduct extends ProductCardProduct> {
+  product: TProduct;
   variant?: ProductCardVariant;
   mobileLayout?: "grid" | "list";
   quantity: number;
   onQuantityChange: (quantity: number) => void;
-  onProductClick: (product: ProductCardProduct) => void;
+  onProductClick: (product: TProduct) => void;
   ivaPct?: number;
   isPriorityImage?: boolean;
   cartQuantity?: number;
 }
 
-export function ProductCard({
+export function ProductCard<TProduct extends ProductCardProduct>({
   product,
   variant = "catalog",
   mobileLayout = "grid",
@@ -46,7 +46,7 @@ export function ProductCard({
   ivaPct,
   isPriorityImage = false,
   cartQuantity = 0,
-}: ProductCardProps) {
+}: ProductCardProps<TProduct>) {
   const hasDiscount =
     product.originalPrice !== undefined && product.originalPrice > product.price;
 

@@ -3,8 +3,8 @@
 import * as React from "react";
 import * as RechartsPrimitive from "recharts";
 import type {
-  TooltipProps,
-  TooltipPayload,
+  TooltipContentProps,
+  DefaultTooltipContentProps,
   LegendProps,
   LegendPayload,
 } from "recharts";
@@ -115,7 +115,9 @@ ${colorConfig
 
 const ChartTooltip = RechartsPrimitive.Tooltip;
 
-type ChartTooltipContentProps = TooltipProps<number, string> &
+type TooltipPayload = NonNullable<DefaultTooltipContentProps<number, string>["payload"]>[number];
+
+type ChartTooltipContentProps = Partial<TooltipContentProps<number, string>> &
   React.HTMLAttributes<HTMLDivElement> & {
     hideLabel?: boolean;
     hideIndicator?: boolean;
@@ -147,7 +149,7 @@ function ChartTooltipContent({
       return null;
     }
 
-    const [item] = payload as TooltipPayload<number, string>[];
+    const [item] = payload as TooltipPayload[];
     const key = `${labelKey || item?.dataKey || item?.name || "value"}`;
     const itemConfig = getPayloadConfigFromPayload(config, item, key);
     const value =
@@ -182,7 +184,7 @@ function ChartTooltipContent({
     return null;
   }
 
-  const typedPayload = payload as TooltipPayload<number, string>[];
+  const typedPayload = payload as TooltipPayload[];
   const nestLabel = typedPayload.length === 1 && indicator !== "dot";
 
   return (
@@ -203,7 +205,7 @@ function ChartTooltipContent({
 
           return (
             <div
-              key={item.dataKey ?? index}
+              key={typeof item.dataKey === "function" ? index : item.dataKey ?? index}
               className={cn(
                 "[&>svg]:text-muted-foreground flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5",
                 indicator === "dot" && "items-center"

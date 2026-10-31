@@ -138,10 +138,10 @@ type CheckoutGateStatus = "idle" | "checking" | "allowed";
 
 /**
  * ✅ Product actualizado para buscador/Firestore
- * - id: string (no number)
+ * - id: Firestore string o hash numérico del catálogo
  */
 interface Product {
-  id: string;
+  id: string | number;
   // Firestore product document ID used for cart/order stock operations.
   backendId?: string;
   name: string;

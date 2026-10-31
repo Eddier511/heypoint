@@ -2,13 +2,10 @@
 
 import * as React from "react";
 import { DayPicker, type DayPickerProps } from "react-day-picker";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from "lucide-react";
 
 import { cn } from "./utils";
 import { buttonVariants } from "./button";
-
-// Tipos de íconos de react-day-picker 9.x
-type IconProps = { className?: string; style?: React.CSSProperties };
 
 export function Calendar({
   className,
@@ -63,13 +60,12 @@ export function Calendar({
         ...classNames,
       }}
       components={{
-        // Tipamos explícitamente para evitar que TS marque 'className' en rojo
-        IconLeft: ({ className }: IconProps) => (
-          <ChevronLeft className={cn("size-4", className)} />
-        ),
-        IconRight: ({ className }: IconProps) => (
-          <ChevronRight className={cn("size-4", className)} />
-        ),
+        Chevron: ({ className, orientation }) => {
+          const Icon = orientation === "right" ? ChevronRight
+            : orientation === "up" ? ChevronUp
+            : orientation === "down" ? ChevronDown : ChevronLeft;
+          return <Icon className={cn("size-4", className)} />;
+        },
       }}
       {...props}
     />

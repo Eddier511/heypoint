@@ -102,7 +102,7 @@ export function CheckoutPage({
     Boolean(normalizedPickupPointAddress) &&
     normalizedPickupPointAddress !== normalizedPickupPointName;
   const checkoutEmail = currentUser?.email || "";
-  const [currentStep] = useState(2);
+  const [currentStep] = useState<1 | 2 | 3>(2);
   const [isProcessing, setIsProcessing] = useState(false);
   const [stockError, setStockError] = useState<string | null>(null);
   // I-01 — a different session/tab/device already has an unresolved
